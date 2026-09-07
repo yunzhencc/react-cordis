@@ -26,7 +26,7 @@ async function bootLanguageSettings() {
   for (const module of [
     { apply: applyI18n },
     { apply: applyRenderer, inject: rendererInject },
-    { apply: applyRouter, inject: ['slots'] },
+    { apply: applyRouter, inject: ['slots', 'uiRenderer'] },
     appLayout,
     { apply: applySettingsLayout, inject: ['i18n', 'routes', 'slots'] },
     { apply: applyGeneral, inject: generalInject },

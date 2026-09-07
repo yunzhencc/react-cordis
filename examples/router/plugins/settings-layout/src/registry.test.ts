@@ -16,7 +16,7 @@ async function bootSettings() {
   for (const module of [
     { apply: applyI18n },
     { apply: applyRenderer, inject: rendererInject },
-    { inject: ['slots'], apply: applyRouter },
+    { inject: ['slots', 'uiRenderer'], apply: applyRouter },
     appLayout,
     { inject: ['i18n', 'routes', 'slots'], apply },
   ]) {

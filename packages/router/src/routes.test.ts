@@ -150,13 +150,10 @@ describe('route registry', () => {
 
   it('publishes deeply immutable route snapshots without exposing registration records', async () => {
     const { ctx, dispose } = await bootRoutes();
-    const Sidebar = () => null;
     const definition: RouteDefinition = {
       id: 'settings',
       path: 'settings',
       Component: Null,
-      Sidebar,
-      navigation: { label: 'Settings', order: 1 },
       children: { 'settings.section': { kind: 'list', scope: 'root' } },
     };
     const remove = ctx.routes.register(definition);
@@ -165,15 +162,10 @@ describe('route registry', () => {
 
     expect(Object.isFrozen(snapshot)).toBe(true);
     expect(Object.isFrozen(exposed)).toBe(true);
-    expect(Object.isFrozen(exposed.navigation)).toBe(true);
     expect(Object.isFrozen(exposed.children)).toBe(true);
     expect(Object.isFrozen(exposed.children!['settings.section'])).toBe(true);
-    expect(exposed.Sidebar).toBe(Sidebar);
     expect(() => {
       exposed.id = 'changed';
-    }).toThrow(TypeError);
-    expect(() => {
-      exposed.navigation!.label = 'Changed';
     }).toThrow(TypeError);
     expect(() => {
       exposed.children!['settings.section']!.kind = 'single';

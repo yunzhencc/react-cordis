@@ -21,7 +21,7 @@ async function bootAppearance() {
   for (const module of [
     { apply: applyI18n },
     { inject: rendererInject, apply: applyRenderer },
-    { inject: ['slots'], apply: applyRouter },
+    { inject: ['slots', 'uiRenderer'], apply: applyRouter },
     appLayout,
     { inject: ['routes', 'slots', 'i18n'], apply: applySettingsLayout },
     { apply: applyTheme },

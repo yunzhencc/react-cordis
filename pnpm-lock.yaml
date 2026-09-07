@@ -254,6 +254,9 @@ importers:
       react-resizable-panels:
         specifier: ^4.12.3
         version: 4.12.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-router-dom:
+        specifier: ^7.18.3
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
     devDependencies:
       react-dom:
         specifier: ^19.2.8
@@ -282,6 +285,9 @@ importers:
       react-i18next:
         specifier: ^16.5.9
         version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+      react-router-dom:
+        specifier: ^7.18.3
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
 
   examples/router/plugins/settings-appearance:
     dependencies:
@@ -374,6 +380,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
+      '@examples/router-app-layout':
+        specifier: workspace:*
+        version: link:../app-layout
       '@react-cordis/i18n':
         specifier: workspace:*
         version: link:../../../../packages/i18n
@@ -456,9 +465,6 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
-      '@react-cordis/i18n':
-        specifier: workspace:*
-        version: link:../i18n
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../renderer
@@ -468,9 +474,6 @@ importers:
       react:
         specifier: ^19.2.8
         version: 19.2.8
-      react-i18next:
-        specifier: ^16.5.9
-        version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.18.3
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

@@ -2,42 +2,25 @@
 
 import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
-import { apply as applyI18n, I18nProvider } from '@react-cordis/i18n';
 import { apply as applyRenderer, inject as rendererInject, Slot } from '@react-cordis/renderer';
 import { act, StrictMode } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { Outlet } from 'react-router-dom';
+import { describe, expect, it } from 'vitest';
 import { apply as applyRouter, inject as routerInject } from './index';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
-beforeEach(() => {
-  localStorage.clear();
-  Object.defineProperty(navigator, 'languages', { configurable: true, value: ['zh-CN'] });
-});
-
 async function boot() {
   const ctx = new Context();
-  const i18n = ctx.plugin({ apply: applyI18n });
-  await i18n.await();
   const renderer = ctx.plugin({ apply: applyRenderer, inject: rendererInject });
   await renderer.await();
   const router = ctx.plugin({ inject: routerInject, apply: applyRouter });
   await router.await();
   ctx.routes.register({
     id: 'app-layout',
-    Component: () => (
-      <I18nProvider i18n={ctx.i18n}>
-        <Slot name="sidebar" />
-        <Slot name="main" />
-      </I18nProvider>
-    ),
-    children: {
-      sidebar: { kind: 'single', scope: 'root' },
-      main: { kind: 'single', scope: 'root' },
-    },
+    Component: Outlet,
   });
-  const fibers = [router, renderer, i18n];
+  const fibers = [router, renderer];
   return {
     ctx,
     container: document.createElement('div'),
@@ -52,40 +35,12 @@ async function boot() {
 
 async function bootRouterWithLayout() {
   const app = await boot();
-  const Settings = () => <h1>Settings</h1>;
-  const layout = app.ctx.plugin({
-    inject: ['routes', 'slots', 'i18n'],
-    apply(ctx) {
-      ctx.i18n.register('router-test', {
-        zh: { navigation: { dashboard: '仪表盘', settings: '设置' } },
-        en: { navigation: { dashboard: 'Dashboard', settings: 'Settings' } },
-      });
-      ctx.routes.inject('app-layout', () => ctx.routes.register({
-        id: 'settings',
-        parentId: 'app-layout',
-        path: 'settings',
-        Component: Settings,
-        navigation: { label: 'Settings', labelKey: 'router-test:navigation.settings', order: 2 },
-      }));
-      ctx.routes.inject('app-layout', () => ctx.routes.register({
-        id: 'dashboard',
-        parentId: 'app-layout',
-        path: 'dashboard',
-        Component: () => null,
-        navigation: { label: 'Dashboard', labelKey: 'router-test:navigation.dashboard', order: 1 },
-      }));
-      ctx.slots.inject('sidebar.navigation', () => ctx.slots.register(
-        { name: 'sidebar.navigation', id: 'custom' },
-        () => <>Custom</>,
-      ));
-      ctx.slots.inject('sidebar.footer', () => ctx.slots.register(
-        { name: 'sidebar.footer', id: 'account' },
-        () => <>Account</>,
-      ));
-    },
+  app.ctx.routes.register({
+    id: 'settings',
+    parentId: 'app-layout',
+    path: 'settings',
+    Component: () => <h1>Settings</h1>,
   });
-  await layout.await();
-  app.addFiber(layout);
   return app;
 }
 
@@ -113,44 +68,23 @@ async function bootRouterWithSettingsSlot() {
   return app;
 }
 
-async function bootRouterWithRouteSidebar() {
-  const app = await boot();
-  const SettingsSidebar = () => (
-    <nav data-settings-sidebar>
-      <NavLink to="/">Return to app</NavLink>
-    </nav>
-  );
-  const layout = app.ctx.plugin({
-    inject: ['routes', 'slots'],
-    apply(ctx) {
-      ctx.routes.inject('app-layout', () => ctx.routes.register({
-        id: 'dashboard',
-        parentId: 'app-layout',
-        index: true,
-        Component: () => <h1>Dashboard</h1>,
-        navigation: { label: 'Dashboard', order: 0 },
-      }));
-      ctx.routes.inject('app-layout', () => ctx.routes.register({
-        id: 'settings',
-        parentId: 'app-layout',
-        path: 'settings',
-        Component: Outlet,
-        Sidebar: SettingsSidebar,
-      }));
-      ctx.routes.inject('settings', () => ctx.routes.register({
-        id: 'settings.appearance',
-        parentId: 'settings',
-        path: 'appearance',
-        Component: () => <h1>Appearance</h1>,
-      }));
-    },
-  });
-  await layout.await();
-  app.addFiber(layout);
-  return app;
-}
-
 describe('router host', () => {
+  it('leaves layout slots for the application to populate', async () => {
+    const { ctx, dispose } = await boot();
+    const owner = ctx.slots.createOwner('custom-layout', {
+      main: { kind: 'single', scope: 'root' },
+      sidebar: { kind: 'single', scope: 'root' },
+    });
+    try {
+      expect(ctx.slots.entries('main')).toEqual([]);
+      expect(ctx.slots.entries('sidebar')).toEqual([]);
+    }
+    finally {
+      owner.dispose();
+      await dispose();
+    }
+  });
+
   it('rejects children below an index route instead of dropping them', async () => {
     const { ctx, dispose } = await boot();
     ctx.routes.register({ id: 'index-parent', index: true, Component: () => null });
@@ -165,7 +99,7 @@ describe('router host', () => {
     await dispose();
   });
 
-  it('renders a pathless layout and its settings child through the main slot', async () => {
+  it('renders a pathless layout and its settings child through the application Outlet', async () => {
     window.history.replaceState({}, '', '/settings');
     const { ctx, container, dispose } = await bootRouterWithLayout();
     let unmount!: () => void;
@@ -189,65 +123,6 @@ describe('router host', () => {
     });
 
     expect(container.textContent).toContain('Appearance');
-    await act(async () => unmount());
-    await dispose();
-  });
-
-  it('renders ordered navigation links and sidebar slots from the route snapshot', async () => {
-    window.history.replaceState({}, '', '/settings');
-    const { ctx, container, dispose } = await bootRouterWithLayout();
-    let unmount!: () => void;
-
-    await act(async () => {
-      unmount = ctx.uiRenderer.mount(container);
-    });
-
-    expect([...container.querySelectorAll('nav a')].map(link => [link.textContent, link.getAttribute('href')])).toEqual([
-      ['仪表盘', '/dashboard'],
-      ['设置', '/settings'],
-    ]);
-    expect(container.textContent).toContain('Custom');
-    expect(container.textContent).toContain('Account');
-    await act(async () => unmount());
-    await dispose();
-  });
-
-  it('keeps the footer outside the sidebar scroll region', async () => {
-    window.history.replaceState({}, '', '/settings');
-    const { ctx, container, dispose } = await bootRouterWithLayout();
-    let unmount!: () => void;
-
-    await act(async () => {
-      unmount = ctx.uiRenderer.mount(container);
-    });
-
-    const scrollRegion = container.querySelector('[data-sidebar-scroll]')!;
-    expect(scrollRegion.querySelector('nav')).not.toBeNull();
-    expect(scrollRegion.querySelector('footer')).toBeNull();
-    expect(container.querySelector('footer')?.parentElement).not.toBe(scrollRegion);
-
-    await act(async () => unmount());
-    await dispose();
-  });
-
-  it('replaces the application sidebar for a matched route and restores it when leaving', async () => {
-    window.history.replaceState({}, '', '/settings/appearance');
-    const { ctx, container, dispose } = await bootRouterWithRouteSidebar();
-    let unmount!: () => void;
-
-    await act(async () => {
-      unmount = ctx.uiRenderer.mount(container);
-    });
-
-    expect(container.querySelector('[data-settings-sidebar]')).not.toBeNull();
-    expect([...container.querySelectorAll('nav a')].map(link => link.textContent)).toEqual(['Return to app']);
-
-    await act(async () => {
-      container.querySelector<HTMLAnchorElement>('[data-settings-sidebar] a')!.click();
-    });
-
-    expect(container.querySelector('[data-settings-sidebar]')).toBeNull();
-    expect([...container.querySelectorAll('nav a')].map(link => link.textContent)).toEqual(['Dashboard']);
     await act(async () => unmount());
     await dispose();
   });

@@ -108,7 +108,7 @@ export function Greeting() {
 
 声明必须纳入每个调用方的 TypeScript 编译范围。独立检查示例插件时，其 `tsconfig.json` 使用 `"include": ["src", "../../src/i18next.d.ts"]`，与应用共用声明。未声明 `CustomTypeOptions.resources` 的项目继续接受任意字符串命名空间和字典。
 
-路由或设置项等跨插件标签使用导出的 `TranslationKey`，格式为 `namespace:key`。通用渲染组件通过 `useTranslation<TranslationNamespace[]>()` 翻译这些完整 key；业务组件继续使用 `useTranslation('greeting')`，将本地 key 限制在自己的命名空间。完整配置见 [i18n 示例类型声明](../../examples/i18n/src/i18next.d.ts)。
+设置项等跨插件标签使用导出的 `TranslationKey`，格式为 `namespace:key`。通用渲染组件通过 `useTranslation<TranslationNamespace[]>()` 翻译这些完整 key；业务组件继续使用 `useTranslation('greeting')`，将本地 key 限制在自己的命名空间。完整配置见 [i18n 示例类型声明](../../examples/i18n/src/i18next.d.ts)。
 
 ### 选择语言
 

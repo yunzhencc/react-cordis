@@ -54,7 +54,7 @@ packages/
 | `@react-cordis/vite` | 生成虚拟 registry 和构建清单，开发期配置变化时重载启动图。 |
 | `@react-cordis/slots` | 纯 `SlotMap` / `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
 | `@react-cordis/renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的 React 根挂载与卸载清理，不依赖 i18n。 |
-| `@react-cordis/router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner。 |
+| `@react-cordis/router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner，不提供导航或侧栏 UI。 |
 | `@examples/router-app-layout` | Router 示例自己的三栏布局、面板尺寸持久化与响应式策略，注册根路由并提供业务服务 `ctx.appLayout`。 |
 | `@react-cordis/i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
 | `examples/router/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Router 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
@@ -67,7 +67,7 @@ packages/
 
 `packages/i18n` 内置 `zh` 与 `en`，按浏览器语言优先级匹配已注册语言；用户选择写入 localStorage，默认 key 为 `react-cordis:locale`，可通过 i18n 插件的 `config.storageKey` 覆盖。`addLanguage({ id, label, fallback })` 可注册更多语言，返回注销函数。应用在业务根组件中显式包裹 `I18nProvider`：Router 示例由 `app-layout` 接入，国际化示例由 `page` 接入。语言变更会刷新 Provider 下的 Slot 与 Route 组件，语言设置列表也会响应注册和注销。
 
-功能包通过 `ctx.effect(() => ctx.i18n.register('dashboard', { zh: ..., en: ... }))` 注册独立命名空间，卸载时自动移除资源。组件使用 `useTranslation('dashboard')`，跨插件的 Route 导航和设置项使用完整 `labelKey`，例如 `dashboard:dashboard.title`。i18n 不内置业务文案或固定的公共命名空间回退；语言包、资源生命周期与事件职责见 [i18n 使用说明](../packages/i18n/README.md)。
+功能包通过 `ctx.effect(() => ctx.i18n.register('dashboard', { zh: ..., en: ... }))` 注册独立命名空间，卸载时自动移除资源。组件使用 `useTranslation('dashboard')`；Dashboard 自己向导航 Slot 注册翻译后的链接，跨插件设置项使用完整 `labelKey`。i18n 不内置业务文案或固定的公共命名空间回退；语言包、资源生命周期与事件职责见 [i18n 使用说明](../packages/i18n/README.md)。
 
 旧接口 `register(resources)` 和旧语言标识 `zh-CN/en-US` 已替换。已有应用升级时需要同时迁移词典、调用方和持久化偏好；核心不会把旧偏好自动重写成新标识。
 
@@ -107,19 +107,19 @@ Slots 只有 `root` scope。父项的 `children` 是子 Slot 唯一声明授权�
 
 Router 是唯一向 `root` Slot 注册的路由宿主。`ctx.routes` 以 `id`、`parentId`、可选 `path` / `index`、`Component` 与页面 `children` Slots 描述路由；`path` 缺省表示不消费 URL 的 Layout Route。跨模块以 `parentId` 建立父子关系，不能修改彼此的 `children` 数组。
 
-router 不依赖布局，也不自动创建业务根路由。布局由业务应用决定，基础包不提供统一布局插件。Router 示例的 `@examples/router-app-layout` 拥有自己的布局组件，显式注册无路径 `app-layout`；其组件声明以下 Slots：
+router 不依赖布局或 i18n，也不自动创建业务根路由、侧栏或 `main` Slot 内容。业务布局自行渲染 React Router 的 `<Outlet />`。布局由业务应用决定，基础包不提供统一布局插件。Router 示例的 `@examples/router-app-layout` 拥有自己的布局组件，显式注册无路径 `app-layout`；其组件声明以下 Slots：
 
 ```text
 app-layout
 ├─ sidebar (single)
 │  ├─ sidebar.navigation (list)
 │  └─ sidebar.footer (list)
-├─ main (single；Router 的 Outlet 占据)
+├─ main (single；app-layout 注册 Outlet)
 ├─ workbench (single)
 └─ shell.overlay (list)
 ```
 
-Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命中 Settings 时其 route Sidebar 替换默认应用侧栏。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。Router 的 app-layout 业务插件负责面板开关、拖拽尺寸持久化与响应式折叠，Dashboard 通过 `ctx.appLayout` 操作工作区。Basic 示例直接向 root Slot 注册自己的页面，不加载 i18n、布局或路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
+Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；app-layout 拥有默认侧栏及其样式，通过业务侧的 TypeScript 声明合并为 `RouteDefinition` 扩展 `Sidebar` 字段，并根据匹配路由选择侧栏；命中 Settings 时显示设置侧栏，基础 router 不解释该字段。Dashboard 向 `sidebar.navigation` 注册自己的 NavLink，菜单顺序由 Slot 的 `order` 决定。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。Router 的 app-layout 业务插件负责面板开关、拖拽尺寸持久化与响应式折叠，Dashboard 通过 `ctx.appLayout` 操作工作区。Basic 示例直接向 root Slot 注册自己的页面，不加载 i18n、布局或路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
 
 ## 部署边界
 

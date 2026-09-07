@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
+import type {} from '@examples/router-app-layout';
 import type { TranslationKey, TranslationNamespace } from '@react-cordis/i18n';
 import type {} from '@react-cordis/renderer';
 import type {} from '@react-cordis/router';

@@ -1,5 +1,4 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { TranslationKey } from '@react-cordis/i18n';
 import type { SlotSpec } from '@react-cordis/slots';
 import type { ComponentType } from 'react';
 import { Service } from '@deepseek-ai/cordis';
@@ -10,15 +9,12 @@ export interface RouteDefinition {
   path?: string;
   index?: boolean;
   Component: ComponentType;
-  Sidebar?: ComponentType;
-  navigation?: { label: string; labelKey?: TranslationKey; order: number };
   children?: Record<string, SlotSpec>;
 }
 
 export type RouteSnapshot = Readonly<
-  Omit<RouteDefinition, 'children' | 'navigation'>
+  Omit<RouteDefinition, 'children'>
   & {
-    navigation?: Readonly<NonNullable<RouteDefinition['navigation']>>;
     children?: Readonly<Record<string, Readonly<SlotSpec>>>;
   }
 >;
@@ -214,7 +210,6 @@ function copyRoute(route: RouteDefinition): RouteSnapshot {
   ));
   return Object.freeze({
     ...route,
-    ...(route.navigation ? { navigation: Object.freeze({ ...route.navigation }) } : {}),
     ...(children ? { children } : {}),
   });
 }

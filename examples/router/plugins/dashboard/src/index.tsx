@@ -5,6 +5,7 @@ import type {} from '@react-cordis/renderer';
 import type {} from '@react-cordis/router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { NavLink } from 'react-router-dom';
 import { dashboardMessages } from './locales';
 
 export function DashboardPage({ closeWorkbench, openWorkbench }: { closeWorkbench: () => void; openWorkbench: () => void }) {
@@ -29,11 +30,20 @@ function DashboardWorkbench() {
   );
 }
 
+function DashboardNavigation() {
+  const { t } = useTranslation('dashboard');
+  return <NavLink to="/">{t('dashboard.title')}</NavLink>;
+}
+
 export const inject = ['i18n', 'appLayout', 'routes', 'slots'];
 
 export function apply(ctx: Context) {
   ctx.effect(() => ctx.i18n.register('dashboard', dashboardMessages));
   const { closeWorkbench, openWorkbench } = ctx.appLayout;
+  ctx.slots.inject('sidebar.navigation', () => ctx.slots.register(
+    { name: 'sidebar.navigation', id: 'dashboard', order: 0 },
+    DashboardNavigation,
+  ));
   ctx.slots.inject('dashboard.workbench', () => ctx.slots.inject('workbench', () => ctx.slots.register(
     { name: 'workbench' },
     DashboardWorkbench,
@@ -44,6 +54,5 @@ export function apply(ctx: Context) {
     index: true,
     Component: () => <DashboardPage closeWorkbench={closeWorkbench} openWorkbench={openWorkbench} />,
     children: { 'dashboard.workbench': { kind: 'single', scope: 'root' } },
-    navigation: { label: 'Dashboard', labelKey: 'dashboard:dashboard.title', order: 0 },
   }));
 }

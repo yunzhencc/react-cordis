@@ -7,13 +7,15 @@ import { I18nProvider } from '@react-cordis/i18n';
 import { Slot, SlotOwner } from '@react-cordis/renderer';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
+import { Outlet } from 'react-router-dom';
 import styles from './index.module.css';
 import { getSidebarBounds, getWorkbenchBounds, getWorkspaceWidth, LayoutController, MAIN_MIN_WIDTH, readStorage } from './layout-controller';
+import { NavigationSidebar } from './sidebar';
 
 export { LayoutController } from './layout-controller';
 export type { LayoutSnapshot } from './layout-controller';
 
-export const inject = ['routes', 'uiRenderer', 'i18n'];
+export const inject = ['routes', 'uiRenderer', 'slots', 'i18n'];
 
 const layoutSlots = {
   'sidebar': { kind: 'single', scope: 'root' },
@@ -27,6 +29,19 @@ export function apply(ctx: Context) {
   const controller = new LayoutController();
   const slots = ctx.uiRenderer.slots;
   ctx.provide('appLayout', controller);
+  const routeService = ctx.routes;
+  const routes = {
+    snapshot: () => routeService.snapshot(),
+    subscribe: (listener: () => void) => routeService.subscribe(listener),
+  };
+  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main' }, Outlet));
+  ctx.slots.inject('sidebar', () => ctx.slots.register({
+    name: 'sidebar',
+    children: {
+      'sidebar.navigation': { kind: 'list', scope: 'root' },
+      'sidebar.footer': { kind: 'list', scope: 'root' },
+    },
+  }, () => <NavigationSidebar routes={routes} />));
   ctx.routes.register({
     id: 'app-layout',
     Component: () => <I18nProvider i18n={i18n}><LayoutRoot controller={controller} slots={slots} /></I18nProvider>,

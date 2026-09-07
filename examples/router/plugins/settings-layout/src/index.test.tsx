@@ -7,6 +7,7 @@ import { apply as applyI18n } from '@react-cordis/i18n';
 import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/renderer';
 import { apply as applyRouter } from '@react-cordis/router';
 import { act } from 'react';
+import { NavLink } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { apply } from './index';
 
@@ -26,17 +27,20 @@ async function bootSettings(path: string) {
   for (const module of [
     { apply: applyI18n },
     { inject: rendererInject, apply: applyRenderer },
-    { inject: ['slots'], apply: applyRouter },
+    { inject: ['slots', 'uiRenderer'], apply: applyRouter },
     appLayout,
     {
-      inject: ['routes'],
+      inject: ['routes', 'slots'],
       apply(pluginCtx: Context) {
+        pluginCtx.slots.inject('sidebar.navigation', () => pluginCtx.slots.register(
+          { name: 'sidebar.navigation', id: 'dashboard', order: 0 },
+          () => <NavLink to="/">Dashboard</NavLink>,
+        ));
         pluginCtx.routes.inject('app-layout', () => pluginCtx.routes.register({
           id: 'dashboard',
           parentId: 'app-layout',
           index: true,
           Component: () => <h1>Dashboard</h1>,
-          navigation: { label: 'Dashboard', order: 0 },
         }));
       },
     },
@@ -88,6 +92,16 @@ describe('settings layout', () => {
     ]);
     expect(container.querySelector('[aria-current="page"]')?.textContent).toBe('Appearance');
     expect(container.textContent).toContain('Appearance content');
+
+    await act(async () => {
+      container.querySelector<HTMLAnchorElement>('[data-settings-sidebar] a')!.click();
+    });
+    expect(container.querySelector('[data-settings-sidebar]')).toBeNull();
+    expect(container.querySelector('nav a')?.textContent).toBe('Dashboard');
+    const scroll = container.querySelector('[data-sidebar-scroll]')!;
+    expect(scroll.querySelector('nav')).not.toBeNull();
+    expect(scroll.querySelector('footer')).toBeNull();
+    expect(container.querySelector('footer a')?.textContent).toBe('设置');
 
     await act(async () => unmount());
     await dispose();

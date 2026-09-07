@@ -1,5 +1,4 @@
 import type { SettingsEntry } from '../../../examples/router/plugins/settings-layout/src/registry';
-import type { RouteDefinition } from '../../router/src';
 import type { I18nRuntime, TranslationKey, TranslationNamespace } from '../src';
 import { useTranslation } from 'react-i18next';
 
@@ -74,14 +73,12 @@ export function useCheckedTranslation() {
   translateLabel('title');
   // @ts-expect-error Unqualified keys must belong to the default namespace.
   translateLabel('description');
-  const navigation: RouteDefinition['navigation'] = { label: 'Welcome', labelKey: 'greeting:title', order: 0 };
-  translateLabel(navigation.labelKey!);
   const settings: Pick<SettingsEntry, 'labelKey'> = { labelKey: 'page:description' };
   translateLabel(settings.labelKey!);
   const group: SettingsEntry['group'] = { id: 'test', label: 'Hello', labelKey: 'greeting:message.welcome', order: 0 };
   translateLabel(group.labelKey!);
   // @ts-expect-error Qualified keys must belong to their namespace.
-  navigation.labelKey = 'greeting:description';
+  settings.labelKey = 'greeting:description';
   // @ts-expect-error Settings labels cannot contain unknown keys.
   settings.labelKey = 'page:typo';
   // @ts-expect-error Settings groups cannot contain unknown namespaces.

@@ -13,7 +13,8 @@
     "@react-cordis/router": "workspace:*",
     "@react-cordis/slots": "workspace:*",
     "react": "^19.2.8",
-    "react-resizable-panels": "^4.12.3"
+    "react-resizable-panels": "^4.12.3",
+    "react-router-dom": "^7.18.3"
   },
   "cordis": {
     "inject": [

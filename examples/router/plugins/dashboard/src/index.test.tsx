@@ -7,6 +7,7 @@ import * as i18n from '@react-cordis/i18n';
 import * as renderer from '@react-cordis/renderer';
 import * as router from '@react-cordis/router';
 import { act } from 'react';
+import { NavLink } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as dashboard from './index';
 
@@ -44,6 +45,30 @@ describe('dashboard module', () => {
   });
 
   afterEach(() => vi.unstubAllGlobals());
+
+  it('contributes translated navigation alongside ordered business links', async () => {
+    const { ctx, container, dispose } = await bootDashboard();
+    ctx.slots.inject('sidebar.navigation', () => ctx.slots.register(
+      { name: 'sidebar.navigation', id: 'after', order: 10 },
+      () => <NavLink to="/after">After</NavLink>,
+    ));
+    ctx.slots.inject('sidebar.navigation', () => ctx.slots.register(
+      { name: 'sidebar.navigation', id: 'before', order: -10 },
+      () => <NavLink to="/before">Before</NavLink>,
+    ));
+    let unmount!: () => void;
+    await act(async () => {
+      unmount = ctx.uiRenderer.mount(container);
+    });
+    expect([...container.querySelectorAll('nav a')].map(link => link.textContent)).toEqual(['Before', '仪表盘', 'After']);
+    expect(container.querySelector('nav a[aria-current="page"]')?.getAttribute('href')).toBe('/');
+
+    await act(async () => ctx.i18n.setLocale('en'));
+    expect([...container.querySelectorAll('nav a')].map(link => link.textContent)).toEqual(['Before', 'Dashboard', 'After']);
+
+    await act(async () => unmount());
+    await dispose();
+  });
 
   it('opens its contributed workbench after the Dashboard button is clicked', async () => {
     const { ctx, container, dispose } = await bootDashboard();
