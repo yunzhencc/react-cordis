@@ -4,5 +4,10 @@ import { cordisWebBoot } from '@yunzhen/cordis-host-vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [cordisWebBoot({ configPath: resolve(import.meta.dirname, 'cordis.yml'), virtualModuleId: 'virtual:cordis-example-basic-boot' }), react()],
+  plugins: [
+    cordisWebBoot({
+      configPath: resolve(import.meta.dirname, 'cordis.yml'),
+    }),
+    react(),
+  ],
 });

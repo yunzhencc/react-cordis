@@ -3,7 +3,7 @@ interface Window {
   galleryPlugin: import('@yunzhen/gallery-formats').GalleryPluginApi;
 }
 
-declare module 'virtual:cordis-gallery-boot' {
+declare module 'virtual:cordis-boot' {
   import type { PluginRegistry, WebBootGraph } from '@yunzhen/cordis-client-modules';
 
   export const graph: WebBootGraph;
