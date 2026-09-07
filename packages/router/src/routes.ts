@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { SlotSpec } from '@react-cordis/slots';
+import type { CheckedSlotChildren, SlotMap } from '@react-cordis/slots';
 import type { ComponentType } from 'react';
 import { Service } from '@deepseek-ai/cordis';
 
@@ -9,13 +9,13 @@ export interface RouteDefinition {
   path?: string;
   index?: boolean;
   Component: ComponentType;
-  children?: Record<string, SlotSpec>;
+  children?: SlotMap;
 }
 
 export type RouteSnapshot = Readonly<
   Omit<RouteDefinition, 'children'>
   & {
-    children?: Readonly<Record<string, Readonly<SlotSpec>>>;
+    children?: Readonly<SlotMap>;
   }
 >;
 
@@ -49,6 +49,7 @@ export class RouteRegistry extends Service {
     return () => this.listeners.delete(listener);
   };
 
+  register<const T extends RouteDefinition>(definition: T & NoInfer<CheckedSlotChildren<T>>): () => void;
   register(definition: RouteDefinition): () => void {
     const disposeEffect = this.ctx.effect(() => {
       const route = copyRoute(definition);

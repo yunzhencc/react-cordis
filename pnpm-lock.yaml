@@ -136,6 +136,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
+      '@examples/i18n-page':
+        specifier: workspace:*
+        version: link:../page
       '@react-cordis/i18n':
         specifier: workspace:*
         version: link:../../../../packages/i18n
@@ -175,6 +178,9 @@ importers:
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../../../../packages/renderer
+      '@react-cordis/slots':
+        specifier: workspace:*
+        version: link:../../../../packages/slots
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -279,6 +285,9 @@ importers:
       '@react-cordis/router':
         specifier: workspace:*
         version: link:../../../../packages/router
+      '@react-cordis/slots':
+        specifier: workspace:*
+        version: link:../../../../packages/slots
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -337,6 +346,9 @@ importers:
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../../../../packages/renderer
+      '@react-cordis/slots':
+        specifier: workspace:*
+        version: link:../../../../packages/slots
       lucide-react:
         specifier: ^1.38.0
         version: 1.38.0(react@19.2.8)

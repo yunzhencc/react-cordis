@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
+import type {} from '@examples/router-settings-general';
 import type { I18nRuntime } from '@react-cordis/i18n';
 import type {} from '@react-cordis/renderer';
 import { useSyncExternalStore } from 'react';

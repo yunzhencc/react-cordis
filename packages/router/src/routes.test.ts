@@ -219,6 +219,7 @@ describe('route registry', () => {
       exposed.id = 'changed';
     }).toThrow(TypeError);
     expect(() => {
+      // @ts-expect-error Verify JavaScript cannot mutate a published declaration.
       exposed.children!['settings.section']!.kind = 'single';
     }).toThrow(TypeError);
 

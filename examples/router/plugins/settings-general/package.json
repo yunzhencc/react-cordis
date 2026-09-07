@@ -11,6 +11,7 @@
     "@examples/router-settings-layout": "workspace:*",
     "@react-cordis/i18n": "workspace:*",
     "@react-cordis/renderer": "workspace:*",
+    "@react-cordis/slots": "workspace:*",
     "lucide-react": "^1.38.0",
     "react": "^19.2.8"
   },

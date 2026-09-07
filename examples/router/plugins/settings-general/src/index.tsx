@@ -2,6 +2,7 @@ import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@examples/router-settings-layout';
 import type {} from '@react-cordis/i18n';
 import type {} from '@react-cordis/renderer';
+import type {} from '@react-cordis/slots';
 import { Slot } from '@react-cordis/renderer';
 import { Settings } from 'lucide-react';
 import styles from './index.module.css';
@@ -17,6 +18,14 @@ const messages = {
 
 export const inject = ['i18n', 'settings', 'slots'];
 
+const childSlots = { 'settings.general.items': { kind: 'list', scope: 'root' } } as const;
+
+type GeneralSlots = typeof childSlots;
+
+declare module '@react-cordis/slots' {
+  interface SlotContracts extends GeneralSlots {}
+}
+
 export function apply(ctx: Context) {
   ctx.effect(() => ctx.i18n.register('settings-general', messages));
   ctx.settings.register({
@@ -27,7 +36,7 @@ export function apply(ctx: Context) {
     Icon: Settings,
     order: 0,
     Component: GeneralSettings,
-    children: { 'settings.general.items': { kind: 'list', scope: 'root' } },
+    children: childSlots,
   });
 }
 

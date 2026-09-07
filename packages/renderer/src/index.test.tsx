@@ -9,6 +9,18 @@ import { apply, inject, Slot, SlotOwner } from './index';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+declare module '@react-cordis/slots' {
+  interface SlotContracts {
+    'child': { kind: 'single'; scope: 'root' };
+    'host': { kind: 'single'; scope: 'root' };
+    'first': { kind: 'single'; scope: 'root' };
+    'second': { kind: 'single'; scope: 'root' };
+    'settings.section': { kind: 'list'; scope: 'root' };
+    'settings.single-section': { kind: 'single'; scope: 'root' };
+    'missing': { kind: 'single'; scope: 'root' };
+  }
+}
+
 const Null = () => null;
 
 beforeEach(() => {
@@ -235,16 +247,16 @@ describe('ui renderer', () => {
   it('clears a mounted route slot when its owner is disposed', async () => {
     const { ctx, dispose } = await bootRenderer();
     const owner = ctx.slots.createOwner('settings', {
-      'settings.section': { kind: 'single', scope: 'root' },
+      'settings.single-section': { kind: 'single', scope: 'root' },
     });
-    ctx.slots.register({ name: 'settings.section' }, () => <>Appearance</>);
+    ctx.slots.register({ name: 'settings.single-section' }, () => <>Appearance</>);
     const container = document.createElement('div');
     const root = createRoot(container);
 
     await act(async () => {
       root.render(
         <SlotOwner owner={owner}>
-          <Slot name="settings.section" />
+          <Slot name="settings.single-section" />
         </SlotOwner>,
       );
     });

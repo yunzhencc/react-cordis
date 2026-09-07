@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { I18nRuntime } from '@react-cordis/i18n';
+import type {} from '@react-cordis/slots';
 import { I18nProvider } from '@react-cordis/i18n';
 import { Slot } from '@react-cordis/renderer';
 import { useSyncExternalStore } from 'react';
@@ -8,12 +9,20 @@ import { pageMessages } from './locales';
 
 export const inject = ['i18n', 'slots'];
 
+const childSlots = { 'i18n.content': { kind: 'list', scope: 'root' } } as const;
+
+type PageSlots = typeof childSlots;
+
+declare module '@react-cordis/slots' {
+  interface SlotContracts extends PageSlots {}
+}
+
 export function apply(ctx: Context) {
   const i18n = ctx.i18n;
   ctx.effect(() => i18n.register('page', pageMessages));
   ctx.slots.register({
     name: 'root',
-    children: { 'i18n.content': { kind: 'list', scope: 'root' } },
+    children: childSlots,
   }, () => <I18nProvider i18n={i18n}><Page i18n={i18n} /></I18nProvider>);
 }
 

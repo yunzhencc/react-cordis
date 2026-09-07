@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/i18n-page": "workspace:*",
     "@react-cordis/i18n": "workspace:*",
     "@react-cordis/renderer": "workspace:*",
     "react": "^19.2.8",

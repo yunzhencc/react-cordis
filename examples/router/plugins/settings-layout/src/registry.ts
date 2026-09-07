@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { TranslationKey } from '@react-cordis/i18n';
 import type {} from '@react-cordis/router';
-import type { SlotMap } from '@react-cordis/slots';
+import type { CheckedSlotChildren, SlotMap } from '@react-cordis/slots';
 import type { ComponentType } from 'react';
 import { Service } from '@deepseek-ai/cordis';
 
@@ -43,6 +43,7 @@ export class SettingsRegistry extends Service {
     return () => this.listeners.delete(listener);
   };
 
+  register<const T extends SettingsEntry>(entry: T & NoInfer<CheckedSlotChildren<T>>): () => void;
   register(entry: SettingsEntry) {
     const copied = copyEntry(entry);
     this.validate(copied);

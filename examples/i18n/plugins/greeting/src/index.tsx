@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
+import type {} from '@examples/i18n-page';
 import type {} from '@react-cordis/i18n';
 import type {} from '@react-cordis/renderer';
 import { useTranslation } from 'react-i18next';

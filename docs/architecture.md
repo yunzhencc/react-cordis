@@ -52,7 +52,7 @@ packages/
 | `@react-cordis/boot` | WebBootGraph 验证、浏览器 ESM 导入/激活、失败呈现与 UI 挂载。 |
 | `@react-cordis/boot-config` | 构建期读取配置和包元数据，验证并排序启动图。 |
 | `@react-cordis/vite` | 生成虚拟 registry 和构建清单，开发期配置变化时重载启动图。 |
-| `@react-cordis/slots` | 纯 `SlotMap` / `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
+| `@react-cordis/slots` | `SlotContracts` 类型契约与纯 `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
 | `@react-cordis/renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的 React 根挂载与卸载清理，不依赖 i18n。 |
 | `@react-cordis/router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner，不提供导航或侧栏 UI。 |
 | `@examples/router-app-layout` | Router 示例自己的三栏布局、面板尺寸持久化与响应式策略，注册根路由并提供业务服务 `ctx.appLayout`。 |
@@ -102,6 +102,53 @@ export default defineConfig({ plugins: [cordisWebBoot()] });
 默认读取 Vite `root` 下的 `cordis.yml`，生成 `virtual:cordis-boot`。调用方可以通过 `configPath` 和 `virtualModuleId` 覆盖；配置路径相对 Vite `root` 解析，也接受绝对路径。应用入口将虚拟模块导出的 `graph`、`registry` 传给 `bootWebApp`。目录解析以配置文件为基准，所以应用需直接声明清单中的插件依赖。
 
 ## Slot、Route 与布局
+
+### 插槽类型契约
+
+`@react-cordis/slots` 导出可声明合并的 `SlotContracts`，基础包只声明 `root`。业务插件从自己的运行时子插槽声明推导契约，消费者通过类型导入获取它；不需要在基础包集中登记业务名称。
+
+```ts
+import type {} from '@react-cordis/slots';
+
+const childSlots = {
+  'settings.general.items': { kind: 'list', scope: 'root' },
+} as const;
+
+type GeneralSlots = typeof childSlots;
+
+declare module '@react-cordis/slots' {
+  interface SlotContracts extends GeneralSlots {}
+}
+```
+
+拥有者将同一份 `childSlots` 传给 `slots.register()` 的 `children`、`slots.createOwner()`，或经由 Route/Settings 的 `children` 转交。`as const` 保留名称和种类的字面量类型；不要把契约来源预先标注为 `SlotMap`，否则会丢失精确声明并形成自引用。
+
+例如语言插件通过 `import type {} from '@examples/router-settings-general'` 获取 settings-general 的契约，注册方式保持不变：
+
+```tsx
+ctx.slots.register(
+  { name: 'settings.general.items', id: 'language', order: 0 },
+  LanguageSettings,
+);
+```
+
+类型导入不会执行拥有者的代码，也不会替代 `cordis.yml`、包依赖或服务 `inject`。消费包需在 `package.json` 中声明类型入口所属包的依赖，并让该入口进入自己的 TypeScript 编译范围。现有 `slots.inject()` 仍用于等待运行时声明。
+
+| 类型/API | 编译期约束 |
+| --- | --- |
+| `SlotName` | `SlotContracts` 的字符串键，不接受任意 string。 |
+| `SlotMap` | 按名称关联对应的 `kind/scope`，每个键可选。 |
+| `SlotRegistration` | 按 name 判别的联合；list 必须有 id，order 可选；single 的 id 仍可选，但禁止 order。 |
+| `Slot`、owner.render、inject、查询和订阅 | 使用同一份 SlotName。 |
+| register、createOwner、Route/Settings 注册 | 同时检查子插槽种类和未知名称，包括保留具体类型的具名对象及联合类型。 |
+
+`CheckedSlotMap` 和 `CheckedSlotChildren` 用于保留转交链的名称检查。应用扩展注册表时可参考 SettingsRegistry 的泛型签名；不要先将输入擦除为宽泛的 `SlotMap` 或 `RouteDefinition` 再期望检查原始额外属性。显式类型断言、any 和已被宽化的对象不在编译器能保证的范围内。
+
+声明合并属于整个 TypeScript 编译项目，不能据此判断某个 Context 是否已启用插件。同名契约必须一致；不同应用使用独立编译项目，或为业务插槽选择不同名称。测试用契约只放在测试文件中。根 `typecheck` 命令分别编译扩展契约和 root-only 用例，防止测试声明掩盖基础包对业务名称的依赖。
+
+类型契约不赋予 owner 权限，也不替代运行时声明、重复注册、有限 order 和卸载检查。组件仍是无参数贡献；当前没有 props 注入、keyed/chain、store-seat 或 session scope。
+
+### 运行时所有权与路由
 
 Slots 只有 `root` scope。父项的 `children` 是子 Slot 唯一声明授权；父项移除会递归清理后代声明和贡献，过期 disposer 为无操作。声明或注册通知抛错时，会回滚本次条目及其子声明和后代贡献，并重新通知恢复后的状态；清理先完成状态移除，再通知所有观察者，最后抛出首个错误。根 renderer 只渲染 `root` Slot，Route 通过 Router 内部的 Slot owner 声明并渲染自己的子 Slots。`ctx.uiRenderer.mount(container)` 返回手动卸载函数；renderer 插件卸载时也会自动卸载其 React 根，重复清理无副作用。
 

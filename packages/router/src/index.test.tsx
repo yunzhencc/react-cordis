@@ -10,6 +10,16 @@ import { apply as applyRouter, inject as routerInject } from './index';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+declare module '@react-cordis/slots' {
+  interface SlotContracts {
+    'main': { kind: 'single'; scope: 'root' };
+    'sidebar': { kind: 'single'; scope: 'root' };
+    'settings.section': { kind: 'list'; scope: 'root' };
+    'settings.first': { kind: 'single'; scope: 'root' };
+    'settings.second': { kind: 'single'; scope: 'root' };
+  }
+}
+
 async function boot() {
   const ctx = new Context();
   const renderer = ctx.plugin({ apply: applyRenderer, inject: rendererInject });

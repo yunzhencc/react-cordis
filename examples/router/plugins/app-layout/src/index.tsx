@@ -24,6 +24,17 @@ const layoutSlots = {
   'shell.overlay': { kind: 'list', scope: 'root' },
 } as const;
 
+const sidebarSlots = {
+  'sidebar.navigation': { kind: 'list', scope: 'root' },
+  'sidebar.footer': { kind: 'list', scope: 'root' },
+} as const;
+
+type LayoutSlots = typeof layoutSlots & typeof sidebarSlots;
+
+declare module '@react-cordis/slots' {
+  interface SlotContracts extends LayoutSlots {}
+}
+
 export function apply(ctx: Context) {
   const i18n = ctx.i18n;
   const controller = new LayoutController();
@@ -37,10 +48,7 @@ export function apply(ctx: Context) {
   ctx.slots.inject('main', () => ctx.slots.register({ name: 'main' }, Outlet));
   ctx.slots.inject('sidebar', () => ctx.slots.register({
     name: 'sidebar',
-    children: {
-      'sidebar.navigation': { kind: 'list', scope: 'root' },
-      'sidebar.footer': { kind: 'list', scope: 'root' },
-    },
+    children: sidebarSlots,
   }, () => <NavigationSidebar routes={routes} />));
   ctx.routes.register({
     id: 'app-layout',

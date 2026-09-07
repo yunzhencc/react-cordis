@@ -1,21 +1,21 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { SlotEntry, SlotMap, SlotRegistration, SlotSpec } from '@react-cordis/slots';
+import type { CheckedSlotChildren, CheckedSlotMap, SlotEntry, SlotMap, SlotName, SlotRegistration, SlotSpec } from '@react-cordis/slots';
 import type { ComponentType, ReactNode } from 'react';
 import { Service } from '@deepseek-ai/cordis';
 import { SlotCore } from '@react-cordis/slots';
 import { createContext, createElement, Fragment, use, useSyncExternalStore } from 'react';
 
 export interface SlotOwnerHandle {
-  render: (name: string) => ReactNode;
+  render: (name: SlotName) => ReactNode;
   dispose: () => void;
 }
 
 /** @internal */
 export interface SlotRenderer {
-  createOwner: (id: string, children: SlotMap) => SlotOwnerHandle;
-  entries: (name: string) => readonly SlotEntry[];
-  subscribe: (name: string, listener: () => void) => () => void;
-  version: (name: string) => number;
+  createOwner: <const T extends SlotMap>(id: string, children: T & NoInfer<CheckedSlotMap<T>>) => SlotOwnerHandle;
+  entries: (name: SlotName) => readonly SlotEntry[];
+  subscribe: (name: SlotName, listener: () => void) => () => void;
+  version: (name: SlotName) => number;
 }
 
 /** @internal */
@@ -34,7 +34,7 @@ export function SlotOwner({ children, owner }: { children?: ReactNode; owner: Sl
   return createElement(SlotOwnerContext.Provider, { value: owner }, children);
 }
 
-export function Slot({ name }: { name: string }) {
+export function Slot({ name }: { name: SlotName }) {
   const owner = use(SlotOwnerContext);
   if (!owner)
     throw new Error(`slot "${name}" rendered without an owner`);
@@ -50,6 +50,7 @@ export class SlotRegistry extends Service {
     super(ctx, 'slots');
   }
 
+  register<const T extends SlotRegistration>(options: T & NoInfer<CheckedSlotChildren<T>>, component: ComponentType): () => void;
   register(options: SlotRegistration, component: ComponentType): () => void {
     const disposeEffect = this.ctx.effect(() => {
       const disposeRegistration = this.core.register(options, component);
@@ -80,7 +81,7 @@ export class SlotRegistry extends Service {
     };
   }
 
-  inject(name: string, callback: () => void | (() => void)): () => void {
+  inject(name: SlotName, callback: () => void | (() => void)): () => void {
     const ctx = this.ctx;
     const disposeController = ctx.effect(() => {
       let active: (() => void) | undefined;
@@ -151,17 +152,18 @@ export class SlotRegistry extends Service {
     };
   }
 
-  entries(name: string): readonly SlotEntry[] {
+  entries(name: SlotName): readonly SlotEntry[] {
     return this.core.entries(name);
   }
 
-  spec(name: string): SlotSpec | undefined {
+  spec(name: SlotName): SlotSpec | undefined {
     return this.core.spec(name);
   }
 
   /** @internal */
+  createOwner<const T extends SlotMap>(id: string, children: T & NoInfer<CheckedSlotMap<T>>): SlotOwnerHandle;
   createOwner(id: string, children: SlotMap): SlotOwnerHandle {
-    const ownedChildren = Object.fromEntries(Object.entries(children).map(([name, spec]) => [name, { ...spec }]));
+    const ownedChildren: SlotMap = Object.fromEntries(Object.entries(children).map(([name, spec]) => [name, { ...spec }]));
     const disposeDeclaration = this.core.declare(ownedChildren);
     let live = true;
     return this.owner(id, ownedChildren, () => {
@@ -196,12 +198,12 @@ export class SlotRegistry extends Service {
   }
 
   /** @internal */
-  entryOwner(name: string, entry: SlotEntry) {
+  entryOwner(name: SlotName, entry: SlotEntry) {
     return this.owner(entry.id ?? name, entry.children ?? {}, () => {});
   }
 
   /** @internal */
-  subscribe(name: string, listener: () => void) {
+  subscribe(name: SlotName, listener: () => void) {
     const listeners = this.listeners.get(name) ?? new Set();
     listeners.add(listener);
     this.listeners.set(name, listeners);
@@ -230,12 +232,12 @@ export class SlotRegistry extends Service {
   }
 
   /** @internal */
-  version(name: string) {
+  version(name: SlotName) {
     return this.versions.get(name) ?? 0;
   }
 }
 
-function SlotView({ name, registry }: { name: string; registry: SlotRegistry }) {
+function SlotView({ name, registry }: { name: SlotName; registry: SlotRegistry }) {
   useSyncExternalStore(
     listener => registry.subscribe(name, listener),
     () => registry.version(name),

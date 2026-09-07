@@ -8,7 +8,27 @@ export interface SlotSpec {
   scope: SlotScope;
 }
 
-export type SlotMap = Record<string, SlotSpec>;
+/** Extend from the owning plugin's literal declarations; this does not mount slots. */
+export interface SlotContracts {
+  root: { kind: 'single'; scope: 'root' };
+}
+
+export type SlotName = Extract<keyof SlotContracts, string>;
+
+/** Runtime declarations, with each name tied to its compile-time contract. */
+export type SlotMap = {
+  [K in SlotName]?: SlotContracts[K] & SlotSpec;
+};
+
+type KeysOfUnion<T> = T extends unknown ? keyof T : never;
+
+/** Check named objects and unions as well as fresh object literals. */
+export type CheckedSlotMap<T extends SlotMap> = T & Record<Exclude<KeysOfUnion<T>, SlotName>, never>;
+
+/** Preserve child-name checks through registries that forward slot declarations. */
+export interface CheckedSlotChildren<T extends { children?: SlotMap }> {
+  children?: CheckedSlotMap<NonNullable<T['children']>>;
+}
 
 export interface SlotEntry {
   component: ComponentType;
@@ -17,12 +37,16 @@ export interface SlotEntry {
   children?: SlotMap;
 }
 
-export interface SlotRegistration {
-  name: string;
-  id?: string;
-  order?: number;
-  children?: SlotMap;
-}
+export type SlotRegistration = {
+  [K in SlotName]: {
+    name: K;
+    children?: SlotMap;
+  } & (SlotContracts[K]['kind'] extends 'list'
+    ? { id: string; order?: number }
+    : SlotContracts[K]['kind'] extends 'single'
+      ? { id?: string; order?: never }
+      : never);
+}[SlotName];
 
 interface DeclarationOwner {
   children?: SlotMap;
@@ -51,6 +75,7 @@ export class SlotCore {
     root.epoch = 1;
   }
 
+  register<const T extends SlotRegistration>(options: T & NoInfer<CheckedSlotChildren<T>>, component: ComponentType): () => void;
   register(options: SlotRegistration, component: ComponentType): () => void {
     const slot = this.records.get(options.name);
     if (!slot?.spec)
@@ -79,6 +104,7 @@ export class SlotCore {
   }
 
   /** @internal */
+  declare<const T extends SlotMap>(children: T & NoInfer<CheckedSlotMap<T>>): () => void;
   declare(children: SlotMap): () => void {
     const ownedChildren = copyMap(children) ?? {};
     this.validateChildren(ownedChildren);
@@ -93,12 +119,12 @@ export class SlotCore {
     return dispose;
   }
 
-  spec(name: string): SlotSpec | undefined {
+  spec(name: SlotName): SlotSpec | undefined {
     const spec = this.records.get(name)?.spec;
     return spec && { ...spec };
   }
 
-  entries(name: string): readonly SlotEntry[] {
+  entries(name: SlotName): readonly SlotEntry[] {
     const slot = this.records.get(name);
     if (!slot?.spec)
       return [];
@@ -109,11 +135,11 @@ export class SlotCore {
     return entries.map(copyEntry);
   }
 
-  declarationEpoch(name: string): number {
+  declarationEpoch(name: SlotName): number {
     return this.records.get(name)?.epoch ?? 0;
   }
 
-  subscribeDeclaration(name: string, listener: () => void): () => void {
+  subscribeDeclaration(name: SlotName, listener: () => void): () => void {
     const slot = this.record(name);
     slot.listeners.add(listener);
     return () => slot.listeners.delete(listener);

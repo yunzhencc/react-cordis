@@ -3,6 +3,7 @@ import type {} from '@examples/router-app-layout';
 import type {} from '@react-cordis/i18n';
 import type {} from '@react-cordis/renderer';
 import type {} from '@react-cordis/router';
+import type {} from '@react-cordis/slots';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
@@ -37,6 +38,14 @@ function DashboardNavigation() {
 
 export const inject = ['i18n', 'appLayout', 'routes', 'slots'];
 
+const childSlots = { 'dashboard.workbench': { kind: 'single', scope: 'root' } } as const;
+
+type DashboardSlots = typeof childSlots;
+
+declare module '@react-cordis/slots' {
+  interface SlotContracts extends DashboardSlots {}
+}
+
 export function apply(ctx: Context) {
   ctx.effect(() => ctx.i18n.register('dashboard', dashboardMessages));
   const { closeWorkbench, openWorkbench } = ctx.appLayout;
@@ -53,6 +62,6 @@ export function apply(ctx: Context) {
     parentId: 'app-layout',
     index: true,
     Component: () => <DashboardPage closeWorkbench={closeWorkbench} openWorkbench={openWorkbench} />,
-    children: { 'dashboard.workbench': { kind: 'single', scope: 'root' } },
+    children: childSlots,
   }));
 }

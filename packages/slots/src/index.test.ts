@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { SlotCore } from './index';
 
+declare module './index' {
+  interface SlotContracts {
+    stable: { kind: 'list'; scope: 'root' };
+    first: { kind: 'single'; scope: 'root' };
+    second: { kind: 'single'; scope: 'root' };
+    nested: { kind: 'single'; scope: 'root' };
+    host: { kind: 'single'; scope: 'root' };
+    row: { kind: 'list'; scope: 'root' };
+    missing: { kind: 'single'; scope: 'root' };
+    leaked: { kind: 'list'; scope: 'root' };
+  }
+}
+
 const Null = () => null;
 
 describe('slotCore', () => {
@@ -31,7 +44,7 @@ describe('slotCore', () => {
 
     expect(core.entries('root')).toEqual([]);
     expect(core.entries('stable').map(entry => entry.id)).toEqual(['existing']);
-    for (const name of ['first', 'second', 'nested']) {
+    for (const name of ['first', 'second', 'nested'] as const) {
       expect(core.spec(name)).toBeUndefined();
       expect(core.entries(name)).toEqual([]);
     }
@@ -68,6 +81,7 @@ describe('slotCore', () => {
     const core = new SlotCore();
     core.register({ name: 'root', children: { row: { kind: 'list', scope: 'root' } } }, Null);
 
+    // @ts-expect-error JavaScript callers still receive runtime validation.
     expect(() => core.register({ name: 'row' }, Null)).toThrow('requires an id');
     core.register({ name: 'row', id: 'second', order: 1 }, Null);
     core.register({ name: 'row', id: 'first', order: 1 }, Null);
