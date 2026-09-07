@@ -26,9 +26,9 @@ it('emits the same graph as cordis.boot.json', () => {
 });
 
 it('resolves a supplied virtual module id', () => {
-  const plugin = cordisWebBoot({ virtualModuleId: 'virtual:cordis-gallery-boot' });
+  const plugin = cordisWebBoot({ virtualModuleId: 'virtual:custom-boot' });
 
-  expect(Reflect.apply(plugin.resolveId, undefined, ['virtual:cordis-gallery-boot'])).toBe('\0virtual:cordis-gallery-boot');
+  expect(Reflect.apply(plugin.resolveId, undefined, ['virtual:custom-boot'])).toBe('\0virtual:custom-boot');
 });
 
 it('resolves the default catalog from the consuming Vite root', () => {
