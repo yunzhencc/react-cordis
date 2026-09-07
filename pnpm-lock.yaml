@@ -23,9 +23,9 @@ importers:
       '@eslint-react/eslint-plugin':
         specifier: ^5.18.6
         version: 5.18.6(eslint@10.9.1(jiti@2.6.1))(typescript@6.0.3)
-      '@examples/layout-app-layout':
+      '@examples/router-app-layout':
         specifier: workspace:*
-        version: link:examples/layout/plugins/app-layout
+        version: link:examples/router/plugins/app-layout
       '@types/node':
         specifier: ^26.4.0
         version: 26.4.0
@@ -106,24 +106,106 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8
 
-  examples/layout:
+  examples/i18n:
     dependencies:
-      '@examples/layout-app-layout':
+      '@examples/i18n-greeting':
+        specifier: workspace:*
+        version: link:plugins/greeting
+      '@examples/i18n-locale-ja':
+        specifier: workspace:*
+        version: link:plugins/locale-ja
+      '@examples/i18n-page':
+        specifier: workspace:*
+        version: link:plugins/page
+      '@yunzhen/cordis-client-modules':
+        specifier: workspace:*
+        version: link:../../packages/client/modules
+      '@yunzhen/cordis-ui-i18n':
+        specifier: workspace:*
+        version: link:../../packages/ui/i18n
+      '@yunzhen/cordis-ui-renderer':
+        specifier: workspace:*
+        version: link:../../packages/ui/renderer
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+    devDependencies:
+      '@yunzhen/cordis-host-plugin-catalog':
+        specifier: workspace:*
+        version: link:../../packages/host/plugin-catalog
+      '@yunzhen/cordis-host-vite':
+        specifier: workspace:*
+        version: link:../../packages/host/vite
+
+  examples/i18n/plugins/greeting:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2
+      '@yunzhen/cordis-ui-i18n':
+        specifier: workspace:*
+        version: link:../../../../packages/ui/i18n
+      '@yunzhen/cordis-ui-renderer':
+        specifier: workspace:*
+        version: link:../../../../packages/ui/renderer
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-i18next:
+        specifier: ^16.5.9
+        version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+
+  examples/i18n/plugins/locale-ja:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2
+      '@examples/i18n-greeting':
+        specifier: workspace:*
+        version: link:../greeting
+      '@examples/i18n-page':
+        specifier: workspace:*
+        version: link:../page
+      '@yunzhen/cordis-ui-i18n':
+        specifier: workspace:*
+        version: link:../../../../packages/ui/i18n
+
+  examples/i18n/plugins/page:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2
+      '@yunzhen/cordis-ui-i18n':
+        specifier: workspace:*
+        version: link:../../../../packages/ui/i18n
+      '@yunzhen/cordis-ui-renderer':
+        specifier: workspace:*
+        version: link:../../../../packages/ui/renderer
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-i18next:
+        specifier: ^16.5.9
+        version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+
+  examples/router:
+    dependencies:
+      '@examples/router-app-layout':
         specifier: workspace:*
         version: link:plugins/app-layout
-      '@examples/layout-dashboard':
+      '@examples/router-dashboard':
         specifier: workspace:*
         version: link:plugins/dashboard
-      '@examples/layout-settings-appearance':
+      '@examples/router-settings-appearance':
         specifier: workspace:*
         version: link:plugins/settings-appearance
-      '@examples/layout-settings-general':
+      '@examples/router-settings-general':
         specifier: workspace:*
         version: link:plugins/settings-general
-      '@examples/layout-settings-language':
+      '@examples/router-settings-language':
         specifier: workspace:*
         version: link:plugins/settings-language
-      '@examples/layout-settings-layout':
+      '@examples/router-settings-layout':
         specifier: workspace:*
         version: link:plugins/settings-layout
       '@yunzhen/cordis-client-modules':
@@ -158,7 +240,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/host/vite
 
-  examples/layout/plugins/app-layout:
+  examples/router/plugins/app-layout:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -170,7 +252,7 @@ importers:
         specifier: workspace:*
         version: link:../../../../packages/ui/router
 
-  examples/layout/plugins/dashboard:
+  examples/router/plugins/dashboard:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -194,12 +276,12 @@ importers:
         specifier: ^16.5.9
         version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
 
-  examples/layout/plugins/settings-appearance:
+  examples/router/plugins/settings-appearance:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
-      '@examples/layout-settings-layout':
+      '@examples/router-settings-layout':
         specifier: workspace:*
         version: link:../settings-layout
       '@yunzhen/cordis-ui-i18n':
@@ -228,12 +310,12 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
 
-  examples/layout/plugins/settings-general:
+  examples/router/plugins/settings-general:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
-      '@examples/layout-settings-layout':
+      '@examples/router-settings-layout':
         specifier: workspace:*
         version: link:../settings-layout
       '@yunzhen/cordis-ui-i18n':
@@ -249,15 +331,15 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8
 
-  examples/layout/plugins/settings-language:
+  examples/router/plugins/settings-language:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
-      '@examples/layout-settings-general':
+      '@examples/router-settings-general':
         specifier: workspace:*
         version: link:../settings-general
-      '@examples/layout-settings-layout':
+      '@examples/router-settings-layout':
         specifier: workspace:*
         version: link:../settings-layout
       '@yunzhen/cordis-ui-i18n':
@@ -280,7 +362,7 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
 
-  examples/layout/plugins/settings-layout:
+  examples/router/plugins/settings-layout:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2

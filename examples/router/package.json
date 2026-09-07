@@ -1,0 +1,29 @@
+{
+  "name": "@examples/router",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@examples/router-app-layout": "workspace:*",
+    "@examples/router-dashboard": "workspace:*",
+    "@examples/router-settings-appearance": "workspace:*",
+    "@examples/router-settings-general": "workspace:*",
+    "@examples/router-settings-language": "workspace:*",
+    "@examples/router-settings-layout": "workspace:*",
+    "@yunzhen/cordis-client-modules": "workspace:*",
+    "@yunzhen/cordis-host-plugin-catalog": "workspace:*",
+    "@yunzhen/cordis-ui-i18n": "workspace:*",
+    "@yunzhen/cordis-ui-layout": "workspace:*",
+    "@yunzhen/cordis-ui-renderer": "workspace:*",
+    "@yunzhen/cordis-ui-router": "workspace:*",
+    "@yunzhen/cordis-ui-theme": "workspace:*",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@yunzhen/cordis-host-vite": "workspace:*"
+  }
+}

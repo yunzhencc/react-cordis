@@ -1,0 +1,12 @@
+- id: i18n
+  name: '@yunzhen/cordis-ui-i18n'
+  config:
+    storageKey: 'examples:i18n:locale'
+- id: renderer
+  name: '@yunzhen/cordis-ui-renderer'
+- id: page
+  name: '@examples/i18n-page'
+- id: greeting
+  name: '@examples/i18n-greeting'
+- id: locale-ja
+  name: '@examples/i18n-locale-ja'

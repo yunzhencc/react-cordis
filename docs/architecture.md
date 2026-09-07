@@ -4,12 +4,12 @@
 
 核心包以 `codex-desktop` 的 `2712dff` 实现为同步基准，底层继续使用 `@deepseek-ai/cordis`。本文描述当前实现；`superpowers` 目录保留历史设计记录。通用 Cordis 启动图在构建期确定，不提供生产 Node catalog 服务、远程模块或 YAML `!!js` 配置。
 
-示例分为 Basic（最小启动与插槽）和 Layout（布局、路由、工作台、主题、语言及设置扩展）。
+示例分为 Basic（最小启动与插槽）、Router（布局、路由、工作台及设置扩展）和 i18n（语言切换、命名空间、额外语言包与回退）。
 
 ## 静态启动链
 
 ```text
-examples/layout/cordis.yml
+examples/router/cordis.yml
   └─ host/plugin-catalog 读取包元数据
       └─ WebBootGraph
           └─ Vite 虚拟 registry（开发）/ cordis.boot.json + chunks（构建）
@@ -17,7 +17,7 @@ examples/layout/cordis.yml
                   └─ Cordis Context → ctx.uiRenderer.mount(container)
 ```
 
-`examples/layout/cordis.yml` 是该示例应用唯一的启用来源。catalog 在 Node 构建阶段读取它和每个包的 `yunzhen.client` 元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
+`examples/router/cordis.yml` 是该示例应用唯一的启用来源。catalog 在 Node 构建阶段读取它和每个包的 `yunzhen.client` 元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
 
 ## 包职责
 
@@ -30,21 +30,34 @@ examples/layout/cordis.yml
 | `@yunzhen/cordis-ui-renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的唯一 React 根挂载。 |
 | `@yunzhen/cordis-ui-router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner。 |
 | `@yunzhen/cordis-ui-layout` | 可选的三栏布局组件和 `ctx.layout` 面板动作，不依赖 router。 |
-| `@examples/layout-app-layout` | Layout 示例的根路由插件，显式注册 `app-layout`。 |
+| `@examples/router-app-layout` | Router 示例的根路由插件，显式注册 `app-layout`。 |
 | `@yunzhen/cordis-ui-i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
-| `examples/layout/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Layout 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
-| `examples/layout/plugins/settings-layout` | Layout 示例的 `/settings` 路由壳、设置侧栏、底部 Settings 入口与 `ctx.settings.register()`。 |
+| `examples/router/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Router 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
+| `examples/router/plugins/settings-layout` | Router 示例的 `/settings` 路由壳、设置侧栏、底部 Settings 入口与 `ctx.settings.register()`。 |
 | `ui/theme` | ThemeRuntime、token 与 DOM 同步；具体设置页面由独立扩展提供。 |
 
 旧的 `core/runtime`、`react/bridge`、`router/react-router` 与 `ui/shell` 分层已不属于当前实现。
 
 ## 多语言
 
-`ui/i18n` 内置 `zh` 与 `en`，按浏览器语言优先级匹配已注册语言；用户选择写入 localStorage。`addLanguage({ id, label, fallback })` 可注册更多语言，返回注销函数。renderer 在唯一 React 根部包裹 i18next Provider，语言变更会刷新 Slot 与 Route 组件，语言设置列表也会响应注册和注销。
+`ui/i18n` 内置 `zh` 与 `en`，按浏览器语言优先级匹配已注册语言；用户选择写入 localStorage，默认 key 为 `react-cordis:locale`，可通过 i18n 插件的 `config.storageKey` 覆盖。`addLanguage({ id, label, fallback })` 可注册更多语言，返回注销函数。renderer 在唯一 React 根部包裹 i18next Provider，语言变更会刷新 Slot 与 Route 组件，语言设置列表也会响应注册和注销。
 
 功能包通过 `ctx.effect(() => ctx.i18n.register('dashboard', { zh: ..., en: ... }))` 注册独立命名空间，卸载时自动移除资源。组件使用 `useTranslation('dashboard')`，跨插件的 Route 导航和设置项使用完整 `labelKey`，例如 `dashboard:dashboard.title`。内置公共文案使用 `common` 命名空间。
 
 旧接口 `register(resources)` 和旧语言标识 `zh-CN/en-US` 已替换。已有应用升级时需要同时迁移词典、调用方和持久化偏好；核心不会把旧偏好自动重写成新标识。
+
+例如，在 `cordis.yml` 中为同源应用配置独立的存储 key：
+
+```yaml
+- id: i18n
+  name: '@yunzhen/cordis-ui-i18n'
+  config:
+    storageKey: 'my-app:locale'
+```
+
+未配置时使用 `react-cordis:locale`；不会自动迁移旧 key `@yunzhen/cordis-ui-i18n:locale`，需要沿用旧偏好时可显式配置为该值。
+
+`pnpm start:i18n` 启动独立国际化示例，使用 `examples:i18n:locale` 隔离其语言偏好。`examples/i18n` 只启用 i18n、renderer 和三个示例插件：`page` 与 `greeting` 各自注册中英文命名空间；`locale-ja` 注册日语并向两个命名空间补充翻译，故意省略 greeting 正文以演示英文回退。语言选择使用原生下拉框，刷新后恢复偏好，不依赖 router、layout 或 settings。
 
 ## Vite 接入
 
@@ -63,7 +76,7 @@ Slots 只有 `root` scope。父项的 `children` 是子 Slot 唯一声明授权�
 
 Router 是唯一向 `root` Slot 注册的路由宿主。`ctx.routes` 以 `id`、`parentId`、可选 `path` / `index`、`Component` 与页面 `children` Slots 描述路由；`path` 缺省表示不消费 URL 的 Layout Route。跨模块以 `parentId` 建立父子关系，不能修改彼此的 `children` 数组。
 
-router 不依赖布局，也不自动创建业务根路由。Layout 的 `@examples/layout-app-layout` 显式注册无路径 `app-layout`，使用 `ctx.layout.Root`；布局组件声明以下 Slots：
+router 不依赖布局，也不自动创建业务根路由。Router 示例的 `@examples/router-app-layout` 显式注册无路径 `app-layout`，使用 `ctx.layout.Root`；布局组件声明以下 Slots：
 
 ```text
 app-layout
@@ -75,8 +88,8 @@ app-layout
 └─ shell.overlay (list)
 ```
 
-Layout 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命中 Settings 时其 route Sidebar 替换默认应用侧栏。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。可选 layout 包负责面板开关、拖拽尺寸持久化与响应式折叠。Basic 示例直接使用布局组件和 Slots，不启用 router 或根路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
+Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命中 Settings 时其 route Sidebar 替换默认应用侧栏。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。可选 layout 包负责面板开关、拖拽尺寸持久化与响应式折叠。Basic 示例直接使用布局组件和 Slots，不启用 router 或根路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
 
 ## 部署边界
 
-开发期 Vite 进程可读取 `examples/layout/cordis.yml` 生成虚拟 registry；生产环境仅托管 `examples/layout/dist` 的静态文件和 ESM chunks。生产不运行 Node catalog 扫描，不支持 HMR、远程插件、运行时安装或动态运行器。
+开发期 Vite 进程可读取 `examples/router/cordis.yml` 生成虚拟 registry；生产环境仅托管 `examples/router/dist` 的静态文件和 ESM chunks。生产不运行 Node catalog 扫描，不支持 HMR、远程插件、运行时安装或动态运行器。

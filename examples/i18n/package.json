@@ -1,0 +1,22 @@
+{
+  "name": "@examples/i18n",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@examples/i18n-greeting": "workspace:*",
+    "@examples/i18n-locale-ja": "workspace:*",
+    "@examples/i18n-page": "workspace:*",
+    "@yunzhen/cordis-client-modules": "workspace:*",
+    "@yunzhen/cordis-ui-i18n": "workspace:*",
+    "@yunzhen/cordis-ui-renderer": "workspace:*",
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@yunzhen/cordis-host-plugin-catalog": "workspace:*",
+    "@yunzhen/cordis-host-vite": "workspace:*"
+  }
+}

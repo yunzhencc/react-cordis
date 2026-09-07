@@ -4,8 +4,12 @@ export const LOCALES = ['zh', 'en'] as const;
 export type BuiltInLocale = typeof LOCALES[number];
 export type Locale = string;
 
-const STORAGE_KEY = '@yunzhen/cordis-ui-i18n:locale';
+const DEFAULT_STORAGE_KEY = 'react-cordis:locale';
 const LOCALE_ID_PATTERN = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u;
+
+export interface I18nConfig {
+  storageKey?: string;
+}
 
 export interface LanguageRegistration {
   id: Locale;
@@ -36,11 +40,20 @@ export class I18nRuntime {
 
   private readonly catalog = new Map<string, LocaleDefinition>();
   private readonly resources = new Map<string, Map<string, LocaleResources>>();
-  private preference = readLocale();
+  private preference: Locale | undefined;
+  private readonly storageKey: string;
   private readonly listeners = new Set<() => void>();
   private languageSnapshot: readonly LocaleDefinition[] = Object.freeze([]);
 
-  constructor() {
+  constructor(config: I18nConfig = {}) {
+    if (!config || typeof config !== 'object' || Array.isArray(config))
+      throw new TypeError('i18n config must be an object');
+    const { storageKey = DEFAULT_STORAGE_KEY } = config;
+    if (typeof storageKey !== 'string' || !storageKey.trim())
+      throw new TypeError('i18n storageKey must be a non-empty string');
+    this.storageKey = storageKey;
+    this.preference = readLocale(storageKey);
+
     for (const locale of BUILT_IN_LOCALES)
       this.catalog.set(localeKey(locale.id), locale);
     this.publishLanguages();
@@ -76,7 +89,7 @@ export class I18nRuntime {
 
     this.preference = language.id;
     try {
-      localStorage.setItem(STORAGE_KEY, language.id);
+      localStorage.setItem(this.storageKey, language.id);
     }
     catch {}
     await this.instance.changeLanguage(language.id);
@@ -239,9 +252,9 @@ function detectLocale(locales: readonly LocaleDefinition[]): Locale | undefined 
   return undefined;
 }
 
-function readLocale(): Locale | undefined {
+function readLocale(storageKey: string): Locale | undefined {
   try {
-    return localStorage.getItem(STORAGE_KEY) ?? undefined;
+    return localStorage.getItem(storageKey) ?? undefined;
   }
   catch {
     return undefined;

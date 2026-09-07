@@ -1,0 +1,36 @@
+:root {
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+  color: #202124;
+  background: #f6f7f8;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 640px;
+  padding: 48px 24px;
+  margin: 0 auto;
+}
+
+label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+select {
+  padding: 6px 12px;
+  font: inherit;
+}
+
+section {
+  padding: 16px 24px;
+  margin-top: 28px;
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+}

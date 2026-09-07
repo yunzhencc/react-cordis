@@ -1,0 +1,30 @@
+{
+  "name": "@examples/router-settings-appearance",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.tsx",
+    "./client": "./src/index.tsx"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/router-settings-layout": "workspace:*",
+    "@yunzhen/cordis-ui-i18n": "workspace:*",
+    "@yunzhen/cordis-ui-theme": "workspace:*",
+    "lucide-react": "^0.576.0",
+    "react": "^19.2.8",
+    "react-i18next": "^16.5.9"
+  },
+  "devDependencies": {
+    "@yunzhen/cordis-ui-renderer": "workspace:*",
+    "@yunzhen/cordis-ui-router": "workspace:*",
+    "react-dom": "^19.2.8"
+  },
+  "yunzhen": {
+    "client": {
+      "platform": "web",
+      "inject": ["@yunzhen/cordis-ui-i18n", "@examples/router-settings-layout", "@yunzhen/cordis-ui-theme"],
+      "immediately": false
+    }
+  }
+}
