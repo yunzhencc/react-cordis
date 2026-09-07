@@ -52,4 +52,41 @@ describe('i18n runtime', () => {
     dispose();
     expect(runtime.instance.getResource('ja', 'greeting', 'welcome')).toBeUndefined();
   });
+
+  it.each(['pt-br', 'pt-BR', 'PT-br'])('resolves and disposes %s resources regardless of language ID casing', async (locale) => {
+    const runtime = new I18nRuntime();
+    const disposeEnglish = runtime.register('greeting', { EN: { welcome: 'Hello' } });
+    const dispose = runtime.register('greeting', { [locale]: { welcome: 'Olá' } });
+    runtime.addLanguage({ id: 'pt-BR', label: 'Português', fallback: 'EN' });
+    await runtime.setLocale('PT-BR');
+
+    expect(runtime.locale).toBe('pt-BR');
+    expect(localStorage.getItem('react-cordis:locale')).toBe('pt-BR');
+    expect(runtime.instance.t('welcome', { ns: 'greeting' })).toBe('Olá');
+    expect(() => runtime.register('greeting', { 'PT-BR': { welcome: 'Duplicate' } })).toThrow(/already has locale/);
+
+    runtime.addLanguage({ id: 'es-AR', label: 'Español', fallback: 'PT-br' });
+    await runtime.setLocale('ES-ar');
+    expect(runtime.instance.t('welcome', { ns: 'greeting' })).toBe('Olá');
+    dispose();
+    expect(runtime.instance.t('welcome', { ns: 'greeting' })).toBe('Hello');
+
+    const disposeReplacement = runtime.register('greeting', { 'PT-BR': { welcome: 'Olá novamente' } });
+    dispose();
+    expect(runtime.instance.t('welcome', { ns: 'greeting' })).toBe('Olá novamente');
+    disposeReplacement();
+    disposeEnglish();
+  });
+
+  it('rejects case-equivalent locale IDs in one dictionary registration before adding resources', () => {
+    const runtime = new I18nRuntime();
+    expect(() => runtime.register('duplicate-case', {
+      en: { welcome: 'Hello' },
+      EN: { welcome: 'Duplicate' },
+    })).toThrow(/already has locale/);
+    expect(runtime.instance.t('welcome', { ns: 'duplicate-case', lng: 'en' })).toBe('welcome');
+    const dispose = runtime.register('duplicate-case', { en: { welcome: 'Hello' } });
+    expect(runtime.instance.t('welcome', { ns: 'duplicate-case', lng: 'en' })).toBe('Hello');
+    dispose();
+  });
 });

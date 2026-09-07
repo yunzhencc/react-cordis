@@ -65,6 +65,7 @@ export class I18nRuntime {
       interpolation: { escapeValue: false },
       lng: this.resolveActive(),
       load: 'currentOnly',
+      lowerCaseLng: true,
       resources: COMMON_RESOURCES,
     });
     this.instance.on('languageChanged', () => {
@@ -75,7 +76,8 @@ export class I18nRuntime {
   }
 
   get locale(): Locale {
-    return this.instance.language || 'en';
+    const locale = this.instance.language || 'en';
+    return this.catalog.get(localeKey(locale))?.id ?? locale;
   }
 
   get languages(): readonly LocaleDefinition[] {
@@ -137,13 +139,15 @@ export class I18nRuntime {
       namespaceResources = new Map();
       this.resources.set(namespace, namespaceResources);
     }
+    const registered = new Set(namespaceResources.keys());
     for (const [locale] of entries) {
-      if (namespaceResources.has(localeKey(locale)))
+      if (registered.has(localeKey(locale)))
         throw new Error(`locale namespace "${namespace}" already has locale "${locale}"`);
+      registered.add(localeKey(locale));
     }
     for (const [locale, resources] of entries) {
       namespaceResources.set(localeKey(locale), resources);
-      this.instance.addResourceBundle(locale, namespace, resources);
+      this.instance.addResourceBundle(localeKey(locale), namespace, resources);
     }
     this.instance.emit('languageChanged', this.locale);
 
@@ -154,7 +158,7 @@ export class I18nRuntime {
         if (namespaceResources!.get(key) !== resources)
           continue;
         namespaceResources!.delete(key);
-        this.instance.removeResourceBundle(locale, namespace);
+        this.instance.removeResourceBundle(key, namespace);
         removed = true;
       }
       if (removed)
