@@ -38,9 +38,17 @@ type CheckDictionary<Provided, Schema> = [Schema] extends [string]
   ? string
   : [Schema] extends [object]
       ? Provided extends object
-        ? { [K in keyof Provided]: K extends keyof Schema ? CheckDictionary<Provided[K], Schema[K]> : never }
+        ? Provided extends (...args: never[]) => unknown
+          ? never
+          : Provided extends readonly unknown[]
+            ? Schema extends readonly unknown[] ? CheckDictionaryKeys<Provided, Schema> : never
+            : CheckDictionaryKeys<Provided, Schema>
         : never
       : Schema;
+
+type CheckDictionaryKeys<Provided, Schema> = {
+  [K in keyof Provided]: K extends keyof Schema ? CheckDictionary<Provided[K], Schema[K]> : never;
+};
 
 type CheckDictionaries<N extends FlatNamespace, D> = [N] extends [keyof TypeOptions['resources']]
   ? { [L in keyof D]: CheckDictionary<D[L], TypeOptions['resources'][N]> }
@@ -78,7 +86,7 @@ export class I18nRuntime {
       fallbackLng: locale => this.fallbackChain(locale),
       initImmediate: false,
       interpolation: { escapeValue: false },
-      lng: this.resolveActive(),
+      lng: localeKey(this.resolveActive()),
       load: 'currentOnly',
       lowerCaseLng: true,
       react: {
@@ -113,7 +121,7 @@ export class I18nRuntime {
       localStorage.setItem(this.storageKey, language.id);
     }
     catch {}
-    await this.instance.changeLanguage(language.id);
+    await this.instance.changeLanguage(localeKey(language.id));
   }
 
   addLanguage(input: LanguageRegistration): () => void {
@@ -173,7 +181,11 @@ export class I18nRuntime {
       this.instance.addResourceBundle(localeKey(locale), namespace, resources);
     }
 
+    let disposed = false;
     return () => {
+      if (disposed)
+        return;
+      disposed = true;
       for (const [locale, resources] of entries) {
         const key = localeKey(locale);
         if (namespaceResources!.get(key) !== resources)
@@ -196,7 +208,7 @@ export class I18nRuntime {
       this.instance.emit('languageCatalogChanged');
     }
     else {
-      void this.instance.changeLanguage(active);
+      void this.instance.changeLanguage(localeKey(active));
     }
   }
 
@@ -233,7 +245,7 @@ export class I18nRuntime {
     let current = start && this.catalog.get(localeKey(start));
     while (current && !seen.has(localeKey(current.id))) {
       seen.add(localeKey(current.id));
-      chain.push(current.id);
+      chain.push(localeKey(current.id));
       current = current.fallback ? this.catalog.get(localeKey(current.fallback)) : undefined;
     }
     if (!seen.has('en'))
@@ -293,5 +305,9 @@ function readLocale(storageKey: string): Locale | undefined {
 }
 
 function localeKey(locale: string): string {
+  try {
+    return Intl.getCanonicalLocales(locale)[0]!.toLowerCase();
+  }
+  catch {}
   return locale.toLowerCase();
 }

@@ -9,6 +9,7 @@ declare module 'i18next' {
       greeting: {
         title: 'Welcome';
         message: { welcome: 'Hello' };
+        steps: readonly ['First', 'Second'];
       };
       page: { description: 'Description' };
     };
@@ -20,6 +21,7 @@ declare const runtime: I18nRuntime;
 runtime.register('greeting', { en: { title: 'Welcome', message: { welcome: 'Hello' } } });
 runtime.register('greeting', { ja: { message: { welcome: 'こんにちは' } } });
 runtime.register('greeting', { ja: {} });
+runtime.register('greeting', { ja: { steps: ['最初', '次'] as const } });
 runtime.register('page', { zh: { description: '说明' } });
 
 // @ts-expect-error Unknown namespace.
@@ -34,6 +36,13 @@ runtime.register('greeting', { en: { description: 'Wrong namespace' } });
 runtime.register('greeting', { ja: { title: 42 } });
 // @ts-expect-error Nested objects cannot be replaced with text.
 runtime.register('greeting', { ja: { message: 'Hello' } });
+// @ts-expect-error Empty arrays cannot replace a nested dictionary.
+runtime.register('greeting', { ja: { message: [] } });
+// @ts-expect-error Functions cannot replace a nested dictionary.
+runtime.register('greeting', { ja: { message: () => 'Hello' } });
+const invalidSubtree = { ja: { message: [] as const } };
+// @ts-expect-error Named readonly arrays cannot replace a nested dictionary either.
+runtime.register('greeting', invalidSubtree);
 
 const extraKey = { ja: { title: 'ようこそ', typo: 'Wrong key' } };
 // @ts-expect-error Named dictionaries must not bypass key checks.

@@ -152,7 +152,7 @@ export function apply(ctx: Context) {
 
 语言定义与字典可以按任意顺序注册。`id` 和 `fallback` 必须符合 ASCII BCP 47 风格标签格式，`label` 不得为空白；fallback 目标必须已注册，整条链必须通向 `en`，重复 ID、未知目标及循环会被拒绝。
 
-语言 ID 按大小写不敏感处理，例如 `pt-BR` 与 `PT-br` 指向同一种语言。资源存储使用小写键，`locale`、语言列表和保存的偏好保留语言定义的 ID 写法。
+语言 ID 按大小写不敏感处理，例如 `pt-BR` 与 `PT-br` 指向同一种语言。内部查找和 i18next 使用 `Intl.getCanonicalLocales()` 规范化后的小写 ID，例如 `iw-IL` 与 `he-IL` 也视为同一种语言，不能重复注册。无法由 Intl 规范化、但符合上述格式的标签仍按小写匹配。`locale`、语言列表和保存的偏好保留语言定义的 ID 写法。
 
 查找文案时，在请求的命名空间内依次尝试当前语言及其 fallback 链，最后回退到 key 本身。例如上述日语字典缺少 `welcome`，便使用 `greeting` 的英文翻译。本包不自动回退到 `common` 或其他命名空间，也不自动推导区域语言的回退关系；需要 `fr-CA → fr → en` 时，应显式注册这条链。
 

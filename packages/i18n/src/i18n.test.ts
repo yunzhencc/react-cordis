@@ -63,6 +63,50 @@ describe('i18n runtime', () => {
     expect(runtime.instance.getResource('ja', 'greeting', 'welcome')).toBeUndefined();
   });
 
+  it('does not remove a new registration when an old disposer is repeated with reused dictionaries', () => {
+    const runtime = new I18nRuntime();
+    const messages = { en: { title: 'Hello' } };
+    const disposeOld = runtime.register('greeting', messages);
+    disposeOld();
+    const disposeNew = runtime.register('greeting', messages);
+
+    disposeOld();
+    expect(runtime.instance.t('greeting:title', { lng: 'en' })).toBe('Hello');
+    disposeNew();
+    expect(runtime.instance.getResource('en', 'greeting', 'title')).toBeUndefined();
+  });
+
+  it.each([
+    ['iw-IL', 'he-IL'],
+    ['en-US-posix', 'en-US-u-va-posix'],
+    ['iw', 'he'],
+  ])('uses canonical keys internally while preserving the registered %s ID', async (id, canonical) => {
+    localStorage.setItem('react-cordis:locale', canonical);
+    const runtime = new I18nRuntime();
+    runtime.register('greeting', { en: { title: 'Hello' } });
+    const disposeDictionary = runtime.register('greeting', { [id]: { title: 'Local translation' } });
+    const disposeLanguage = runtime.addLanguage({ id, label: 'Local language', fallback: 'en' });
+
+    expect.soft(runtime.locale).toBe(id);
+    expect.soft(runtime.instance.t('greeting:title')).toBe('Local translation');
+    await runtime.setLocale(canonical);
+    expect.soft(runtime.locale).toBe(id);
+    expect.soft(document.documentElement.lang).toBe(id);
+    expect.soft(localStorage.getItem('react-cordis:locale')).toBe(id);
+    expect(() => runtime.addLanguage({ id: canonical, label: 'Duplicate', fallback: 'en' })).toThrow(/already registered/);
+    expect(() => runtime.register('greeting', { [canonical]: { title: 'Duplicate' } })).toThrow(/already has locale/);
+
+    runtime.addLanguage({ id: 'fr-CA', label: 'Canadian French', fallback: canonical });
+    await runtime.setLocale('fr-CA');
+    expect(runtime.instance.t('greeting:title')).toBe('Local translation');
+    disposeLanguage();
+    expect(runtime.instance.t('greeting:title')).toBe('Hello');
+    runtime.addLanguage({ id, label: 'Local language', fallback: 'en' });
+    expect(runtime.instance.t('greeting:title')).toBe('Local translation');
+    disposeDictionary();
+    expect(runtime.instance.t('greeting:title')).toBe('Hello');
+  });
+
   it.each(['pt-br', 'pt-BR', 'PT-br'])('resolves and disposes %s resources regardless of language ID casing', async (locale) => {
     const runtime = new I18nRuntime();
     const disposeEnglish = runtime.register('greeting', { EN: { welcome: 'Hello' } });
