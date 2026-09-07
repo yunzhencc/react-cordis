@@ -9,22 +9,22 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@examples/router-settings-layout": "workspace:*",
-    "@react-cordis/ui-i18n": "workspace:*",
-    "@react-cordis/ui-theme": "workspace:*",
+    "@react-cordis/i18n": "workspace:*",
+    "@react-cordis/theme": "workspace:*",
     "lucide-react": "^0.576.0",
     "react": "^19.2.8",
     "react-i18next": "^16.5.9"
   },
   "devDependencies": {
-    "@react-cordis/ui-renderer": "workspace:*",
-    "@react-cordis/ui-router": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
+    "@react-cordis/router": "workspace:*",
     "react-dom": "^19.2.8"
   },
   "cordis": {
     "inject": [
-      "@react-cordis/ui-i18n",
+      "@react-cordis/i18n",
       "@examples/router-settings-layout",
-      "@react-cordis/ui-theme"
+      "@react-cordis/theme"
     ]
   }
 }

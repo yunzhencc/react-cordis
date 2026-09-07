@@ -2,10 +2,10 @@
 
 // @vitest-environment jsdom
 
-import type { PluginRegistry } from '@react-cordis/client-modules';
+import type { PluginRegistry } from '@react-cordis/boot';
 import { resolve } from 'node:path';
-import { bootWebApp } from '@react-cordis/client-modules';
-import { loadWebBootGraph } from '@react-cordis/host-plugin-catalog';
+import { bootWebApp } from '@react-cordis/boot';
+import { loadWebBootGraph } from '@react-cordis/boot-config';
 import { act } from 'react';
 import { expect, it, vi } from 'vitest';
 
@@ -16,15 +16,15 @@ it.each(['/', '/settings/general'])('boots the real router plugins concurrently 
   window.history.replaceState({}, '', path);
   vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-CN']);
   vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
-  const catalog = loadWebBootGraph(resolve(import.meta.dirname, '../cordis.yml'));
+  const configuredGraph = loadWebBootGraph(resolve(import.meta.dirname, '../cordis.yml'));
   // Consumers are scheduled first so package order cannot hide missing service dependencies.
-  const graph = { ...catalog, entries: [...catalog.entries].reverse() };
+  const graph = { ...configuredGraph, entries: [...configuredGraph.entries].reverse() };
   const registry: PluginRegistry = new Map([
-    ['@react-cordis/ui-i18n', () => import('@react-cordis/ui-i18n')],
-    ['@react-cordis/ui-renderer', () => import('@react-cordis/ui-renderer')],
-    ['@react-cordis/ui-layout', () => import('@react-cordis/ui-layout')],
-    ['@react-cordis/ui-router', () => import('@react-cordis/ui-router')],
-    ['@react-cordis/ui-theme', () => import('@react-cordis/ui-theme')],
+    ['@react-cordis/i18n', () => import('@react-cordis/i18n')],
+    ['@react-cordis/renderer', () => import('@react-cordis/renderer')],
+    ['@react-cordis/layout', () => import('@react-cordis/layout')],
+    ['@react-cordis/router', () => import('@react-cordis/router')],
+    ['@react-cordis/theme', () => import('@react-cordis/theme')],
     ['@examples/router-app-layout', () => import('../plugins/app-layout/src')],
     ['@examples/router-dashboard', () => import('../plugins/dashboard/src')],
     ['@examples/router-settings-layout', () => import('../plugins/settings-layout/src')],

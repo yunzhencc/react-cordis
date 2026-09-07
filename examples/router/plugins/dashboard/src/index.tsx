@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type {} from '@react-cordis/ui-i18n';
-import type {} from '@react-cordis/ui-renderer';
-import type {} from '@react-cordis/ui-router';
+import type {} from '@react-cordis/i18n';
+import type {} from '@react-cordis/renderer';
+import type {} from '@react-cordis/router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dashboardMessages } from './locales';

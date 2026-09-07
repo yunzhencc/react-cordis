@@ -1,8 +1,8 @@
 - id: i18n
-  name: '@react-cordis/ui-i18n'
+  name: '@react-cordis/i18n'
 - id: renderer
-  name: '@react-cordis/ui-renderer'
+  name: '@react-cordis/renderer'
 - id: layout
-  name: '@react-cordis/ui-layout'
+  name: '@react-cordis/layout'
 - id: page
   name: '@examples/basic-page'

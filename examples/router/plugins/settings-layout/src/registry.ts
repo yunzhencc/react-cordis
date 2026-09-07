@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type {} from '@react-cordis/ui-router';
-import type { SlotMap } from '@react-cordis/ui-slots';
+import type {} from '@react-cordis/router';
+import type { SlotMap } from '@react-cordis/slots';
 import type { ComponentType } from 'react';
 import { Service } from '@deepseek-ai/cordis';
 

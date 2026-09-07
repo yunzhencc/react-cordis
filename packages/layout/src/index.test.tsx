@@ -2,8 +2,8 @@
 
 import { readFileSync } from 'node:fs';
 import { Context } from '@deepseek-ai/cordis';
-import { apply as applyI18n } from '@react-cordis/ui-i18n';
-import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/ui-renderer';
+import { apply as applyI18n } from '@react-cordis/i18n';
+import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/renderer';
 import { act } from 'react';
 import { describe, expect, it } from 'vitest';
 import { apply } from './index';

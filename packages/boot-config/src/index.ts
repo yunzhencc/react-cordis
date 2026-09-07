@@ -1,12 +1,12 @@
-import type { JsonValue, WebBootEntry, WebBootGraph } from '@react-cordis/client-modules/manifest';
+import type { JsonValue, WebBootEntry, WebBootGraph } from '@react-cordis/boot/manifest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { findPackageJSON } from 'node:module';
 import { pathToFileURL } from 'node:url';
-import { assertWebBootGraph, sortWebBootEntries } from '@react-cordis/client-modules/manifest';
+import { assertWebBootGraph, sortWebBootEntries } from '@react-cordis/boot/manifest';
 import { parseDocument } from 'yaml';
 
-interface CatalogRow {
+interface BootConfigRow {
   id: unknown;
   name: unknown;
   disabled?: unknown;
@@ -21,15 +21,15 @@ interface PackageManifest {
 export function loadWebBootGraph(configPath: string): WebBootGraph {
   const source = readFileSync(configPath, 'utf8');
   if (/!!js(?:\/\S+)?\b/.test(source))
-    throw new TypeError('web boot catalog rejects !!js tags');
+    throw new TypeError('web boot config rejects !!js tags');
 
   const document = parseDocument(source);
   if (document.errors.length > 0)
-    throw new TypeError(`web boot catalog YAML error: ${document.errors[0]!.message}`);
+    throw new TypeError(`web boot config YAML error: ${document.errors[0]!.message}`);
 
   const rows = document.toJS();
   if (!Array.isArray(rows))
-    throw new TypeError('web boot catalog must be a top-level array');
+    throw new TypeError('web boot config must be a top-level array');
 
   const entries = rows.flatMap((value, index) => loadEntry(value, index, configPath));
   const graph = {
@@ -42,25 +42,25 @@ export function loadWebBootGraph(configPath: string): WebBootGraph {
 
 function loadEntry(value: unknown, index: number, configPath: string): WebBootEntry[] {
   if (!isRecord(value))
-    throw new TypeError(`web boot catalog entry ${index} must be an object`);
+    throw new TypeError(`web boot config entry ${index} must be an object`);
 
-  const row = value as unknown as CatalogRow;
+  const row = value as unknown as BootConfigRow;
   if (row.disabled === true)
     return [];
   if (row.disabled !== undefined && typeof row.disabled !== 'boolean')
-    throw new TypeError(`web boot catalog disabled must be boolean: ${index}`);
+    throw new TypeError(`web boot config disabled must be boolean: ${index}`);
   if (typeof row.id !== 'string' || typeof row.name !== 'string')
-    throw new TypeError(`web boot catalog entry ${index} requires id and name`);
+    throw new TypeError(`web boot config entry ${index} requires id and name`);
 
   const manifest = loadPackageManifest(row.name, configPath);
   if (!hasClientExport(manifest.exports))
-    throw new TypeError(`web boot catalog exports./client missing: ${row.name}`);
+    throw new TypeError(`web boot config exports./client missing: ${row.name}`);
 
   if (manifest.cordis !== undefined && !isRecord(manifest.cordis))
-    throw new TypeError(`web boot catalog cordis metadata must be an object: ${row.name}`);
+    throw new TypeError(`web boot config cordis metadata must be an object: ${row.name}`);
   const inject = manifest.cordis?.inject;
   if (inject !== undefined && (!Array.isArray(inject) || inject.some(name => typeof name !== 'string')))
-    throw new TypeError(`web boot catalog inject must be package names: ${row.name}`);
+    throw new TypeError(`web boot config inject must be package names: ${row.name}`);
 
   const config = parseJsonConfig(row.config, row.name);
   return [{
@@ -74,7 +74,7 @@ function loadEntry(value: unknown, index: number, configPath: string): WebBootEn
 function loadPackageManifest(name: string, configPath: string): PackageManifest {
   const packagePath = findPackageJSON(name, pathToFileURL(configPath));
   if (!packagePath)
-    throw new TypeError(`web boot catalog package not found: ${name}`);
+    throw new TypeError(`web boot config package not found: ${name}`);
   return JSON.parse(readFileSync(packagePath, 'utf8')) as PackageManifest;
 }
 
@@ -92,7 +92,7 @@ function parseJsonConfig(config: unknown, name: string) {
     return JSON.parse(JSON.stringify(config)) as JsonValue;
   }
   catch {
-    throw new TypeError(`web boot catalog config must be JSON-safe: ${name}`);
+    throw new TypeError(`web boot config value must be JSON-safe: ${name}`);
   }
 }
 

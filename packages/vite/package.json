@@ -1,5 +1,5 @@
 {
-  "name": "@react-cordis/host-vite",
+  "name": "@react-cordis/vite",
   "type": "module",
   "private": true,
   "exports": "./src/index.ts",
@@ -7,11 +7,11 @@
     "vite": "^8.2.2"
   },
   "dependencies": {
-    "@react-cordis/client-modules": "workspace:*",
-    "@react-cordis/host-plugin-catalog": "workspace:*"
+    "@react-cordis/boot": "workspace:*",
+    "@react-cordis/boot-config": "workspace:*"
   },
   "devDependencies": {
-    "@react-cordis/ui-i18n": "workspace:*",
-    "@react-cordis/ui-renderer": "workspace:*"
+    "@react-cordis/i18n": "workspace:*",
+    "@react-cordis/renderer": "workspace:*"
   }
 }

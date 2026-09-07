@@ -1,10 +1,10 @@
 import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
 import * as appLayout from '@examples/router-app-layout';
-import { apply as applyI18n } from '@react-cordis/ui-i18n';
-import { apply as applyLayout, inject as layoutInject } from '@react-cordis/ui-layout';
-import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/ui-renderer';
-import { apply as applyRouter } from '@react-cordis/ui-router';
+import { apply as applyI18n } from '@react-cordis/i18n';
+import { apply as applyLayout, inject as layoutInject } from '@react-cordis/layout';
+import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/renderer';
+import { apply as applyRouter } from '@react-cordis/router';
 import { describe, expect, it } from 'vitest';
 import { apply } from './index';
 

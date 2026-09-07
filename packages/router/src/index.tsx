@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { SlotOwnerHandle, SlotRenderer } from '@react-cordis/ui-renderer';
+import type { SlotOwnerHandle, SlotRenderer } from '@react-cordis/renderer';
 import type { RouteObject } from 'react-router-dom';
-import { Slot, SlotOwner } from '@react-cordis/ui-renderer';
+import { Slot, SlotOwner } from '@react-cordis/renderer';
 import { createElement, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, matchRoutes, NavLink, Outlet, useLocation, useRoutes } from 'react-router-dom';

@@ -1,5 +1,5 @@
 {
-  "name": "@react-cordis/ui-slots",
+  "name": "@react-cordis/slots",
   "type": "module",
   "private": true,
   "exports": "./src/index.ts"

@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type {} from '@react-cordis/ui-i18n';
+import type {} from '@react-cordis/i18n';
 import type { SlotRenderer } from './registry';
-import { I18nProvider } from '@react-cordis/ui-i18n';
+import { I18nProvider } from '@react-cordis/i18n';
 import { createRoot } from 'react-dom/client';
 import { createSlotRenderer, Slot, SlotOwner, SlotRegistry } from './registry';
 

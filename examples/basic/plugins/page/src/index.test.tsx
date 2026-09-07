@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import { Context } from '@deepseek-ai/cordis';
-import { apply as applyI18n } from '@react-cordis/ui-i18n';
-import { apply as applyLayout, inject as layoutInject } from '@react-cordis/ui-layout';
-import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/ui-renderer';
+import { apply as applyI18n } from '@react-cordis/i18n';
+import { apply as applyLayout, inject as layoutInject } from '@react-cordis/layout';
+import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/renderer';
 import { act } from 'react';
 import { expect, it } from 'vitest';
 import { apply, inject } from './index';

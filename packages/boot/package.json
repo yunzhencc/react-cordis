@@ -1,5 +1,5 @@
 {
-  "name": "@react-cordis/client-modules",
+  "name": "@react-cordis/boot",
   "type": "module",
   "private": true,
   "exports": {
@@ -8,6 +8,6 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@react-cordis/ui-renderer": "workspace:*"
+    "@react-cordis/renderer": "workspace:*"
   }
 }

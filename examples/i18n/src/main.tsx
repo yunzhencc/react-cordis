@@ -1,4 +1,4 @@
-import { bootWebApp } from '@react-cordis/client-modules';
+import { bootWebApp } from '@react-cordis/boot';
 import { graph, registry } from 'virtual:cordis-boot';
 import './style.css';
 

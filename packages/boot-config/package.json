@@ -1,10 +1,10 @@
 {
-  "name": "@react-cordis/host-plugin-catalog",
+  "name": "@react-cordis/boot-config",
   "type": "module",
   "private": true,
   "exports": "./src/index.ts",
   "dependencies": {
-    "@react-cordis/client-modules": "workspace:*",
+    "@react-cordis/boot": "workspace:*",
     "yaml": "^2.9.0"
   }
 }

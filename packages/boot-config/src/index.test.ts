@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 function fixture(config: string, packages: Record<string, object>) {
-  const root = mkdtempSync(join(tmpdir(), 'cordis-catalog-'));
+  const root = mkdtempSync(join(tmpdir(), 'cordis-boot-config-'));
   roots.push(root);
   writeFileSync(join(root, 'cordis.yml'), config);
 
@@ -82,6 +82,6 @@ it.each([
   [() => fixture(`- id: missing-client\n  name: '@fixture/missing-client'\n`, { '@fixture/missing-client': {} }), /exports\.\/client/],
   [() => fixture(`- id: dashboard\n  name: '@fixture/dashboard'\n`, { '@fixture/dashboard': client({ inject: ['@fixture/missing'] }) }), /injects inactive package/],
   [() => fixture(`- id: invalid\n  name: '@fixture/invalid'\n  config: !!js/function >\n    function () {}\n`, { '@fixture/invalid': client() }), /!!js/],
-])('rejects invalid catalog input', (createFixture, error) => {
+])('rejects invalid boot config input', (createFixture, error) => {
   expect(() => loadWebBootGraph(createFixture())).toThrow(error);
 });

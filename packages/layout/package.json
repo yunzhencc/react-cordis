@@ -1,5 +1,5 @@
 {
-  "name": "@react-cordis/ui-layout",
+  "name": "@react-cordis/layout",
   "type": "module",
   "private": true,
   "exports": {
@@ -8,17 +8,17 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@react-cordis/ui-renderer": "workspace:*",
-    "@react-cordis/ui-slots": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
+    "@react-cordis/slots": "workspace:*",
     "react": "^19.2.8",
     "react-resizable-panels": "^4.12.3"
   },
   "devDependencies": {
-    "@react-cordis/ui-i18n": "workspace:*"
+    "@react-cordis/i18n": "workspace:*"
   },
   "cordis": {
     "inject": [
-      "@react-cordis/ui-renderer"
+      "@react-cordis/renderer"
     ]
   }
 }

@@ -8,13 +8,13 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@react-cordis/ui-layout": "workspace:*",
-    "@react-cordis/ui-router": "workspace:*"
+    "@react-cordis/layout": "workspace:*",
+    "@react-cordis/router": "workspace:*"
   },
   "cordis": {
     "inject": [
-      "@react-cordis/ui-layout",
-      "@react-cordis/ui-router"
+      "@react-cordis/layout",
+      "@react-cordis/router"
     ]
   }
 }

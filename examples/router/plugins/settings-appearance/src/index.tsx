@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@examples/router-settings-layout';
-import type {} from '@react-cordis/ui-theme';
+import type {} from '@react-cordis/theme';
 import { Palette } from 'lucide-react';
 import { AppearanceSettings } from './appearance-settings';
 import { appearanceMessages } from './locales';

@@ -9,16 +9,16 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@examples/router-settings-layout": "workspace:*",
-    "@react-cordis/ui-i18n": "workspace:*",
-    "@react-cordis/ui-renderer": "workspace:*",
+    "@react-cordis/i18n": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
     "lucide-react": "^1.38.0",
     "react": "^19.2.8"
   },
   "cordis": {
     "inject": [
-      "@react-cordis/ui-i18n",
+      "@react-cordis/i18n",
       "@examples/router-settings-layout",
-      "@react-cordis/ui-renderer"
+      "@react-cordis/renderer"
     ]
   }
 }

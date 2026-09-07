@@ -1,9 +1,9 @@
 - id: i18n
-  name: '@react-cordis/ui-i18n'
+  name: '@react-cordis/i18n'
   config:
     storageKey: 'examples:i18n:locale'
 - id: renderer
-  name: '@react-cordis/ui-renderer'
+  name: '@react-cordis/renderer'
 - id: page
   name: '@examples/i18n-page'
 - id: greeting

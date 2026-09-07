@@ -1,5 +1,5 @@
 {
-  "name": "@react-cordis/ui-router",
+  "name": "@react-cordis/router",
   "type": "module",
   "private": true,
   "exports": {
@@ -8,16 +8,16 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@react-cordis/ui-i18n": "workspace:*",
-    "@react-cordis/ui-renderer": "workspace:*",
-    "@react-cordis/ui-slots": "workspace:*",
+    "@react-cordis/i18n": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
+    "@react-cordis/slots": "workspace:*",
     "react": "^19.2.8",
     "react-i18next": "^16.5.9",
     "react-router-dom": "^7.18.3"
   },
   "cordis": {
     "inject": [
-      "@react-cordis/ui-renderer"
+      "@react-cordis/renderer"
     ]
   }
 }

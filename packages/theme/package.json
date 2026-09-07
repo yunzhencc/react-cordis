@@ -1,5 +1,5 @@
 {
-  "name": "@react-cordis/ui-theme",
+  "name": "@react-cordis/theme",
   "type": "module",
   "private": true,
   "exports": {
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@react-cordis/ui-renderer": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
     "react": "^19.2.8"
   },
   "devDependencies": {
@@ -18,7 +18,7 @@
   },
   "cordis": {
     "inject": [
-      "@react-cordis/ui-renderer"
+      "@react-cordis/renderer"
     ]
   }
 }

@@ -2,7 +2,7 @@
 
 ## 状态与范围
 
-核心包以 `codex-desktop` 的 `2712dff` 实现为同步基准，底层继续使用 `@deepseek-ai/cordis`。本文描述当前实现；`superpowers` 目录保留历史设计记录。通用 Cordis 启动图在构建期确定，不提供生产 Node catalog 服务、远程模块或 YAML `!!js` 配置。
+核心包以 `codex-desktop` 的 `2712dff` 实现为同步基准，底层继续使用 `@deepseek-ai/cordis`。本文描述当前实现；`superpowers` 目录保留历史设计记录。通用 Cordis 启动图在构建期确定，不提供生产 Node 配置解析服务、远程模块或 YAML `!!js` 配置。
 
 示例分为 Basic（最小启动与插槽）、Router（布局、路由、工作台及设置扩展）和 i18n（语言切换、命名空间、额外语言包与回退）。
 
@@ -10,20 +10,20 @@
 
 ```text
 examples/router/cordis.yml
-  └─ plugin-catalog 读取包元数据
+  └─ boot-config 读取包元数据
       └─ WebBootGraph
           └─ Vite 虚拟 registry（开发）/ cordis.boot.json + chunks（构建）
               └─ boot Boot Loader
                   └─ Cordis Context → ctx.uiRenderer.mount(container)
 ```
 
-`examples/router/cordis.yml` 是该示例应用唯一的启用来源。catalog 在 Node 构建阶段读取它和每个包的 `cordis.inject` 包依赖元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
+`examples/router/cordis.yml` 是该示例应用唯一的启用来源。`boot-config` 在 Node 构建阶段读取它和每个包的 `cordis.inject` 包依赖元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
 
 插件通过 `exports["./client"]` 提供浏览器入口，`package.json` 的可选 `cordis.inject` 声明包名依赖，用于校验和排序启动图；没有包依赖时可省略整个 `cordis` 字段。代码中的 `export const inject` 仍声明 Cordis 服务名依赖。
 
 ```json
 "cordis": {
-  "inject": ["@react-cordis/ui-i18n"]
+  "inject": ["@react-cordis/i18n"]
 }
 ```
 
@@ -33,12 +33,12 @@ examples/router/cordis.yml
 
 ## 包职责
 
-`packages/` 采用单层目录，按包职责命名；目录调整不改变 `@react-cordis/*` 包名。`boot` 目录对应 `@react-cordis/client-modules`，`plugin-catalog` 和 `vite` 仍属于 Node 构建工具。
+`packages/` 采用单层目录，目录名与 `@react-cordis/*` 的包名后缀一致，例如 `packages/boot` 对应 `@react-cordis/boot`。`boot-config` 和 `vite` 属于 Node 构建工具。
 
 ```text
 packages/
 ├── boot
-├── plugin-catalog
+├── boot-config
 ├── vite
 ├── i18n
 ├── layout
@@ -50,15 +50,15 @@ packages/
 
 | 包 | 职责 |
 | --- | --- |
-| `@react-cordis/client-modules` | WebBootGraph 验证、浏览器 ESM 导入/激活、失败呈现与 UI 挂载。 |
-| `@react-cordis/host-plugin-catalog` | 构建期读取配置和包元数据，验证并排序启动图。 |
-| `@react-cordis/host-vite` | 生成虚拟 registry 和构建清单，开发期配置变化时重载启动图。 |
-| `@react-cordis/ui-slots` | 纯 `SlotMap` / `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
-| `@react-cordis/ui-renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的唯一 React 根挂载。 |
-| `@react-cordis/ui-router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner。 |
-| `@react-cordis/ui-layout` | 可选的三栏布局组件和 `ctx.layout` 面板动作，不依赖 router。 |
+| `@react-cordis/boot` | WebBootGraph 验证、浏览器 ESM 导入/激活、失败呈现与 UI 挂载。 |
+| `@react-cordis/boot-config` | 构建期读取配置和包元数据，验证并排序启动图。 |
+| `@react-cordis/vite` | 生成虚拟 registry 和构建清单，开发期配置变化时重载启动图。 |
+| `@react-cordis/slots` | 纯 `SlotMap` / `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
+| `@react-cordis/renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的唯一 React 根挂载。 |
+| `@react-cordis/router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner。 |
+| `@react-cordis/layout` | 可选的三栏布局组件和 `ctx.layout` 面板动作，不依赖 router。 |
 | `@examples/router-app-layout` | Router 示例的根路由插件，显式注册 `app-layout`。 |
-| `@react-cordis/ui-i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
+| `@react-cordis/i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
 | `examples/router/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Router 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
 | `examples/router/plugins/settings-layout` | Router 示例的 `/settings` 路由壳、设置侧栏、底部 Settings 入口与 `ctx.settings.register()`。 |
 | `packages/theme` | ThemeRuntime、token 与 DOM 同步；具体设置页面由独立扩展提供。 |
@@ -77,7 +77,7 @@ packages/
 
 ```yaml
 - id: i18n
-  name: '@react-cordis/ui-i18n'
+  name: '@react-cordis/i18n'
   config:
     storageKey: 'my-app:locale'
 ```
@@ -89,7 +89,7 @@ packages/
 ## Vite 接入
 
 ```ts
-import { cordisWebBoot } from '@react-cordis/host-vite';
+import { cordisWebBoot } from '@react-cordis/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({ plugins: [cordisWebBoot()] });
@@ -119,4 +119,4 @@ Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命�
 
 ## 部署边界
 
-开发期 Vite 进程可读取 `examples/router/cordis.yml` 生成虚拟 registry；生产环境仅托管 `examples/router/dist` 的静态文件和 ESM chunks。生产不运行 Node catalog 扫描，不支持 HMR、远程插件、运行时安装或动态运行器。
+开发期 Vite 进程可读取 `examples/router/cordis.yml` 生成虚拟 registry；生产环境仅托管 `examples/router/dist` 的静态文件和 ESM chunks。生产不运行 Node 配置扫描，不支持 HMR、远程插件、运行时安装或动态运行器。

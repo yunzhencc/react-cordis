@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type {} from '@react-cordis/ui-layout';
-import type {} from '@react-cordis/ui-renderer';
+import type {} from '@react-cordis/layout';
+import type {} from '@react-cordis/renderer';
 
 export const inject = ['layout', 'slots'];
 

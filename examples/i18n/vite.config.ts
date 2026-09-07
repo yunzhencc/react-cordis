@@ -1,4 +1,4 @@
-import { cordisWebBoot } from '@react-cordis/host-vite';
+import { cordisWebBoot } from '@react-cordis/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 

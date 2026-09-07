@@ -8,7 +8,7 @@ const graph = {
   entries: [{ id: 'renderer', name: '@app/renderer', inject: [] }],
 };
 
-it('maps each catalog package to its client import', () => {
+it('maps each configured package to its client import', () => {
   const source = renderWebBootVirtualModule(graph);
 
   expect(source).toContain('import(\'@app/renderer/client\')');
@@ -31,7 +31,7 @@ it('resolves a supplied virtual module id', () => {
   expect(Reflect.apply(plugin.resolveId, undefined, ['virtual:custom-boot'])).toBe('\0virtual:custom-boot');
 });
 
-it('resolves the default catalog from the consuming Vite root', () => {
+it('resolves the default boot config from the consuming Vite root', () => {
   const root = mkdtempSync(join(import.meta.dirname, '.cordis-vite-plugin-'));
   writeFileSync(join(root, 'cordis.yml'), '[]');
   const plugin = cordisWebBoot();
@@ -45,12 +45,12 @@ it('resolves the default catalog from the consuming Vite root', () => {
   }
 });
 
-it('reloads the virtual boot graph when its catalog changes', () => {
+it('reloads the virtual boot graph when its boot config changes', () => {
   const root = mkdtempSync(join(import.meta.dirname, '.cordis-vite-plugin-'));
   const configPath = join(root, 'cordis.yml');
   const virtualModuleId = 'virtual:cordis-test-boot';
   const resolvedVirtualModuleId = `\0${virtualModuleId}`;
-  writeFileSync(configPath, '- id: i18n\n  name: \'@react-cordis/ui-i18n\'\n');
+  writeFileSync(configPath, '- id: i18n\n  name: \'@react-cordis/i18n\'\n');
   const plugin = cordisWebBoot({ configPath, virtualModuleId });
   const module = { id: resolvedVirtualModuleId };
   const add = vi.fn();
@@ -60,8 +60,8 @@ it('reloads the virtual boot graph when its catalog changes', () => {
   try {
     Reflect.apply(plugin.configureServer, undefined, [{ watcher: { add } }]);
     expect(add).toHaveBeenCalledWith(configPath);
-    expect(Reflect.apply(plugin.load, undefined, [resolvedVirtualModuleId])).not.toContain('@react-cordis/ui-renderer');
-    writeFileSync(configPath, '- id: i18n\n  name: \'@react-cordis/ui-i18n\'\n- id: renderer\n  name: \'@react-cordis/ui-renderer\'\n');
+    expect(Reflect.apply(plugin.load, undefined, [resolvedVirtualModuleId])).not.toContain('@react-cordis/renderer');
+    writeFileSync(configPath, '- id: i18n\n  name: \'@react-cordis/i18n\'\n- id: renderer\n  name: \'@react-cordis/renderer\'\n');
     Reflect.apply(plugin.handleHotUpdate, undefined, [{
       file: configPath,
       server: { moduleGraph: { getModuleById: () => module, invalidateModule }, ws: { send } },
@@ -69,7 +69,7 @@ it('reloads the virtual boot graph when its catalog changes', () => {
 
     expect(invalidateModule).toHaveBeenCalledWith(module);
     expect(send).toHaveBeenCalledWith({ type: 'full-reload' });
-    expect(Reflect.apply(plugin.load, undefined, [resolvedVirtualModuleId])).toContain('@react-cordis/ui-renderer');
+    expect(Reflect.apply(plugin.load, undefined, [resolvedVirtualModuleId])).toContain('@react-cordis/renderer');
   }
   finally {
     rmSync(root, { force: true, recursive: true });

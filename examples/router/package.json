@@ -13,17 +13,17 @@
     "@examples/router-settings-general": "workspace:*",
     "@examples/router-settings-language": "workspace:*",
     "@examples/router-settings-layout": "workspace:*",
-    "@react-cordis/client-modules": "workspace:*",
-    "@react-cordis/host-plugin-catalog": "workspace:*",
-    "@react-cordis/ui-i18n": "workspace:*",
-    "@react-cordis/ui-layout": "workspace:*",
-    "@react-cordis/ui-renderer": "workspace:*",
-    "@react-cordis/ui-router": "workspace:*",
-    "@react-cordis/ui-theme": "workspace:*",
+    "@react-cordis/boot": "workspace:*",
+    "@react-cordis/boot-config": "workspace:*",
+    "@react-cordis/i18n": "workspace:*",
+    "@react-cordis/layout": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
+    "@react-cordis/router": "workspace:*",
+    "@react-cordis/theme": "workspace:*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@react-cordis/host-vite": "workspace:*"
+    "@react-cordis/vite": "workspace:*"
   }
 }

@@ -3,10 +3,10 @@
 import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
 import * as appLayout from '@examples/router-app-layout';
-import * as i18n from '@react-cordis/ui-i18n';
-import * as layout from '@react-cordis/ui-layout';
-import * as renderer from '@react-cordis/ui-renderer';
-import * as router from '@react-cordis/ui-router';
+import * as i18n from '@react-cordis/i18n';
+import * as layout from '@react-cordis/layout';
+import * as renderer from '@react-cordis/renderer';
+import * as router from '@react-cordis/router';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as dashboard from './index';

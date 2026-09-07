@@ -8,13 +8,13 @@
   },
   "dependencies": {
     "@examples/basic-page": "workspace:*",
-    "@react-cordis/client-modules": "workspace:*",
-    "@react-cordis/host-plugin-catalog": "workspace:*",
-    "@react-cordis/ui-i18n": "workspace:*",
-    "@react-cordis/ui-layout": "workspace:*",
-    "@react-cordis/ui-renderer": "workspace:*"
+    "@react-cordis/boot": "workspace:*",
+    "@react-cordis/boot-config": "workspace:*",
+    "@react-cordis/i18n": "workspace:*",
+    "@react-cordis/layout": "workspace:*",
+    "@react-cordis/renderer": "workspace:*"
   },
   "devDependencies": {
-    "@react-cordis/host-vite": "workspace:*"
+    "@react-cordis/vite": "workspace:*"
   }
 }

@@ -8,10 +8,10 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@react-cordis/ui-i18n": "workspace:*",
-    "@react-cordis/ui-renderer": "workspace:*",
-    "@react-cordis/ui-router": "workspace:*",
-    "@react-cordis/ui-slots": "workspace:*",
+    "@react-cordis/i18n": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
+    "@react-cordis/router": "workspace:*",
+    "@react-cordis/slots": "workspace:*",
     "lucide-react": "^1.38.0",
     "react": "^19.2.8",
     "react-i18next": "^16.5.9",
@@ -19,9 +19,9 @@
   },
   "cordis": {
     "inject": [
-      "@react-cordis/ui-i18n",
-      "@react-cordis/ui-renderer",
-      "@react-cordis/ui-router"
+      "@react-cordis/i18n",
+      "@react-cordis/renderer",
+      "@react-cordis/router"
     ]
   }
 }

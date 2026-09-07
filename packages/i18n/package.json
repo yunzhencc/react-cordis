@@ -1,5 +1,5 @@
 {
-  "name": "@react-cordis/ui-i18n",
+  "name": "@react-cordis/i18n",
   "type": "module",
   "private": true,
   "exports": {

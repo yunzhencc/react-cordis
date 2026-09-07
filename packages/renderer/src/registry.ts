@@ -1,8 +1,8 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { SlotEntry, SlotMap, SlotRegistration, SlotSpec } from '@react-cordis/ui-slots';
+import type { SlotEntry, SlotMap, SlotRegistration, SlotSpec } from '@react-cordis/slots';
 import type { ComponentType, ReactNode } from 'react';
 import { Service } from '@deepseek-ai/cordis';
-import { SlotCore } from '@react-cordis/ui-slots';
+import { SlotCore } from '@react-cordis/slots';
 import { createContext, createElement, Fragment, use, useSyncExternalStore } from 'react';
 
 export interface SlotOwnerHandle {

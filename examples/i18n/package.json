@@ -10,13 +10,13 @@
     "@examples/i18n-greeting": "workspace:*",
     "@examples/i18n-locale-ja": "workspace:*",
     "@examples/i18n-page": "workspace:*",
-    "@react-cordis/client-modules": "workspace:*",
-    "@react-cordis/ui-i18n": "workspace:*",
-    "@react-cordis/ui-renderer": "workspace:*",
+    "@react-cordis/boot": "workspace:*",
+    "@react-cordis/i18n": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
     "react": "^19.2.8"
   },
   "devDependencies": {
-    "@react-cordis/host-plugin-catalog": "workspace:*",
-    "@react-cordis/host-vite": "workspace:*"
+    "@react-cordis/boot-config": "workspace:*",
+    "@react-cordis/vite": "workspace:*"
   }
 }
