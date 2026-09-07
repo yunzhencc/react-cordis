@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
 
 import { Context } from '@deepseek-ai/cordis';
-import { apply as applyI18n } from '@react-cordis/i18n';
-import { act } from 'react';
+import { act, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { useTranslation } from 'react-i18next';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { apply, inject, Slot, SlotOwner } from './index';
 
@@ -20,20 +18,68 @@ beforeEach(() => {
 
 async function bootRenderer() {
   const ctx = new Context();
-  const i18nFiber = ctx.plugin({ apply: applyI18n });
-  await i18nFiber.await();
   const fiber = ctx.plugin({ apply, inject });
   await fiber.await();
   return {
     ctx,
     async dispose() {
       await fiber.dispose();
-      await i18nFiber.dispose();
     },
   };
 }
 
 describe('ui renderer', () => {
+  it('activates and renders without i18n', async () => {
+    const ctx = new Context();
+    const fiber = ctx.plugin({ apply, inject });
+    await fiber.await();
+    try {
+      expect(ctx.get('uiRenderer')).toBeDefined();
+      ctx.slots.register({ name: 'root' }, () => <h1>Standalone</h1>);
+      const container = document.createElement('div');
+      await act(async () => {
+        ctx.uiRenderer.mount(container);
+      });
+      expect(container.textContent).toBe('Standalone');
+    }
+    finally {
+      await act(async () => {
+        await fiber.dispose();
+      });
+    }
+  });
+
+  it('unmounts React effects when the renderer is disposed', async () => {
+    const { ctx, dispose } = await bootRenderer();
+    let active = 0;
+    const Content = () => {
+      useEffect(() => {
+        active += 1;
+        return () => {
+          active -= 1;
+        };
+      }, []);
+      return <h1>Mounted</h1>;
+    };
+    ctx.slots.register({ name: 'root' }, Content);
+    const container = document.createElement('div');
+    let unmount!: () => void;
+    await act(async () => {
+      unmount = ctx.uiRenderer.mount(container);
+    });
+    expect(active).toBe(1);
+    try {
+      await act(async () => {
+        await dispose();
+      });
+      expect(container.childNodes).toHaveLength(0);
+      expect(active).toBe(0);
+    }
+    finally {
+      await act(async () => unmount());
+    }
+  });
+
   it('removes a contribution when its caller fiber is disposed', async () => {
     const { ctx, dispose } = await bootRenderer();
     ctx.slots.register({ name: 'root', children: { host: { kind: 'single', scope: 'root' } } }, Null);
@@ -116,115 +162,6 @@ describe('ui renderer', () => {
     expect(container.innerHTML).toBe('<main><h1>Settings</h1></main>');
     await act(async () => unmount());
     await dispose();
-  });
-
-  it('refreshes slot content when the active language changes', async () => {
-    const { ctx, dispose } = await bootRenderer();
-    const Greeting = () => {
-      const { t } = useTranslation('renderer-test');
-      return <h1>{t('greeting')}</h1>;
-    };
-    ctx.i18n.register('renderer-test', {
-      zh: { greeting: '你好' },
-      en: { greeting: 'Hello' },
-    });
-    ctx.slots.register({ name: 'root' }, Greeting);
-    const container = document.createElement('div');
-
-    let unmount!: () => void;
-    await act(async () => {
-      unmount = ctx.uiRenderer.mount(container);
-    });
-    expect(container.textContent).toBe('你好');
-
-    await act(async () => ctx.i18n.setLocale('en'));
-    expect(container.textContent).toBe('Hello');
-
-    await act(async () => unmount());
-    await dispose();
-  });
-
-  it('refreshes added and removed dictionaries without emitting language changes', async () => {
-    const { ctx, dispose } = await bootRenderer();
-    const Greeting = () => {
-      const { t } = useTranslation('late-pack');
-      return <h1>{t('greeting')}</h1>;
-    };
-    ctx.i18n.addLanguage({ id: 'ja', label: '日本語', fallback: 'en' });
-    ctx.i18n.register('late-pack', { en: { greeting: 'Hello' } });
-    await ctx.i18n.setLocale('ja');
-    ctx.slots.register({ name: 'root' }, Greeting);
-    const container = document.createElement('div');
-
-    let unmount!: () => void;
-    await act(async () => {
-      unmount = ctx.uiRenderer.mount(container);
-    });
-    expect(container.textContent).toBe('Hello');
-
-    const languageChanges: string[] = [];
-    ctx.i18n.instance.on('languageChanged', locale => languageChanges.push(locale));
-    let removeDictionary!: () => void;
-    await act(async () => {
-      removeDictionary = ctx.i18n.register('late-pack', { ja: { greeting: 'こんにちは' } });
-    });
-    expect(container.textContent).toBe('こんにちは');
-    expect.soft(languageChanges).toEqual([]);
-
-    await act(async () => removeDictionary());
-    expect(container.textContent).toBe('Hello');
-    expect(ctx.i18n.locale).toBe('ja');
-    expect.soft(languageChanges).toEqual([]);
-
-    languageChanges.length = 0;
-    await act(async () => ctx.i18n.setLocale('en'));
-    expect(languageChanges).toEqual(['en']);
-
-    await act(async () => unmount());
-    await dispose();
-  });
-
-  it('refreshes translations when a fallback language definition is removed and restored', async () => {
-    const { ctx, dispose } = await bootRenderer();
-    const Greeting = () => {
-      const { t } = useTranslation('fallback-catalog');
-      return <h1>{t('greeting')}</h1>;
-    };
-    let removeFrench = ctx.i18n.addLanguage({ id: 'fr', label: 'Français', fallback: 'en' });
-    ctx.i18n.addLanguage({ id: 'fr-CA', label: 'Français (Canada)', fallback: 'fr' });
-    ctx.i18n.register('fallback-catalog', {
-      fr: { greeting: 'Bonjour' },
-      en: { greeting: 'Hello' },
-    });
-    await ctx.i18n.setLocale('fr-CA');
-    ctx.slots.register({ name: 'root' }, Greeting);
-    const container = document.createElement('div');
-    const languageChanges: string[] = [];
-    ctx.i18n.instance.on('languageChanged', locale => languageChanges.push(locale));
-    let unmount!: () => void;
-
-    try {
-      await act(async () => {
-        unmount = ctx.uiRenderer.mount(container);
-      });
-      expect(container.textContent).toBe('Bonjour');
-
-      await act(async () => removeFrench());
-      expect(container.textContent).toBe('Hello');
-      expect(ctx.i18n.locale).toBe('fr-CA');
-
-      await act(async () => {
-        removeFrench = ctx.i18n.addLanguage({ id: 'fr', label: 'Français', fallback: 'en' });
-      });
-      expect(container.textContent).toBe('Bonjour');
-      expect(ctx.i18n.locale).toBe('fr-CA');
-      expect(languageChanges).toEqual([]);
-    }
-    finally {
-      await act(async () => unmount());
-      removeFrench();
-      await dispose();
-    }
   });
 
   it('provides a disposable owner for route-declared slots', async () => {

@@ -8,15 +8,8 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@react-cordis/i18n": "workspace:*",
     "@react-cordis/slots": "workspace:*",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-i18next": "^16.5.9"
-  },
-  "cordis": {
-    "inject": [
-      "@react-cordis/i18n"
-    ]
+    "react-dom": "^19.2.8"
   }
 }

@@ -2,7 +2,7 @@
 
 import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
-import { apply as applyI18n } from '@react-cordis/i18n';
+import { apply as applyI18n, I18nProvider } from '@react-cordis/i18n';
 import { apply as applyRenderer, inject as rendererInject, Slot } from '@react-cordis/renderer';
 import { act, StrictMode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
@@ -27,10 +27,10 @@ async function boot() {
   ctx.routes.register({
     id: 'app-layout',
     Component: () => (
-      <>
+      <I18nProvider i18n={ctx.i18n}>
         <Slot name="sidebar" />
         <Slot name="main" />
-      </>
+      </I18nProvider>
     ),
     children: {
       sidebar: { kind: 'single', scope: 'root' },

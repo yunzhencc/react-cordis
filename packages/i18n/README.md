@@ -21,7 +21,7 @@
 
 `storageKey` 是唯一的插件配置项，可省略，默认值为 `react-cordis:locale`。同源的多个应用需要独立保存语言偏好时，应使用不同的 key。
 
-`@react-cordis/renderer` 会在 React 根部挂载 `I18nProvider`。自行挂载 React 树时，需要使用本包导出的 `<I18nProvider i18n={runtime}>` 包裹组件，其中 `runtime` 是 `ctx.i18n` 或独立创建的 `new I18nRuntime()`。
+`@react-cordis/renderer` 不依赖 i18n。需要国际化的应用应在业务根组件中使用本包导出的 `<I18nProvider i18n={runtime}>` 包裹组件，其中 `runtime` 是 `ctx.i18n` 或独立创建的 `new I18nRuntime()`。Router 示例在 `app-layout` 路由组件中接入，独立国际化示例在 `page` 的 root Slot 组件中接入；后代 Slot 和 Route 共享该实例。
 
 ### 注册字典与翻译
 

@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { I18nRuntime } from '@react-cordis/i18n';
+import { I18nProvider } from '@react-cordis/i18n';
 import { Slot } from '@react-cordis/renderer';
 import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +14,7 @@ export function apply(ctx: Context) {
   ctx.slots.register({
     name: 'root',
     children: { 'i18n.content': { kind: 'list', scope: 'root' } },
-  }, () => <Page i18n={i18n} />);
+  }, () => <I18nProvider i18n={i18n}><Page i18n={i18n} /></I18nProvider>);
 }
 
 function Page({ i18n }: { i18n: I18nRuntime }) {

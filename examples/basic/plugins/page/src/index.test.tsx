@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 
 import { Context } from '@deepseek-ai/cordis';
-import { apply as applyI18n } from '@react-cordis/i18n';
 import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/renderer';
 import { act } from 'react';
 import { expect, it } from 'vitest';
@@ -11,8 +10,6 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 it('renders without the router host', async () => {
   const ctx = new Context();
-  const i18n = ctx.plugin({ apply: applyI18n });
-  await i18n.await();
   const renderer = ctx.plugin({ apply: applyRenderer, inject: rendererInject });
   await renderer.await();
   const page = ctx.plugin({ apply, inject });
@@ -29,5 +26,4 @@ it('renders without the router host', async () => {
   await act(async () => unmount());
   await page.dispose();
   await renderer.dispose();
-  await i18n.dispose();
 });

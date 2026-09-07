@@ -77,9 +77,6 @@ importers:
       '@react-cordis/boot-config':
         specifier: workspace:*
         version: link:../../packages/boot-config
-      '@react-cordis/i18n':
-        specifier: workspace:*
-        version: link:../../packages/i18n
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
@@ -239,6 +236,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
+      '@react-cordis/i18n':
+        specifier: workspace:*
+        version: link:../../../../packages/i18n
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../../../../packages/renderer
@@ -255,9 +255,6 @@ importers:
         specifier: ^4.12.3
         version: 4.12.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
     devDependencies:
-      '@react-cordis/i18n':
-        specifier: workspace:*
-        version: link:../../../../packages/i18n
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
@@ -434,15 +431,16 @@ importers:
       react-i18next:
         specifier: ^16.5.9
         version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+    devDependencies:
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
 
   packages/renderer:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
-      '@react-cordis/i18n':
-        specifier: workspace:*
-        version: link:../i18n
       '@react-cordis/slots':
         specifier: workspace:*
         version: link:../slots
@@ -452,9 +450,6 @@ importers:
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
-      react-i18next:
-        specifier: ^16.5.9
-        version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
 
   packages/router:
     dependencies:

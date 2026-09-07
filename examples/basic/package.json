@@ -10,7 +10,6 @@
     "@examples/basic-page": "workspace:*",
     "@react-cordis/boot": "workspace:*",
     "@react-cordis/boot-config": "workspace:*",
-    "@react-cordis/i18n": "workspace:*",
     "@react-cordis/renderer": "workspace:*"
   },
   "devDependencies": {

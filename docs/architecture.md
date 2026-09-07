@@ -53,7 +53,7 @@ packages/
 | `@react-cordis/boot-config` | 构建期读取配置和包元数据，验证并排序启动图。 |
 | `@react-cordis/vite` | 生成虚拟 registry 和构建清单，开发期配置变化时重载启动图。 |
 | `@react-cordis/slots` | 纯 `SlotMap` / `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
-| `@react-cordis/renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的唯一 React 根挂载。 |
+| `@react-cordis/renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的 React 根挂载与卸载清理，不依赖 i18n。 |
 | `@react-cordis/router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner。 |
 | `@examples/router-app-layout` | Router 示例自己的三栏布局、面板尺寸持久化与响应式策略，注册根路由并提供业务服务 `ctx.appLayout`。 |
 | `@react-cordis/i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
@@ -65,7 +65,7 @@ packages/
 
 ## 多语言
 
-`packages/i18n` 内置 `zh` 与 `en`，按浏览器语言优先级匹配已注册语言；用户选择写入 localStorage，默认 key 为 `react-cordis:locale`，可通过 i18n 插件的 `config.storageKey` 覆盖。`addLanguage({ id, label, fallback })` 可注册更多语言，返回注销函数。renderer 在唯一 React 根部包裹 i18next Provider，语言变更会刷新 Slot 与 Route 组件，语言设置列表也会响应注册和注销。
+`packages/i18n` 内置 `zh` 与 `en`，按浏览器语言优先级匹配已注册语言；用户选择写入 localStorage，默认 key 为 `react-cordis:locale`，可通过 i18n 插件的 `config.storageKey` 覆盖。`addLanguage({ id, label, fallback })` 可注册更多语言，返回注销函数。应用在业务根组件中显式包裹 `I18nProvider`：Router 示例由 `app-layout` 接入，国际化示例由 `page` 接入。语言变更会刷新 Provider 下的 Slot 与 Route 组件，语言设置列表也会响应注册和注销。
 
 功能包通过 `ctx.effect(() => ctx.i18n.register('dashboard', { zh: ..., en: ... }))` 注册独立命名空间，卸载时自动移除资源。组件使用 `useTranslation('dashboard')`，跨插件的 Route 导航和设置项使用完整 `labelKey`，例如 `dashboard:dashboard.title`。i18n 不内置业务文案或固定的公共命名空间回退；语言包、资源生命周期与事件职责见 [i18n 使用说明](../packages/i18n/README.md)。
 
@@ -103,7 +103,7 @@ export default defineConfig({ plugins: [cordisWebBoot()] });
 
 ## Slot、Route 与布局
 
-Slots 只有 `root` scope。父项的 `children` 是子 Slot 唯一声明授权；父项移除会递归清理后代声明和贡献，过期 disposer 为无操作。根 renderer 只渲染 `root` Slot，Route 通过 Router 内部的 Slot owner 声明并渲染自己的子 Slots。
+Slots 只有 `root` scope。父项的 `children` 是子 Slot 唯一声明授权；父项移除会递归清理后代声明和贡献，过期 disposer 为无操作。根 renderer 只渲染 `root` Slot，Route 通过 Router 内部的 Slot owner 声明并渲染自己的子 Slots。`ctx.uiRenderer.mount(container)` 返回手动卸载函数；renderer 插件卸载时也会自动卸载其 React 根，重复清理无副作用。
 
 Router 是唯一向 `root` Slot 注册的路由宿主。`ctx.routes` 以 `id`、`parentId`、可选 `path` / `index`、`Component` 与页面 `children` Slots 描述路由；`path` 缺省表示不消费 URL 的 Layout Route。跨模块以 `parentId` 建立父子关系，不能修改彼此的 `children` 数组。
 
@@ -119,7 +119,7 @@ app-layout
 └─ shell.overlay (list)
 ```
 
-Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命中 Settings 时其 route Sidebar 替换默认应用侧栏。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。Router 的 app-layout 业务插件负责面板开关、拖拽尺寸持久化与响应式折叠，Dashboard 通过 `ctx.appLayout` 操作工作区。Basic 示例直接向 root Slot 注册自己的页面，不加载布局或路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
+Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命中 Settings 时其 route Sidebar 替换默认应用侧栏。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。Router 的 app-layout 业务插件负责面板开关、拖拽尺寸持久化与响应式折叠，Dashboard 通过 `ctx.appLayout` 操作工作区。Basic 示例直接向 root Slot 注册自己的页面，不加载 i18n、布局或路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
 
 ## 部署边界
 

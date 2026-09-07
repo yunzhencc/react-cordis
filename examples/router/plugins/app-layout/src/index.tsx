@@ -3,6 +3,7 @@ import type { SlotOwnerHandle, SlotRenderer } from '@react-cordis/renderer';
 import type {} from '@react-cordis/router';
 import type { PanelImperativeHandle, PanelSize } from 'react-resizable-panels';
 import type { PanelBounds } from './layout-controller';
+import { I18nProvider } from '@react-cordis/i18n';
 import { Slot, SlotOwner } from '@react-cordis/renderer';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
@@ -12,7 +13,7 @@ import { getSidebarBounds, getWorkbenchBounds, getWorkspaceWidth, LayoutControll
 export { LayoutController } from './layout-controller';
 export type { LayoutSnapshot } from './layout-controller';
 
-export const inject = ['routes', 'uiRenderer'];
+export const inject = ['routes', 'uiRenderer', 'i18n'];
 
 const layoutSlots = {
   'sidebar': { kind: 'single', scope: 'root' },
@@ -22,12 +23,13 @@ const layoutSlots = {
 } as const;
 
 export function apply(ctx: Context) {
+  const i18n = ctx.i18n;
   const controller = new LayoutController();
   const slots = ctx.uiRenderer.slots;
   ctx.provide('appLayout', controller);
   ctx.routes.register({
     id: 'app-layout',
-    Component: () => <LayoutRoot controller={controller} slots={slots} />,
+    Component: () => <I18nProvider i18n={i18n}><LayoutRoot controller={controller} slots={slots} /></I18nProvider>,
   });
 }
 
