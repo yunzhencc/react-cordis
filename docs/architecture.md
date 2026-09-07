@@ -41,7 +41,6 @@ packages/
 ├── boot-config
 ├── vite
 ├── i18n
-├── layout
 ├── renderer
 ├── router
 ├── slots
@@ -56,8 +55,7 @@ packages/
 | `@react-cordis/slots` | 纯 `SlotMap` / `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
 | `@react-cordis/renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的唯一 React 根挂载。 |
 | `@react-cordis/router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner。 |
-| `@react-cordis/layout` | 可选的三栏布局组件和 `ctx.layout` 面板动作，不依赖 router。 |
-| `@examples/router-app-layout` | Router 示例的根路由插件，显式注册 `app-layout`。 |
+| `@examples/router-app-layout` | Router 示例自己的三栏布局、面板尺寸持久化与响应式策略，注册根路由并提供业务服务 `ctx.appLayout`。 |
 | `@react-cordis/i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
 | `examples/router/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Router 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
 | `examples/router/plugins/settings-layout` | Router 示例的 `/settings` 路由壳、设置侧栏、底部 Settings 入口与 `ctx.settings.register()`。 |
@@ -109,7 +107,7 @@ Slots 只有 `root` scope。父项的 `children` 是子 Slot 唯一声明授权�
 
 Router 是唯一向 `root` Slot 注册的路由宿主。`ctx.routes` 以 `id`、`parentId`、可选 `path` / `index`、`Component` 与页面 `children` Slots 描述路由；`path` 缺省表示不消费 URL 的 Layout Route。跨模块以 `parentId` 建立父子关系，不能修改彼此的 `children` 数组。
 
-router 不依赖布局，也不自动创建业务根路由。Router 示例的 `@examples/router-app-layout` 显式注册无路径 `app-layout`，使用 `ctx.layout.Root`；布局组件声明以下 Slots：
+router 不依赖布局，也不自动创建业务根路由。布局由业务应用决定，基础包不提供统一布局插件。Router 示例的 `@examples/router-app-layout` 拥有自己的布局组件，显式注册无路径 `app-layout`；其组件声明以下 Slots：
 
 ```text
 app-layout
@@ -121,7 +119,7 @@ app-layout
 └─ shell.overlay (list)
 ```
 
-Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命中 Settings 时其 route Sidebar 替换默认应用侧栏。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。可选 layout 包负责面板开关、拖拽尺寸持久化与响应式折叠。Basic 示例直接使用布局组件和 Slots，不启用 router 或根路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
+Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命中 Settings 时其 route Sidebar 替换默认应用侧栏。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。Router 的 app-layout 业务插件负责面板开关、拖拽尺寸持久化与响应式折叠，Dashboard 通过 `ctx.appLayout` 操作工作区。Basic 示例直接向 root Slot 注册自己的页面，不加载布局或路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
 
 ## 部署边界
 

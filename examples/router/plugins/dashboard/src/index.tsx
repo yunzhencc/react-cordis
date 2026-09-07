@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
+import type {} from '@examples/router-app-layout';
 import type {} from '@react-cordis/i18n';
 import type {} from '@react-cordis/renderer';
 import type {} from '@react-cordis/router';
@@ -28,11 +29,11 @@ function DashboardWorkbench() {
   );
 }
 
-export const inject = ['i18n', 'layout', 'routes', 'slots'];
+export const inject = ['i18n', 'appLayout', 'routes', 'slots'];
 
 export function apply(ctx: Context) {
   ctx.effect(() => ctx.i18n.register('dashboard', dashboardMessages));
-  const { closeWorkbench, openWorkbench } = ctx.layout;
+  const { closeWorkbench, openWorkbench } = ctx.appLayout;
   ctx.slots.inject('dashboard.workbench', () => ctx.slots.inject('workbench', () => ctx.slots.register(
     { name: 'workbench' },
     DashboardWorkbench,

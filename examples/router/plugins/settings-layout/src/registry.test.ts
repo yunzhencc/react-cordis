@@ -2,7 +2,6 @@ import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
 import * as appLayout from '@examples/router-app-layout';
 import { apply as applyI18n } from '@react-cordis/i18n';
-import { apply as applyLayout, inject as layoutInject } from '@react-cordis/layout';
 import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/renderer';
 import { apply as applyRouter } from '@react-cordis/router';
 import { describe, expect, it } from 'vitest';
@@ -17,8 +16,7 @@ async function bootSettings() {
   for (const module of [
     { apply: applyI18n },
     { apply: applyRenderer, inject: rendererInject },
-    { apply: applyLayout, inject: layoutInject },
-    { inject: ['layout', 'slots'], apply: applyRouter },
+    { inject: ['slots'], apply: applyRouter },
     appLayout,
     { inject: ['i18n', 'routes', 'slots'], apply },
   ]) {

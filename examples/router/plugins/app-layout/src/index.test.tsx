@@ -1,86 +1,49 @@
 // @vitest-environment jsdom
 
-import { readFileSync } from 'node:fs';
 import { Context } from '@deepseek-ai/cordis';
 import { apply as applyI18n } from '@react-cordis/i18n';
 import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/renderer';
+import * as router from '@react-cordis/router';
 import { act } from 'react';
-import { describe, expect, it } from 'vitest';
-import { apply } from './index';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { apply, inject } from './index';
 import { LayoutController } from './layout-controller';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const Workbench = () => <section>Workbench</section>;
 const EmptyPage = () => null;
-const layoutStyles = readFileSync('packages/layout/src/index.module.css', 'utf8');
 
-async function bootLayout() {
+beforeEach(() => {
+  localStorage.clear();
+  window.history.replaceState({}, '', '/');
+});
+
+async function bootLayout(Component = EmptyPage) {
   const ctx = new Context();
   const i18n = ctx.plugin({ apply: applyI18n });
   await i18n.await();
   const renderer = ctx.plugin({ apply: applyRenderer, inject: rendererInject });
   await renderer.await();
-  const layout = ctx.plugin({ inject: ['slots'], apply });
+  const routerFiber = ctx.plugin(router);
+  await routerFiber.await();
+  const layout = ctx.plugin({ inject, apply });
   await layout.await();
-  ctx.slots.register({ name: 'root' }, ctx.layout.Root);
-  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main' }, EmptyPage));
+  ctx.routes.register({ id: 'page', parentId: 'app-layout', index: true, Component });
 
   return {
     ctx,
     container: document.createElement('div'),
     async dispose() {
       await layout.dispose();
+      await routerFiber.dispose();
       await renderer.dispose();
       await i18n.dispose();
     },
   };
 }
 
-async function bootStaticLayout() {
-  const ctx = new Context();
-  const i18n = ctx.plugin({ apply: applyI18n });
-  await i18n.await();
-  const renderer = ctx.plugin({ apply: applyRenderer, inject: rendererInject });
-  await renderer.await();
-  const layout = ctx.plugin({ inject: ['slots'], apply });
-  await layout.await();
-  ctx.slots.register({ name: 'root' }, ctx.layout.Root);
-  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main' }, () => <p>Static page</p>));
-
-  return {
-    ctx,
-    container: document.createElement('div'),
-    async dispose() {
-      await layout.dispose();
-      await renderer.dispose();
-      await i18n.dispose();
-    },
-  };
-}
-
-describe('app layout', () => {
-  it('keeps the sidebar and main area in separate viewport-bound scroll containers', () => {
-    expect(layoutStyles).toContain('.layout {\n  position: relative;\n  height: 100dvh;\n  overflow: hidden;\n}');
-    expect(layoutStyles).toContain('.group {\n  height: 100%;\n}');
-    expect(layoutStyles).toContain('.sidebar,\n.workbench {\n  box-sizing: border-box;\n  height: 100%;\n  min-width: 0;\n  overflow-x: hidden;\n  overflow-y: auto;');
-    expect(layoutStyles).toContain('.main {\n  box-sizing: border-box;\n  height: 100%;\n  min-width: 0;\n  overflow-x: hidden;\n  overflow-y: auto;');
-  });
-
-  it('mounts as a static root without routes', async () => {
-    const { ctx, container, dispose } = await bootStaticLayout();
-    let unmount!: () => void;
-
-    await act(async () => {
-      unmount = ctx.uiRenderer.mount(container);
-    });
-
-    expect(container.textContent).toContain('Static page');
-
-    await act(async () => unmount());
-    await dispose();
-  });
-
+describe('router app layout', () => {
   it('publishes frozen snapshots that external writes cannot mutate', () => {
     const controller = new LayoutController();
     const initial = controller.snapshot();
@@ -102,7 +65,7 @@ describe('app layout', () => {
 
   it('fully hides the sidebar and lets main fill the frame', async () => {
     const { ctx, container, dispose } = await bootLayout();
-    ctx.layout.toggleSidebar();
+    ctx.appLayout.toggleSidebar();
     let unmount!: () => void;
 
     await act(async () => {
@@ -128,12 +91,12 @@ describe('app layout', () => {
     expect(container.querySelector('[data-workbench-column]')).toBeNull();
     await act(async () => {
       ctx.slots.register({ name: 'workbench' }, Workbench);
-      ctx.layout.openWorkbench();
+      ctx.appLayout.openWorkbench();
     });
     expect(container.querySelector('[data-workbench-column]')).not.toBeNull();
-    await act(async () => ctx.layout.closeWorkbench());
+    await act(async () => ctx.appLayout.closeWorkbench());
     expect(container.querySelector('[data-workbench-column]')).not.toBeNull();
-    await act(async () => ctx.layout.openWorkbench());
+    await act(async () => ctx.appLayout.openWorkbench());
     expect(container.querySelector('[data-workbench-column]')).not.toBeNull();
 
     await act(async () => unmount());
@@ -146,7 +109,7 @@ describe('app layout', () => {
 
     await act(async () => {
       unmount = ctx.uiRenderer.mount(container);
-      ctx.layout.openWorkbench();
+      ctx.appLayout.openWorkbench();
     });
 
     expect(container.querySelector('[data-workbench-column]')).toBeNull();
@@ -168,7 +131,7 @@ describe('app layout', () => {
     });
     await act(async () => {
       ctx.slots.register({ name: 'workbench' }, Workbench);
-      ctx.layout.openWorkbench();
+      ctx.appLayout.openWorkbench();
     });
 
     expect(container.querySelector('[data-group]')).not.toBeNull();

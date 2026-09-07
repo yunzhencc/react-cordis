@@ -15,7 +15,7 @@ it('declares direct UI runtime dependencies in plugin manifests', () => {
   const injectFor = (id: string) => entries.find(entry => entry.id === id)?.inject ?? [];
 
   expect(injectFor('dashboard')).toEqual(expect.arrayContaining([
-    '@react-cordis/layout',
+    '@examples/router-app-layout',
     '@react-cordis/renderer',
     '@react-cordis/router',
   ]));

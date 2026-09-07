@@ -1,5 +1,3 @@
-import type { ComponentType } from 'react';
-
 export interface LayoutSnapshot {
   readonly sidebarOpen: boolean;
   readonly workbenchOpen: boolean;
@@ -32,12 +30,11 @@ export function getWorkbenchBounds(workspaceWidth: number, shellHeight: number):
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
-    layout: LayoutController;
+    appLayout: LayoutController;
   }
 }
 
 export class LayoutController {
-  Root: ComponentType = () => null;
   private current: LayoutSnapshot = Object.freeze({ sidebarOpen: true, workbenchOpen: false });
   private readonly listeners = new Set<() => void>();
 
@@ -71,4 +68,17 @@ export class LayoutController {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+export function readStorage(key: string) {
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored === null || !stored.trim())
+      return undefined;
+    const value = Number(stored);
+    return Number.isFinite(value) ? value : undefined;
+  }
+  catch {
+    return undefined;
+  }
 }

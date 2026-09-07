@@ -22,7 +22,6 @@ it.each(['/', '/settings/general'])('boots the real router plugins concurrently 
   const registry: PluginRegistry = new Map([
     ['@react-cordis/i18n', () => import('@react-cordis/i18n')],
     ['@react-cordis/renderer', () => import('@react-cordis/renderer')],
-    ['@react-cordis/layout', () => import('@react-cordis/layout')],
     ['@react-cordis/router', () => import('@react-cordis/router')],
     ['@react-cordis/theme', () => import('@react-cordis/theme')],
     ['@examples/router-app-layout', () => import('../plugins/app-layout/src')],

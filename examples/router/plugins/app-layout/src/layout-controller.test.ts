@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { getSidebarBounds, getWorkbenchBounds, getWorkspaceWidth, MAIN_MIN_WIDTH } from './layout-controller';
+// @vitest-environment jsdom
 
-describe('codex layout constraints', () => {
+import { describe, expect, it } from 'vitest';
+import { getSidebarBounds, getWorkbenchBounds, getWorkspaceWidth, MAIN_MIN_WIDTH, readStorage } from './layout-controller';
+
+describe('router layout constraints', () => {
   it('clamps the sidebar while preserving 240px for the remaining shell', () => {
     expect(getSidebarBounds(1600)).toEqual({ defaultSize: 275, maxSize: 520, minSize: 240 });
     expect(getSidebarBounds(600)).toEqual({ defaultSize: 275, maxSize: 360, minSize: 240 });
@@ -19,4 +21,10 @@ describe('codex layout constraints', () => {
     expect(MAIN_MIN_WIDTH).toBe(352);
     expect(getWorkbenchBounds(workspaceWidth, 600).maxSize).toBe(328);
   });
+});
+
+it('uses the panel default when storage has no value', () => {
+  localStorage.clear();
+  const bounds = getSidebarBounds(1600);
+  expect(readStorage('sidebar-width') ?? bounds.defaultSize).toBe(275);
 });

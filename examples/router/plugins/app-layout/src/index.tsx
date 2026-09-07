@@ -1,17 +1,18 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { SlotOwnerHandle, SlotRenderer } from '@react-cordis/renderer';
+import type {} from '@react-cordis/router';
 import type { PanelImperativeHandle, PanelSize } from 'react-resizable-panels';
 import type { PanelBounds } from './layout-controller';
 import { Slot, SlotOwner } from '@react-cordis/renderer';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import styles from './index.module.css';
-import { getSidebarBounds, getWorkbenchBounds, getWorkspaceWidth, LayoutController, MAIN_MIN_WIDTH } from './layout-controller';
+import { getSidebarBounds, getWorkbenchBounds, getWorkspaceWidth, LayoutController, MAIN_MIN_WIDTH, readStorage } from './layout-controller';
 
 export { LayoutController } from './layout-controller';
 export type { LayoutSnapshot } from './layout-controller';
 
-export const inject = ['slots'];
+export const inject = ['routes', 'uiRenderer'];
 
 const layoutSlots = {
   'sidebar': { kind: 'single', scope: 'root' },
@@ -22,9 +23,12 @@ const layoutSlots = {
 
 export function apply(ctx: Context) {
   const controller = new LayoutController();
-  const slots = ctx.get('uiRenderer')!.slots;
-  controller.Root = () => <LayoutRoot controller={controller} slots={slots} />;
-  ctx.effect(() => ctx.reflect.provide('layout', controller), 'layout.provide()');
+  const slots = ctx.uiRenderer.slots;
+  ctx.provide('appLayout', controller);
+  ctx.routes.register({
+    id: 'app-layout',
+    Component: () => <LayoutRoot controller={controller} slots={slots} />,
+  });
 }
 
 function LayoutRoot({ controller, slots }: { controller: LayoutController; slots: SlotRenderer }) {
@@ -165,16 +169,6 @@ function useStoredRatio(key: string, width: number, bounds: PanelBounds) {
 
 function readViewport() {
   return { height: window.innerHeight, width: window.innerWidth };
-}
-
-function readStorage(key: string) {
-  try {
-    const value = Number(localStorage.getItem(key));
-    return Number.isFinite(value) ? value : undefined;
-  }
-  catch {
-    return undefined;
-  }
 }
 
 function writeStorage(key: string, value: number) {

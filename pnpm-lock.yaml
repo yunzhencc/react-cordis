@@ -80,9 +80,6 @@ importers:
       '@react-cordis/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@react-cordis/layout':
-        specifier: workspace:*
-        version: link:../../packages/layout
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
@@ -96,9 +93,6 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
-      '@react-cordis/layout':
-        specifier: workspace:*
-        version: link:../../../../packages/layout
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../../../../packages/renderer
@@ -220,9 +214,6 @@ importers:
       '@react-cordis/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@react-cordis/layout':
-        specifier: workspace:*
-        version: link:../../packages/layout
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
@@ -248,24 +239,40 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
-      '@react-cordis/layout':
+      '@react-cordis/renderer':
         specifier: workspace:*
-        version: link:../../../../packages/layout
+        version: link:../../../../packages/renderer
       '@react-cordis/router':
         specifier: workspace:*
         version: link:../../../../packages/router
+      '@react-cordis/slots':
+        specifier: workspace:*
+        version: link:../../../../packages/slots
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-resizable-panels:
+        specifier: ^4.12.3
+        version: 4.12.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+    devDependencies:
+      '@react-cordis/i18n':
+        specifier: workspace:*
+        version: link:../../../../packages/i18n
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
 
   examples/router/plugins/dashboard:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
+      '@examples/router-app-layout':
+        specifier: workspace:*
+        version: link:../app-layout
       '@react-cordis/i18n':
         specifier: workspace:*
         version: link:../../../../packages/i18n
-      '@react-cordis/layout':
-        specifier: workspace:*
-        version: link:../../../../packages/layout
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../../../../packages/renderer
@@ -427,28 +434,6 @@ importers:
       react-i18next:
         specifier: ^16.5.9
         version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
-
-  packages/layout:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2
-      '@react-cordis/renderer':
-        specifier: workspace:*
-        version: link:../renderer
-      '@react-cordis/slots':
-        specifier: workspace:*
-        version: link:../slots
-      react:
-        specifier: ^19.2.8
-        version: 19.2.8
-      react-resizable-panels:
-        specifier: ^4.12.3
-        version: 4.12.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-    devDependencies:
-      '@react-cordis/i18n':
-        specifier: workspace:*
-        version: link:../i18n
 
   packages/renderer:
     dependencies:

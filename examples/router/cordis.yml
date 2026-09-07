@@ -2,8 +2,6 @@
   name: '@react-cordis/i18n'
 - id: renderer
   name: '@react-cordis/renderer'
-- id: layout
-  name: '@react-cordis/layout'
 - id: router
   name: '@react-cordis/router'
 - id: app-layout

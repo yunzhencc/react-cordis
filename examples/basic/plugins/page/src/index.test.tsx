@@ -2,7 +2,6 @@
 
 import { Context } from '@deepseek-ai/cordis';
 import { apply as applyI18n } from '@react-cordis/i18n';
-import { apply as applyLayout, inject as layoutInject } from '@react-cordis/layout';
 import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/renderer';
 import { act } from 'react';
 import { expect, it } from 'vitest';
@@ -16,8 +15,6 @@ it('renders without the router host', async () => {
   await i18n.await();
   const renderer = ctx.plugin({ apply: applyRenderer, inject: rendererInject });
   await renderer.await();
-  const layout = ctx.plugin({ apply: applyLayout, inject: layoutInject });
-  await layout.await();
   const page = ctx.plugin({ apply, inject });
   await page.await();
   const container = document.createElement('div');
@@ -31,7 +28,6 @@ it('renders without the router host', async () => {
 
   await act(async () => unmount());
   await page.dispose();
-  await layout.dispose();
   await renderer.dispose();
   await i18n.dispose();
 });

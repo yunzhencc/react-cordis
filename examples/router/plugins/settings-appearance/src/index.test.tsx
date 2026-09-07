@@ -5,7 +5,6 @@ import { Context } from '@deepseek-ai/cordis';
 import * as appLayout from '@examples/router-app-layout';
 import { apply as applySettingsLayout } from '@examples/router-settings-layout';
 import { apply as applyI18n } from '@react-cordis/i18n';
-import { apply as applyLayout, inject as layoutInject } from '@react-cordis/layout';
 import { apply as applyRenderer, inject as rendererInject } from '@react-cordis/renderer';
 import { apply as applyRouter } from '@react-cordis/router';
 import { apply as applyTheme } from '@react-cordis/theme';
@@ -22,8 +21,7 @@ async function bootAppearance() {
   for (const module of [
     { apply: applyI18n },
     { inject: rendererInject, apply: applyRenderer },
-    { inject: layoutInject, apply: applyLayout },
-    { inject: ['layout', 'slots'], apply: applyRouter },
+    { inject: ['slots'], apply: applyRouter },
     appLayout,
     { inject: ['routes', 'slots', 'i18n'], apply: applySettingsLayout },
     { apply: applyTheme },

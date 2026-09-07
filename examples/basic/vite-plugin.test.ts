@@ -7,7 +7,6 @@ it('boots the static example without the router host', () => {
   expect(entries.map(entry => entry.name)).toEqual([
     '@react-cordis/i18n',
     '@react-cordis/renderer',
-    '@react-cordis/layout',
     '@examples/basic-page',
   ]);
 });

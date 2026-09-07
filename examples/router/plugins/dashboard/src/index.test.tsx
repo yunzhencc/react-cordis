@@ -4,7 +4,6 @@ import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
 import * as appLayout from '@examples/router-app-layout';
 import * as i18n from '@react-cordis/i18n';
-import * as layout from '@react-cordis/layout';
 import * as renderer from '@react-cordis/renderer';
 import * as router from '@react-cordis/router';
 import { act } from 'react';
@@ -18,7 +17,7 @@ async function bootDashboard() {
   const ctx = new Context();
   const fibers: ReturnType<CordisContext['plugin']>[] = [];
 
-  for (const module of [i18n, renderer, layout, router, appLayout, dashboard]) {
+  for (const module of [i18n, renderer, router, appLayout, dashboard]) {
     const fiber = ctx.plugin(module);
     fibers.push(fiber);
     await fiber.await();
@@ -56,13 +55,13 @@ describe('dashboard module', () => {
 
     expect(container.querySelector('h1')?.textContent).toBe('仪表盘');
     expect(container.querySelector('button')?.textContent).toBe('打开工作台');
-    expect(ctx.layout.snapshot().workbenchOpen).toBe(false);
+    expect(ctx.appLayout.snapshot().workbenchOpen).toBe(false);
 
     await act(async () => {
       (container.querySelector('button') as HTMLButtonElement).click();
     });
 
-    expect(ctx.layout.snapshot().workbenchOpen).toBe(true);
+    expect(ctx.appLayout.snapshot().workbenchOpen).toBe(true);
     expect(container.querySelector('[data-workbench-column]')?.textContent).toContain('仪表盘工作台');
 
     await act(async () => unmount());
