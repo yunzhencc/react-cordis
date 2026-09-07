@@ -105,7 +105,7 @@ export default defineConfig({ plugins: [cordisWebBoot()] });
 
 Slots 只有 `root` scope。父项的 `children` 是子 Slot 唯一声明授权；父项移除会递归清理后代声明和贡献，过期 disposer 为无操作。声明或注册通知抛错时，会回滚本次条目及其子声明和后代贡献，并重新通知恢复后的状态；清理先完成状态移除，再通知所有观察者，最后抛出首个错误。根 renderer 只渲染 `root` Slot，Route 通过 Router 内部的 Slot owner 声明并渲染自己的子 Slots。`ctx.uiRenderer.mount(container)` 返回手动卸载函数；renderer 插件卸载时也会自动卸载其 React 根，重复清理无副作用。
 
-Router 是唯一向 `root` Slot 注册的路由宿主。`ctx.routes` 以 `id`、`parentId`、可选 `path` / `index`、`Component` 与页面 `children` Slots 描述路由；`path` 缺省表示不消费 URL 的 Layout Route。跨模块以 `parentId` 建立父子关系，不能修改彼此的 `children` 数组。
+Router 是唯一向 `root` Slot 注册的路由宿主。`ctx.routes` 以 `id`、`parentId`、可选 `path` / `index`、`Component` 与页面 `children` Slots 描述路由；`path` 缺省表示不消费 URL 的 Layout Route。跨模块以 `parentId` 建立父子关系，不能修改彼此的 `children` 数组。Route 注册通知抛错时，会撤销本次路由及其后代，并通知恢复后的快照；其他路由保留。子树移除先完成状态清理与 epoch 更新，再通知订阅者，避免误删通知期间创建的替代路由。
 
 router 不依赖布局或 i18n，也不自动创建业务根路由、侧栏或 `main` Slot 内容。业务布局自行渲染 React Router 的 `<Outlet />`。布局由业务应用决定，基础包不提供统一布局插件。Router 示例的 `@examples/router-app-layout` 拥有自己的布局组件，显式注册无路径 `app-layout`；其组件声明以下 Slots：
 

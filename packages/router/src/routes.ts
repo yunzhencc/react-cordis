@@ -53,12 +53,24 @@ export class RouteRegistry extends Service {
     const disposeEffect = this.ctx.effect(() => {
       const route = copyRoute(definition);
       this.validate(route);
-      this.transaction(() => {
-        this.routes.set(route.id, route);
-        this.changed = true;
-        this.bump(route.id);
-      });
-      return () => this.transaction(() => this.remove(route));
+      const dispose = () => this.transaction(() => this.remove(route));
+      try {
+        this.transaction(() => {
+          this.routes.set(route.id, route);
+          this.changed = true;
+          this.bump(route.id);
+        });
+      }
+      catch (error) {
+        try {
+          dispose();
+        }
+        catch {
+          // Cleanup notifications must not replace the registration error.
+        }
+        throw error;
+      }
+      return dispose;
     }, 'routes.register()');
     return () => {
       void disposeEffect();
@@ -162,21 +174,29 @@ export class RouteRegistry extends Service {
   }
 
   private remove(route: RouteSnapshot) {
+    const removed: RouteRecord[] = [];
+    this.removeTree(route, removed);
+    this.notify(removed.flatMap(record => [...record.listeners]));
+  }
+
+  private removeTree(route: RouteSnapshot, removed: RouteRecord[]) {
     if (this.routes.get(route.id) !== route)
       return;
     this.routes.delete(route.id);
     this.changed = true;
-    this.bump(route.id);
+    const record = this.record(route.id);
+    record.epoch += 1;
+    removed.push(record);
     for (const child of [...this.routes.values()]) {
       if (child.parentId === route.id)
-        this.remove(child);
+        this.removeTree(child, removed);
     }
   }
 
   private bump(id: string) {
     const record = this.record(id);
     record.epoch += 1;
-    for (const listener of [...record.listeners]) listener();
+    this.notify([...record.listeners]);
   }
 
   private record(id: string) {
@@ -186,6 +206,20 @@ export class RouteRegistry extends Service {
       this.records.set(id, record);
     }
     return record;
+  }
+
+  private notify(listeners: (() => void)[]) {
+    const errors: unknown[] = [];
+    for (const listener of listeners) {
+      try {
+        listener();
+      }
+      catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length)
+      throw errors[0];
   }
 
   private transaction(callback: () => void) {
@@ -198,7 +232,7 @@ export class RouteRegistry extends Service {
       if (!this.transactionDepth && this.changed) {
         this.changed = false;
         this.currentSnapshot = Object.freeze([...this.routes.values()]);
-        for (const listener of [...this.listeners]) listener();
+        this.notify([...this.listeners]);
       }
     }
   }

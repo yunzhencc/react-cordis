@@ -36,6 +36,57 @@ async function bootRoutes() {
 }
 
 describe('route registry', () => {
+  it.each([undefined, 'stable'])('rolls back a failed route under %s and its descendants without losing existing routes', async (parentId) => {
+    const { ctx, dispose } = await bootRoutes();
+    ctx.routes.register({ id: 'stable', Component: Null });
+    ctx.routes.register({ id: 'existing', parentId: 'stable', path: 'existing', Component: Null });
+    let removeChild = () => {};
+    ctx.routes.inject('candidate', () => {
+      removeChild = ctx.routes.register({ id: 'child', parentId: 'candidate', path: 'child', Component: Null });
+      ctx.routes.register({ id: 'grandchild', parentId: 'child', path: 'nested', Component: Null });
+      ctx.routes.register({ id: 'sibling', parentId: 'candidate', path: 'sibling', Component: Null });
+    });
+    const failure = new Error('route notification failed');
+    const stop = ctx.routes.subscribe(() => {
+      throw ctx.routes.snapshot().some(route => route.id === 'candidate') ? failure : new Error('cleanup notification failed');
+    });
+    const snapshots: string[][] = [];
+    const stopHealthy = ctx.routes.subscribe(() => snapshots.push(ctx.routes.snapshot().map(route => route.id)));
+
+    expect(() => ctx.routes.register({ id: 'candidate', parentId, path: 'candidate', Component: Null })).toThrow(failure);
+    expect(ctx.routes.snapshot().map(route => route.id)).toEqual(['stable', 'existing']);
+    expect(snapshots.at(-1)).toEqual(['stable', 'existing']);
+    stop();
+    stopHealthy();
+    const removeStaleChild = removeChild;
+    const removeReplacement = ctx.routes.register({ id: 'candidate', parentId, path: 'candidate', Component: Null });
+    removeStaleChild();
+    expect(ctx.routes.snapshot().map(route => route.id)).toEqual(['stable', 'existing', 'candidate', 'child', 'grandchild', 'sibling']);
+    removeReplacement();
+    expect(ctx.routes.snapshot().map(route => route.id)).toEqual(['stable', 'existing']);
+    await dispose();
+  });
+
+  it('preserves a replacement subtree created during removal notifications', async () => {
+    const { ctx, dispose } = await bootRoutes();
+    const removeParent = ctx.routes.register({ id: 'parent', Component: Null });
+    ctx.routes.register({ id: 'old-child', parentId: 'parent', path: 'old', Component: Null });
+    let replaced = false;
+    const stop = ctx.routes.inject('parent', () => () => {
+      if (replaced)
+        return;
+      replaced = true;
+      ctx.routes.register({ id: 'parent', Component: Null });
+      ctx.routes.register({ id: 'new-child', parentId: 'parent', path: 'new', Component: Null });
+    });
+
+    removeParent();
+
+    expect(ctx.routes.snapshot().map(route => route.id)).toEqual(['parent', 'new-child']);
+    stop();
+    await dispose();
+  });
+
   it('waits for a parent route then removes the child with its caller fiber', async () => {
     const { ctx, dispose } = await bootRoutes();
     const child = ctx.plugin({
