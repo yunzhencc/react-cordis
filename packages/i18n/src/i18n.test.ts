@@ -6,6 +6,16 @@ import { I18nRuntime } from './i18n';
 
 describe('i18n runtime', () => {
   beforeEach(() => localStorage.clear());
+  it('leaves common resources and namespace fallback to consumers', () => {
+    const runtime = new I18nRuntime();
+    expect.soft(runtime.instance.t('close', { ns: 'common', lng: 'en' })).toBe('close');
+
+    const dispose = runtime.register('common', { en: { shared: 'Application text' } });
+    expect(runtime.instance.t('shared', { ns: 'common', lng: 'en' })).toBe('Application text');
+    expect.soft(runtime.instance.t('shared', { ns: 'feature', lng: 'en' })).toBe('shared');
+    dispose();
+  });
+
   it('uses the browser language until the user selects another language', async () => {
     localStorage.clear();
     Object.defineProperty(navigator, 'languages', { configurable: true, value: ['zh-CN'] });

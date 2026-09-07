@@ -58,6 +58,7 @@ describe('language settings extension', () => {
     });
 
     expect(container.querySelector('h1')?.textContent).toBe('常规');
+    expect(container.querySelector('[data-settings-menu] h2')?.textContent).toBe('个人');
     expect([...container.querySelectorAll('[data-settings-menu] a')].map(link => link.textContent)).toEqual(['常规']);
     expect(container.textContent).toContain('应用 UI 语言');
     const select = container.querySelector('select')!;
@@ -69,6 +70,7 @@ describe('language settings extension', () => {
     });
 
     expect(container.querySelector('h1')?.textContent).toBe('General');
+    expect(container.querySelector('[data-settings-menu] h2')?.textContent).toBe('Personal');
     expect(container.textContent).toContain('Application UI language');
     expect(container.textContent).toContain('Return to app');
     expect(select.value).toBe('en');

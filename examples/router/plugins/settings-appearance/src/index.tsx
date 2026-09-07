@@ -12,7 +12,7 @@ export function apply(ctx: Context) {
   const theme = ctx.theme;
   ctx.settings.register({
     id: 'appearance',
-    group: { id: 'personal', label: 'Personal', labelKey: 'common:settings.groups.personal', order: 100 },
+    group: { id: 'personal', label: 'Personal', labelKey: 'settings-layout:settings.groups.personal', order: 100 },
     label: 'Appearance',
     labelKey: 'settings-appearance:appearance.title',
     Icon: Palette,

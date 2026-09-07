@@ -9,9 +9,6 @@ export const appearanceMessages = {
       },
       title: '外观',
     },
-    settings: {
-      groups: { personal: '个人' },
-    },
   },
   en: {
     appearance: {
@@ -22,9 +19,6 @@ export const appearanceMessages = {
         system: 'System',
       },
       title: 'Appearance',
-    },
-    settings: {
-      groups: { personal: 'Personal' },
     },
   },
 } as const;

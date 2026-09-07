@@ -71,6 +71,7 @@ describe('appearance settings extension', () => {
     });
 
     expect(container.textContent).toContain('外观');
+    expect(container.querySelector('[data-settings-menu] h2')?.textContent).toBe('个人');
     expect(container.textContent).toContain('系统');
     expect(container.querySelectorAll('input[type="radio"]')).toHaveLength(3);
     expect(container.querySelectorAll('[data-theme-preview]')).toHaveLength(3);

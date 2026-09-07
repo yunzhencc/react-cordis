@@ -30,11 +30,6 @@ const BUILT_IN_LOCALES: readonly LocaleDefinition[] = [
   { id: 'en', label: 'English' },
 ];
 
-const COMMON_RESOURCES = {
-  zh: { common: { close: '关闭', settings: { groups: { personal: '个人' } } } },
-  en: { common: { close: 'Close', settings: { groups: { personal: 'Personal' } } } },
-};
-
 export class I18nRuntime {
   readonly instance = i18next.createInstance();
 
@@ -60,13 +55,12 @@ export class I18nRuntime {
 
     void this.instance.init({
       fallbackLng: locale => this.fallbackChain(locale),
-      fallbackNS: 'common',
       initImmediate: false,
       interpolation: { escapeValue: false },
       lng: this.resolveActive(),
       load: 'currentOnly',
       lowerCaseLng: true,
-      resources: COMMON_RESOURCES,
+      resources: {},
     });
     this.instance.on('languageChanged', () => {
       this.syncDocumentLanguage();
