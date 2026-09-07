@@ -148,6 +148,16 @@ ctx.slots.register(
 
 类型契约不赋予 owner 权限，也不替代运行时声明、重复注册、有限 order 和卸载检查。组件仍是无参数贡献；当前没有 props 注入、keyed/chain、store-seat 或 session scope。
 
+### 渲染异常隔离
+
+renderer 使用原生 React 错误边界，按每个 Slot 注册项隔离渲染异常，包含 `root`。故障项渲染空的 `<div data-slot-error="插槽名" />`，日志记录插槽名、可选的注册 id 和原始错误；兄弟项继续显示。Router 复用同一边界隔离每个页面，使用 `<div data-route-error="路由 id" />` 占位，页面异常不会卸载正常的祖先布局。
+
+Slot 快照保留内部注册序号 `sequence`，用于 React key：普通通知不会重置错误状态或重挂健康兄弟项；注销后重新注册即使沿用相同 id 和组件，也会创建新边界。路由定义替换则通过现有 owner 生命周期重建页面边界。边界不自动重试，也不提供通用重试按钮。
+
+运行时 Slot 声明校验、缺失 owner、owner 已销毁和未授权子插槽使用 `SlotAssemblyError`，穿透所有渲染边界继续抛出，避免把装配错误隐藏成空占位。普通事件回调、渲染之外的异步异常和 SSR 错误不属于此边界的捕获范围；订阅通知仍由各服务自行处理。
+
+隔离粒度、空占位和注册身份恢复参考 DeepSeek Harness。当前 single 插槽和 list 的每个 id 只允许一个注册项，没有候选接替机制；渲染报错不会注销插件、移除注册项或清理其子声明。
+
 ### 运行时所有权与路由
 
 Slots 只有 `root` scope。父项的 `children` 是子 Slot 唯一声明授权；父项移除会递归清理后代声明和贡献，过期 disposer 为无操作。声明或注册通知抛错时，会回滚本次条目及其子声明和后代贡献，并重新通知恢复后的状态；清理先完成状态移除，再通知所有观察者，最后抛出首个错误。根 renderer 只渲染 `root` Slot，Route 通过 Router 内部的 Slot owner 声明并渲染自己的子 Slots。`ctx.uiRenderer.mount(container)` 返回手动卸载函数；renderer 插件卸载时也会自动卸载其 React 根，重复清理无副作用。

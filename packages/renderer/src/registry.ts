@@ -2,8 +2,9 @@ import type { Context } from '@deepseek-ai/cordis';
 import type { CheckedSlotChildren, CheckedSlotMap, SlotEntry, SlotMap, SlotName, SlotRegistration, SlotSpec } from '@react-cordis/slots';
 import type { ComponentType, ReactNode } from 'react';
 import { Service } from '@deepseek-ai/cordis';
-import { SlotCore } from '@react-cordis/slots';
+import { SlotAssemblyError, SlotCore } from '@react-cordis/slots';
 import { createContext, createElement, Fragment, use, useSyncExternalStore } from 'react';
+import { RenderErrorBoundary } from './error-boundary';
 
 export interface SlotOwnerHandle {
   render: (name: SlotName) => ReactNode;
@@ -37,7 +38,7 @@ export function SlotOwner({ children, owner }: { children?: ReactNode; owner: Sl
 export function Slot({ name }: { name: SlotName }) {
   const owner = use(SlotOwnerContext);
   if (!owner)
-    throw new Error(`slot "${name}" rendered without an owner`);
+    throw new SlotAssemblyError(`slot "${name}" rendered without an owner`);
   return owner.render(name);
 }
 
@@ -189,9 +190,9 @@ export class SlotRegistry extends Service {
       dispose,
       render: (name) => {
         if (!isLive())
-          throw new Error(`slot owner "${id}" is disposed`);
+          throw new SlotAssemblyError(`slot owner "${id}" is disposed`);
         if (!Object.hasOwn(children, name))
-          throw new Error(`slot "${name}" is not declared by owner "${id}"`);
+          throw new SlotAssemblyError(`slot "${name}" is not declared by owner "${id}"`);
         return createElement(SlotView, { name, registry: this });
       },
     };
@@ -245,8 +246,16 @@ function SlotView({ name, registry }: { name: SlotName; registry: SlotRegistry }
   );
   return createElement(Fragment, null, registry.entries(name).map(entry =>
     createElement(
-      SlotOwner,
-      { key: entry.id ?? name, owner: registry.entryOwner(name, entry) },
-      createElement(entry.component),
+      RenderErrorBoundary,
+      {
+        key: entry.sequence,
+        label: `slot "${name}"${entry.id === undefined ? '' : ` entry "${entry.id}"`}`,
+        fallback: createElement('div', { 'data-slot-error': name }),
+      },
+      createElement(
+        SlotOwner,
+        { owner: registry.entryOwner(name, entry) },
+        createElement(entry.component),
+      ),
     )));
 }

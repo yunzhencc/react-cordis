@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { createSlotRenderer, Slot, SlotOwner, SlotRegistry } from './registry';
 
 export { Slot, SlotOwner, SlotRegistry };
+export { RenderErrorBoundary } from './error-boundary';
 export type { SlotOwnerHandle, SlotRenderer } from './registry';
 
 export interface UiRendererService {

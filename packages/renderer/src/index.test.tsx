@@ -4,7 +4,7 @@ import { Context } from '@deepseek-ai/cordis';
 import { act, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apply, inject, Slot, SlotOwner } from './index';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -41,6 +41,110 @@ async function bootRenderer() {
 }
 
 describe('ui renderer', () => {
+  it('isolates a crashed list entry and recovers only when that registration is replaced', async () => {
+    const { ctx, dispose } = await bootRenderer();
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failure = new Error('broken section');
+    let broken = false;
+    let active = 0;
+    let mounts = 0;
+    const Section = () => {
+      if (broken)
+        throw failure;
+      return <>Section</>;
+    };
+    const Healthy = () => {
+      useEffect(() => {
+        active++;
+        mounts++;
+        return () => {
+          active--;
+        };
+      }, []);
+      return <>Healthy</>;
+    };
+    ctx.slots.register({ name: 'root', children: { 'settings.section': { kind: 'list', scope: 'root' } } }, () => <main><Slot name="settings.section" /></main>);
+    let remove = ctx.slots.register({ name: 'settings.section', id: 'section' }, Section);
+    ctx.slots.register({ name: 'settings.section', id: 'healthy' }, Healthy);
+    const container = document.createElement('div');
+    try {
+      await act(async () => {
+        ctx.uiRenderer.mount(container);
+      });
+      expect(container.textContent).toBe('SectionHealthy');
+      broken = true;
+      let removeExtra!: () => void;
+      await act(async () => {
+        removeExtra = ctx.slots.register({ name: 'settings.section', id: 'extra' }, Null);
+      });
+      expect(container.querySelector('main')?.textContent).toBe('Healthy');
+      expect(container.querySelector('[data-slot-error="settings.section"]')).not.toBeNull();
+      expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('settings.section'), failure);
+      expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('section'), failure);
+      expect(active).toBe(1);
+
+      broken = false;
+      await act(async () => removeExtra());
+      expect(container.textContent).toBe('Healthy');
+      await act(async () => {
+        remove();
+        remove = ctx.slots.register({ name: 'settings.section', id: 'section' }, Section);
+      });
+      expect(container.querySelector('[data-slot-error]')).toBeNull();
+      expect(container.textContent).toBe('HealthySection');
+      expect(active).toBe(1);
+      expect(mounts).toBe(1);
+    }
+    finally {
+      await act(async () => dispose());
+      errorLog.mockRestore();
+    }
+    expect(active).toBe(0);
+  });
+
+  it('isolates root render errors and resets on re-registration without an explicit id', async () => {
+    const { ctx, dispose } = await bootRenderer();
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let broken = true;
+    const Page = () => {
+      if (broken)
+        throw new Error('broken root');
+      return <>Recovered</>;
+    };
+    const remove = ctx.slots.register({ name: 'root' }, Page);
+    const container = document.createElement('div');
+    try {
+      await act(async () => {
+        ctx.uiRenderer.mount(container);
+      });
+      expect(container.querySelector('[data-slot-error="root"]')).not.toBeNull();
+      await act(async () => {
+        remove();
+        broken = false;
+        ctx.slots.register({ name: 'root' }, Page);
+      });
+      expect(container.innerHTML).toBe('Recovered');
+    }
+    finally {
+      await act(async () => dispose());
+      errorLog.mockRestore();
+    }
+  });
+
+  it('lets ownership assembly errors escape nested entry boundaries', async () => {
+    const { ctx, dispose } = await bootRenderer();
+    ctx.slots.register({ name: 'root', children: { host: { kind: 'single', scope: 'root' } } }, () => <Slot name="host" />);
+    ctx.slots.register({ name: 'host' }, () => <Slot name="missing" />);
+    try {
+      await expect(act(async () => {
+        ctx.uiRenderer.mount(document.createElement('div'));
+      })).rejects.toThrow('not declared by owner "host"');
+    }
+    finally {
+      await act(async () => dispose());
+    }
+  });
+
   it('activates and renders without i18n', async () => {
     const ctx = new Context();
     const fiber = ctx.plugin({ apply, inject });

@@ -5,7 +5,7 @@ import { Context } from '@deepseek-ai/cordis';
 import { apply as applyRenderer, inject as rendererInject, Slot } from '@react-cordis/renderer';
 import { act, StrictMode } from 'react';
 import { Outlet } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { apply as applyRouter, inject as routerInject } from './index';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -79,6 +79,73 @@ async function bootRouterWithSettingsSlot() {
 }
 
 describe('router host', () => {
+  it('isolates a failed page from its layout and recovers after same-id replacement', async () => {
+    window.history.replaceState({}, '', '/settings');
+    const { ctx, container, dispose } = await boot();
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failure = new Error('broken page');
+    let broken = true;
+    const Page = () => {
+      if (broken)
+        throw failure;
+      return <h1>Recovered</h1>;
+    };
+    ctx.routes.register({
+      id: 'shell',
+      parentId: 'app-layout',
+      Component: () => (
+        <main>
+          <nav>Navigation</nav>
+          <Outlet />
+        </main>
+      ),
+    });
+    const definition = { id: 'settings', parentId: 'shell', path: 'settings', Component: Page };
+    const remove = ctx.routes.register(definition);
+    try {
+      await act(async () => {
+        ctx.uiRenderer.mount(container);
+      });
+      expect(container.querySelector('nav')?.textContent).toBe('Navigation');
+      expect(container.querySelector('main [data-route-error="settings"]')).not.toBeNull();
+      expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('settings'), failure);
+      await act(async () => {
+        remove();
+        broken = false;
+        ctx.routes.register(definition);
+      });
+      expect(container.querySelector('h1')?.textContent).toBe('Recovered');
+      expect(container.querySelector('nav')?.textContent).toBe('Navigation');
+      expect(container.querySelector('[data-route-error]')).toBeNull();
+    }
+    finally {
+      await act(async () => dispose());
+      errorLog.mockRestore();
+    }
+  });
+
+  it('does not hide a route slot declaration conflict behind a render fallback', async () => {
+    window.history.replaceState({}, '', '/settings');
+    const { ctx, container, dispose } = await boot();
+    const owner = ctx.slots.createOwner('existing', { 'settings.section': { kind: 'list', scope: 'root' } });
+    ctx.routes.register({
+      id: 'settings',
+      parentId: 'app-layout',
+      path: 'settings',
+      Component: () => <Slot name="settings.section" />,
+      children: { 'settings.section': { kind: 'list', scope: 'root' } },
+    });
+    try {
+      await expect(act(async () => {
+        ctx.uiRenderer.mount(container);
+      })).rejects.toThrow('duplicate declaration');
+    }
+    finally {
+      owner.dispose();
+      await act(async () => dispose());
+    }
+  });
+
   it('leaves layout slots for the application to populate', async () => {
     const { ctx, dispose } = await boot();
     const owner = ctx.slots.createOwner('custom-layout', {

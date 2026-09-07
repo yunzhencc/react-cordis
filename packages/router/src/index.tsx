@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { SlotOwnerHandle, SlotRenderer } from '@react-cordis/renderer';
 import type { RouteObject } from 'react-router-dom';
-import { SlotOwner } from '@react-cordis/renderer';
+import { RenderErrorBoundary, SlotOwner } from '@react-cordis/renderer';
 import { useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { BrowserRouter, useRoutes } from 'react-router-dom';
 import { RouteRegistry } from './routes';
@@ -54,7 +54,9 @@ function RouteSlotOwner({ route, slots }: { route: ReturnType<RouteRegistry['sna
   const Component = route.Component;
   return (
     <SlotOwner owner={committed.owner}>
-      <Component />
+      <RenderErrorBoundary label={`route "${route.id}"`} fallback={<div data-route-error={route.id} />}>
+        <Component />
+      </RenderErrorBoundary>
     </SlotOwner>
   );
 }

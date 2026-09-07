@@ -8,6 +8,11 @@ export interface SlotSpec {
   scope: SlotScope;
 }
 
+/** Invalid slot assembly must propagate through render error boundaries. */
+export class SlotAssemblyError extends Error {
+  override name = 'SlotAssemblyError';
+}
+
 /** Extend from the owning plugin's literal declarations; this does not mount slots. */
 export interface SlotContracts {
   root: { kind: 'single'; scope: 'root' };
@@ -31,6 +36,8 @@ export interface CheckedSlotChildren<T extends { children?: SlotMap }> {
 }
 
 export interface SlotEntry {
+  /** Stable for one registration, including across snapshot copies. @internal */
+  readonly sequence: number;
   component: ComponentType;
   id?: string;
   order?: number;
@@ -53,9 +60,7 @@ interface DeclarationOwner {
   live: boolean;
 }
 
-interface StoredEntry extends SlotEntry, DeclarationOwner {
-  sequence: number;
-}
+interface StoredEntry extends SlotEntry, DeclarationOwner {}
 
 interface SlotRecord {
   declaredBy?: DeclarationOwner;
@@ -79,7 +84,7 @@ export class SlotCore {
   register(options: SlotRegistration, component: ComponentType): () => void {
     const slot = this.records.get(options.name);
     if (!slot?.spec)
-      throw new Error(`slot "${options.name}" is not declared`);
+      throw new SlotAssemblyError(`slot "${options.name}" is not declared`);
 
     const children = copyMap(options.children);
     this.validate(slot, options, children);
@@ -149,28 +154,28 @@ export class SlotCore {
     this.validateChildren(children ?? {});
 
     if (slot.spec?.kind === 'single' && slot.entries.length)
-      throw new Error(`single slot "${options.name}" already has an entry`);
+      throw new SlotAssemblyError(`single slot "${options.name}" already has an entry`);
     if (slot.spec?.kind === 'list') {
       if (typeof options.id !== 'string' || !options.id)
-        throw new Error(`list slot "${options.name}" requires an id`);
+        throw new SlotAssemblyError(`list slot "${options.name}" requires an id`);
       if (slot.entries.some(entry => entry.id === options.id))
-        throw new Error(`list slot "${options.name}" already has id "${options.id}"`);
+        throw new SlotAssemblyError(`list slot "${options.name}" already has id "${options.id}"`);
       if (options.order !== undefined && !Number.isFinite(options.order))
-        throw new Error(`list slot "${options.name}" order must be finite`);
+        throw new SlotAssemblyError(`list slot "${options.name}" order must be finite`);
     }
     else if (options.order !== undefined) {
-      throw new Error(`single slot "${options.name}" does not accept an order`);
+      throw new SlotAssemblyError(`single slot "${options.name}" does not accept an order`);
     }
   }
 
   private validateChildren(children: SlotMap) {
     for (const [name, spec] of Object.entries(children)) {
       if (this.records.get(name)?.spec)
-        throw new Error(`duplicate declaration: "${name}"`);
+        throw new SlotAssemblyError(`duplicate declaration: "${name}"`);
       if (spec.kind !== 'single' && spec.kind !== 'list')
-        throw new Error(`slot "${name}" has an invalid kind`);
+        throw new SlotAssemblyError(`slot "${name}" has an invalid kind`);
       if (spec.scope !== 'root')
-        throw new Error(`slot "${name}" has an invalid scope`);
+        throw new SlotAssemblyError(`slot "${name}" has an invalid scope`);
     }
   }
 
@@ -251,6 +256,7 @@ export class SlotCore {
 
 function copyEntry(entry: StoredEntry): SlotEntry {
   return {
+    sequence: entry.sequence,
     component: entry.component,
     ...(entry.id === undefined ? {} : { id: entry.id }),
     ...(entry.order === undefined ? {} : { order: entry.order }),
