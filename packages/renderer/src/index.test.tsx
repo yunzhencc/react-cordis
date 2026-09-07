@@ -144,7 +144,7 @@ describe('ui renderer', () => {
     await dispose();
   });
 
-  it('refreshes active content when a language pack adds its dictionary', async () => {
+  it('refreshes added and removed dictionaries without emitting language changes', async () => {
     const { ctx, dispose } = await bootRenderer();
     const Greeting = () => {
       const { t } = useTranslation('late-pack');
@@ -162,10 +162,23 @@ describe('ui renderer', () => {
     });
     expect(container.textContent).toBe('Hello');
 
+    const languageChanges: string[] = [];
+    ctx.i18n.instance.on('languageChanged', locale => languageChanges.push(locale));
+    let removeDictionary!: () => void;
     await act(async () => {
-      ctx.i18n.register('late-pack', { ja: { greeting: 'こんにちは' } });
+      removeDictionary = ctx.i18n.register('late-pack', { ja: { greeting: 'こんにちは' } });
     });
     expect(container.textContent).toBe('こんにちは');
+    expect.soft(languageChanges).toEqual([]);
+
+    await act(async () => removeDictionary());
+    expect(container.textContent).toBe('Hello');
+    expect(ctx.i18n.locale).toBe('ja');
+    expect.soft(languageChanges).toEqual([]);
+
+    languageChanges.length = 0;
+    await act(async () => ctx.i18n.setLocale('en'));
+    expect(languageChanges).toEqual(['en']);
 
     await act(async () => unmount());
     await dispose();

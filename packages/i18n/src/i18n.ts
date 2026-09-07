@@ -60,6 +60,10 @@ export class I18nRuntime {
       lng: this.resolveActive(),
       load: 'currentOnly',
       lowerCaseLng: true,
+      react: {
+        bindI18n: 'languageChanged',
+        bindI18nStore: 'added removed',
+      },
       resources: {},
     });
     this.instance.on('languageChanged', () => {
@@ -143,20 +147,15 @@ export class I18nRuntime {
       namespaceResources.set(localeKey(locale), resources);
       this.instance.addResourceBundle(localeKey(locale), namespace, resources);
     }
-    this.instance.emit('languageChanged', this.locale);
 
     return () => {
-      let removed = false;
       for (const [locale, resources] of entries) {
         const key = localeKey(locale);
         if (namespaceResources!.get(key) !== resources)
           continue;
         namespaceResources!.delete(key);
         this.instance.removeResourceBundle(key, namespace);
-        removed = true;
       }
-      if (removed)
-        this.instance.emit('languageChanged', this.locale);
     };
   }
 
