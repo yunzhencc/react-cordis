@@ -15,7 +15,7 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tests/tsconfig.json && pnpm -r exec tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests/tsconfig.json && tsc --noEmit -p packages/i18n/type-tests/tsconfig.json && pnpm -r exec tsc --noEmit",
     "prepare": "simple-git-hooks",
     "preinstall": "npx only-allow pnpm"
   },

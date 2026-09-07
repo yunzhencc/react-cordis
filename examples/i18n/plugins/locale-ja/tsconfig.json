@@ -1,4 +1,4 @@
 {
   "extends": "@yunzhen/tsconfig/web.json",
-  "include": ["src"]
+  "include": ["src", "../../src/i18next.d.ts"]
 }

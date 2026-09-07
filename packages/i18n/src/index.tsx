@@ -5,7 +5,7 @@ import { I18nextProvider } from 'react-i18next';
 import { I18nRuntime } from './i18n';
 
 export { I18nRuntime, LOCALES } from './i18n';
-export type { I18nConfig, LanguageRegistration, Locale, LocaleDefinition } from './i18n';
+export type { I18nConfig, LanguageRegistration, Locale, LocaleDefinition, TranslationKey, TranslationNamespace } from './i18n';
 
 declare module '@deepseek-ai/cordis' {
   interface Context {

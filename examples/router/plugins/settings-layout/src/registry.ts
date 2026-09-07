@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
+import type { TranslationKey } from '@react-cordis/i18n';
 import type {} from '@react-cordis/router';
 import type { SlotMap } from '@react-cordis/slots';
 import type { ComponentType } from 'react';
@@ -9,11 +10,11 @@ export interface SettingsEntry {
   group: {
     id: string;
     label: string;
-    labelKey?: string;
+    labelKey?: TranslationKey;
     order: number;
   };
   label: string;
-  labelKey?: string;
+  labelKey?: TranslationKey;
   children?: SlotMap;
   Icon?: ComponentType<{ size?: number; strokeWidth?: number }>;
   order: number;

@@ -136,6 +136,9 @@ importers:
       '@react-cordis/vite':
         specifier: workspace:*
         version: link:../../packages/vite
+      i18next:
+        specifier: ^25.8.13
+        version: 25.10.10(typescript@6.0.3)
 
   examples/i18n/plugins/greeting:
     dependencies:

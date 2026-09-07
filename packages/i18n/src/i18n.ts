@@ -1,3 +1,4 @@
+import type { FlatNamespace, ParseKeys, TypeOptions } from 'i18next';
 import i18next from 'i18next';
 
 export const LOCALES = ['zh', 'en'] as const;
@@ -24,6 +25,26 @@ export interface LocaleDefinition {
 }
 
 type LocaleResources = Record<string, unknown>;
+
+/** Namespaces declared through i18next, or string in projects without resource types. */
+export type TranslationNamespace = FlatNamespace;
+
+/** Namespace-qualified keys for labels translated outside their owning component. */
+export type TranslationKey = string extends FlatNamespace ? string : {
+  [N in FlatNamespace]: `${N}:${ParseKeys<N> & string}`;
+}[FlatNamespace];
+
+type CheckDictionary<Provided, Schema> = [Schema] extends [string]
+  ? string
+  : [Schema] extends [object]
+      ? Provided extends object
+        ? { [K in keyof Provided]: K extends keyof Schema ? CheckDictionary<Provided[K], Schema[K]> : never }
+        : never
+      : Schema;
+
+type CheckDictionaries<N extends FlatNamespace, D> = [N] extends [keyof TypeOptions['resources']]
+  ? { [L in keyof D]: CheckDictionary<D[L], TypeOptions['resources'][N]> }
+  : D;
 
 const BUILT_IN_LOCALES: readonly LocaleDefinition[] = [
   { id: 'zh', label: '中文', fallback: 'en' },
@@ -122,6 +143,10 @@ export class I18nRuntime {
     };
   }
 
+  register<N extends FlatNamespace, D extends Record<string, LocaleResources>>(
+    namespace: N,
+    dictionaries: D & CheckDictionaries<NoInfer<N>, NoInfer<D>>,
+  ): () => void;
   register(namespace: string, dictionaries: Record<string, LocaleResources>): () => void {
     if (!namespace)
       throw new Error('locale namespace must not be empty');

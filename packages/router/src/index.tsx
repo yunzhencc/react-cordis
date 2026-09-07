@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
+import type { TranslationNamespace } from '@react-cordis/i18n';
 import type { SlotOwnerHandle, SlotRenderer } from '@react-cordis/renderer';
 import type { RouteObject } from 'react-router-dom';
 import { Slot, SlotOwner } from '@react-cordis/renderer';
@@ -74,7 +75,7 @@ function RouteOutlet() {
 }
 
 function NavigationSidebar({ routes }: { routes: RouteRenderer }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation<TranslationNamespace[]>();
   const snapshot = useSyncExternalStore(routes.subscribe, routes.snapshot, routes.snapshot);
   const location = useLocation();
   const Sidebar = findMatchedSidebar(snapshot, location.pathname);

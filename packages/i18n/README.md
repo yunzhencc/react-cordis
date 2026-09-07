@@ -58,6 +58,58 @@ export function Greeting() {
 
 同一个命名空间可以由不同语言包补充不同语言，但同一组「命名空间 + 语言 ID」只能有一个注册者。重复注册会抛错，包括同一次调用中的 `en` 与 `EN`。更新字典时应先调用旧注册返回的释放函数，再重新注册。
 
+### 启用 namespace/key 类型检查
+
+类型声明由应用维护，插件本身不内置业务命名空间。先从业务插件导出基础字典，使用 `as const` 保留键名和文案类型：
+
+```ts
+// plugins/greeting/src/locales.ts
+export const greetingMessages = {
+  en: { title: 'Welcome', message: { welcome: 'Hello' } },
+  zh: { title: '欢迎', message: { welcome: '你好' } },
+} as const;
+```
+
+应用声明对 `i18next` 的直接依赖，并在 `src/i18next.d.ts` 中汇总业务命名空间：
+
+```ts
+import type { greetingMessages } from '../plugins/greeting/src/locales';
+import 'i18next';
+
+declare module 'i18next' {
+  interface CustomTypeOptions {
+    resources: {
+      greeting: typeof greetingMessages.en;
+    };
+    strictKeyChecks: true;
+  }
+}
+```
+
+`register()` 和原有的 `useTranslation()` 共用这份资源类型，无需额外的 Hook 或运行时配置：
+
+```tsx
+ctx.i18n.register('greeting', greetingMessages);
+ctx.i18n.register('greeting', { ja: { message: { welcome: 'こんにちは' } } });
+
+// 以下写法会在类型检查时报错：
+// ctx.i18n.register('greting', { ja: { title: 'ようこそ' } });
+// ctx.i18n.register('greeting', { ja: { titel: 'ようこそ' } });
+
+export function Greeting() {
+  const { t } = useTranslation('greeting');
+  // t('message.welcom'); // key 拼写错误
+  // t('typo', { defaultValue: 'Fallback' }); // 默认文案不会绕过 key 检查
+  return <p>{t('message.welcome')}</p>;
+}
+```
+
+基础字典提供结构，其他语言的字符串不必与基础文案相同；每种语言均可只提供部分键，嵌套字典也可部分翻译。字典先保存在变量中再传给 `register()`，仍会检查多余键。
+
+声明必须纳入每个调用方的 TypeScript 编译范围。独立检查示例插件时，其 `tsconfig.json` 使用 `"include": ["src", "../../src/i18next.d.ts"]`，与应用共用声明。未声明 `CustomTypeOptions.resources` 的项目继续接受任意字符串命名空间和字典。
+
+路由或设置项等跨插件标签使用导出的 `TranslationKey`，格式为 `namespace:key`。通用渲染组件通过 `useTranslation<TranslationNamespace[]>()` 翻译这些完整 key；业务组件继续使用 `useTranslation('greeting')`，将本地 key 限制在自己的命名空间。完整配置见 [i18n 示例类型声明](../../examples/i18n/src/i18next.d.ts)。
+
 ### 选择语言
 
 ```ts
@@ -121,7 +173,7 @@ export function apply(ctx: Context) {
 | `I18nProvider` | 向 React 子树提供指定运行时的 i18next 实例 |
 | `LOCALES` | 内置语言 ID `['zh', 'en']`；完整可选语言列表使用 `languages` |
 
-包根入口与 `./client` 导出同一实现。导出类型包括 `I18nConfig`、`Locale`、`LanguageRegistration` 和 `LocaleDefinition`。
+包根入口与 `./client` 导出同一实现。导出类型包括 `I18nConfig`、`Locale`、`LanguageRegistration`、`LocaleDefinition`、`TranslationNamespace` 和 `TranslationKey`。
 
 ## 理解实现
 
@@ -140,7 +192,7 @@ export function apply(ctx: Context) {
 
 ## 当前限制
 
-- 字典使用 `Record<string, unknown>`，尚未建立 namespace/key 的类型映射，也不强制中英文键齐全。
+- 资源类型声明作用于同一个 TypeScript 编译项目，不能按运行时实例隔离。类型检查不验证外部 JSON；动态输入应在应用边界校验，再转换为已知的资源类型。本包不强制各语言键齐全。
 - 偏好只保存在当前浏览器的 localStorage，没有 Host 持久化或跨标签页同步，也不监听系统语言的实时变化。
 - 没有恢复“跟随浏览器”的专用 API；语言回退最终固定到 `en`。
 - 语言标签只做格式校验，不验证完整 BCP 47 注册信息；本包同步 `lang`，不自动设置 RTL 的 `dir`。
@@ -154,7 +206,7 @@ export function apply(ctx: Context) {
 pnpm start:i18n
 ```
 
-该示例演示中英日切换、命名空间隔离、部分翻译回退及偏好恢复，使用 `examples:i18n:locale` 作为存储 key。
+该示例演示中英日切换、命名空间类型检查、部分翻译回退及偏好恢复，使用 `examples:i18n:locale` 作为存储 key。根目录的 `pnpm typecheck` 同时运行独立的类型正例和错误断言。
 
 | 文件 | 职责 |
 | --- | --- |
@@ -162,6 +214,7 @@ pnpm start:i18n
 | [src/index.tsx](src/index.tsx) | Cordis 服务声明、插件入口和 React Provider |
 | [src/i18n.test.ts](src/i18n.test.ts) | 偏好、资源所有权及语言 ID 行为测试 |
 | [src/i18n.node.test.ts](src/i18n.node.test.ts) | 非浏览器环境下的语言选择测试 |
+| [type-tests/registration.ts](type-tests/registration.ts) | 字典、翻译调用及动态标签的编译期约束 |
 | [renderer 集成测试](../renderer/src/index.test.tsx) | 语言切换、动态字典加载与卸载后的 React 更新 |
 | [i18n 示例](../../examples/i18n/) | 插件配置、业务字典和外部日语包 |
 | [语言设置插件](../../examples/router/plugins/settings-language/src/index.tsx) | 独立业务插件提供的语言设置行 |

@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
+import type { TranslationKey } from '@react-cordis/i18n';
 import type { SlotSpec } from '@react-cordis/slots';
 import type { ComponentType } from 'react';
 import { Service } from '@deepseek-ai/cordis';
@@ -10,7 +11,7 @@ export interface RouteDefinition {
   index?: boolean;
   Component: ComponentType;
   Sidebar?: ComponentType;
-  navigation?: { label: string; labelKey?: string; order: number };
+  navigation?: { label: string; labelKey?: TranslationKey; order: number };
   children?: Record<string, SlotSpec>;
 }
 

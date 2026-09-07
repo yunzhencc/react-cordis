@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type {} from '@react-cordis/i18n';
+import type { TranslationKey, TranslationNamespace } from '@react-cordis/i18n';
 import type {} from '@react-cordis/renderer';
 import type {} from '@react-cordis/router';
 import { Settings } from 'lucide-react';
@@ -33,7 +33,7 @@ export function apply(ctx: Context) {
 }
 
 function SettingsLayout({ settings }: { settings: SettingsRegistry }) {
-  const { t } = useTranslation('settings-layout');
+  const { t } = useTranslation<['settings-layout', ...TranslationNamespace[]]>(['settings-layout']);
   const entries = useSettingsEntries(settings);
   const location = useLocation();
   if (!entries.length) {
@@ -57,7 +57,7 @@ function SettingsLayout({ settings }: { settings: SettingsRegistry }) {
 }
 
 function SettingsSidebar({ settings }: { settings: SettingsRegistry }) {
-  const { t } = useTranslation('settings-layout');
+  const { t } = useTranslation<['settings-layout', ...TranslationNamespace[]]>(['settings-layout']);
   const entries = useSettingsEntries(settings);
   const groups = Map.groupBy(entries, entry => entry.group.id);
   return (
@@ -90,11 +90,11 @@ function SettingsFooterLink() {
   );
 }
 
-function labelOf(entry: ReturnType<SettingsRegistry['snapshot']>[number], t: (key: string) => string) {
+function labelOf(entry: ReturnType<SettingsRegistry['snapshot']>[number], t: (key: TranslationKey) => string) {
   return entry.labelKey ? t(entry.labelKey) : entry.label;
 }
 
-function groupLabelOf(entry: ReturnType<SettingsRegistry['snapshot']>[number], t: (key: string) => string) {
+function groupLabelOf(entry: ReturnType<SettingsRegistry['snapshot']>[number], t: (key: TranslationKey) => string) {
   return entry.group.labelKey ? t(entry.group.labelKey) : entry.group.label;
 }
 

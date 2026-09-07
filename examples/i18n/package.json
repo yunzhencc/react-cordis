@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@react-cordis/boot-config": "workspace:*",
-    "@react-cordis/vite": "workspace:*"
+    "@react-cordis/vite": "workspace:*",
+    "i18next": "^25.8.13"
   }
 }
