@@ -502,16 +502,6 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
-      '@react-cordis/renderer':
-        specifier: workspace:*
-        version: link:../renderer
-      react:
-        specifier: ^19.2.8
-        version: 19.2.8
-    devDependencies:
-      react-dom:
-        specifier: ^19.2.8
-        version: 19.2.8(react@19.2.8)
 
   packages/vite:
     dependencies:

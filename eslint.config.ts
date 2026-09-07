@@ -11,12 +11,6 @@ export default antfu(
     react: true,
   },
   {
-    files: ['examples/router/index.test.ts'],
-    rules: {
-      'no-eval': 'off',
-    },
-  },
-  {
     files: ['packages/**/*.tsx', 'examples/*/plugins/**/*.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off',

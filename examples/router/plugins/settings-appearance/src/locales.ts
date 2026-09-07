@@ -1,7 +1,6 @@
 export const appearanceMessages = {
   zh: {
     appearance: {
-      fontSize: '内容字号',
       preference: {
         dark: '深色',
         light: '浅色',
@@ -12,7 +11,6 @@ export const appearanceMessages = {
   },
   en: {
     appearance: {
-      fontSize: 'Content font size',
       preference: {
         dark: 'Dark',
         light: 'Light',

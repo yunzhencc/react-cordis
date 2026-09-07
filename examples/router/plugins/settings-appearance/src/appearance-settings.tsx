@@ -33,24 +33,6 @@ export function AppearanceSettings({ theme }: { theme: ThemeRuntime }) {
           </label>
         ))}
       </div>
-      <div className={styles.controls}>
-        <label className={styles.fontSizeRow}>
-          <span>{t('appearance.fontSize')}</span>
-          <span className={styles.fontSizeControl}>
-            <input
-              min={12}
-              max={20}
-              type="range"
-              value={snapshot.fontSize}
-              onChange={event => theme.setFontSize(Number(event.currentTarget.value))}
-            />
-            <output>
-              {snapshot.fontSize}
-              px
-            </output>
-          </span>
-        </label>
-      </div>
     </fieldset>
   );
 }

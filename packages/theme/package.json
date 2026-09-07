@@ -5,20 +5,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/index.ts",
-    "./theme": "./src/theme.ts",
-    "./styles": "./src/styles.ts"
+    "./theme": "./src/theme.ts"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@react-cordis/renderer": "workspace:*",
-    "react": "^19.2.8"
-  },
-  "devDependencies": {
-    "react-dom": "^19.2.8"
-  },
-  "cordis": {
-    "inject": [
-      "@react-cordis/renderer"
-    ]
+    "@deepseek-ai/cordis": "^4.0.2"
   }
 }

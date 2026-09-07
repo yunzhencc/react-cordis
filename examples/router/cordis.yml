@@ -10,6 +10,8 @@
   name: '@examples/router-app-layout'
 - id: theme
   name: '@react-cordis/theme'
+  config:
+    storageKey: '@yunzhen/cordis-ui-theme:preference'
 - id: dashboard
   name: '@examples/router-dashboard'
 - id: settings-layout

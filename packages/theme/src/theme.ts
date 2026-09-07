@@ -1,131 +1,167 @@
-export const PREFERENCE_STORAGE_KEY = '@yunzhen/cordis-ui-theme:preference';
-export const FONT_SIZE_STORAGE_KEY = '@yunzhen/cordis-ui-theme:font-size';
-export const DEFAULT_FONT_SIZE = 14;
-export const MIN_FONT_SIZE = 12;
-export const MAX_FONT_SIZE = 17;
-
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type ResolvedTheme = Exclude<ThemePreference, 'system'>;
 
+export interface ThemeConfig {
+  storageKey?: string;
+  defaultTheme?: ThemePreference;
+  attribute?: 'class' | `data-${string}`;
+  enableColorScheme?: boolean;
+}
+
 export interface ThemeSnapshot {
-  preference: ThemePreference;
-  resolvedTheme: ResolvedTheme;
-  fontSize: number;
+  readonly preference: ThemePreference;
+  readonly resolvedTheme: ResolvedTheme;
 }
 
 export class ThemeRuntime {
+  private readonly config: Required<ThemeConfig>;
   private readonly listeners = new Set<() => void>();
   private readonly mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  private listeningToMedia = false;
+  private readonly restoreDOM: () => void;
   private disposed = false;
+  private state: ThemeSnapshot;
 
-  snapshot: ThemeSnapshot;
-
-  constructor() {
-    const preference = getPreference(readStorage(PREFERENCE_STORAGE_KEY));
-    const fontSize = getStoredFontSize(readStorage(FONT_SIZE_STORAGE_KEY));
-    this.snapshot = {
-      preference,
-      resolvedTheme: resolveTheme(preference, this.mediaQuery.matches),
-      fontSize,
+  constructor(config: ThemeConfig = {}) {
+    this.config = resolveConfig(config);
+    const root = document.documentElement;
+    const { attribute, enableColorScheme } = this.config;
+    const previousAttribute = root.getAttribute(attribute);
+    const previousClasses = ['light', 'dark'].filter(name => root.classList.contains(name));
+    const colorScheme = root.style.getPropertyValue('color-scheme');
+    const priority = root.style.getPropertyPriority('color-scheme');
+    this.restoreDOM = () => {
+      if (attribute === 'class') {
+        root.classList.remove('light', 'dark');
+        root.classList.add(...previousClasses);
+      }
+      else if (previousAttribute === null) {
+        root.removeAttribute(attribute);
+      }
+      else {
+        root.setAttribute(attribute, previousAttribute);
+      }
+      if (enableColorScheme) {
+        if (colorScheme)
+          root.style.setProperty('color-scheme', colorScheme, priority);
+        else
+          root.style.removeProperty('color-scheme');
+      }
     };
-    this.updateMediaListener();
-    this.apply();
+    this.state = applyTheme(this.config);
+    this.mediaQuery.addEventListener('change', this.onMediaChange);
+    window.addEventListener('storage', this.onStorage);
+  }
+
+  get snapshot(): ThemeSnapshot {
+    return this.state;
   }
 
   subscribe = (listener: () => void) => {
-    this.listeners.add(listener);
+    if (!this.disposed)
+      this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
     };
   };
 
   setTheme(preference: ThemePreference) {
-    this.snapshot = {
-      ...this.snapshot,
-      preference,
-      resolvedTheme: resolveTheme(preference, this.mediaQuery.matches),
-    };
-    writeStorage(PREFERENCE_STORAGE_KEY, preference);
-    this.updateMediaListener();
-    this.apply();
-  }
-
-  setFontSize(fontSize: number) {
-    const nextFontSize = Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Number.isFinite(fontSize) ? fontSize : DEFAULT_FONT_SIZE));
-    this.snapshot = { ...this.snapshot, fontSize: nextFontSize };
-    writeStorage(FONT_SIZE_STORAGE_KEY, String(nextFontSize));
-    this.apply();
+    if (this.disposed)
+      return;
+    if (!['light', 'dark', 'system'].includes(preference))
+      throw new TypeError('theme preference must be light, dark or system');
+    try {
+      localStorage.setItem(this.config.storageKey, preference);
+    }
+    catch {}
+    this.update(preference);
   }
 
   dispose() {
     if (this.disposed)
       return;
     this.disposed = true;
-    this.stopMediaListener();
+    this.mediaQuery.removeEventListener('change', this.onMediaChange);
+    window.removeEventListener('storage', this.onStorage);
     this.listeners.clear();
+    this.restoreDOM();
   }
 
-  private readonly onMediaChange = (event: MediaQueryListEvent) => {
-    if (this.disposed || this.snapshot.preference !== 'system')
-      return;
-    this.snapshot = { ...this.snapshot, resolvedTheme: event.matches ? 'dark' : 'light' };
-    this.apply();
+  private readonly onMediaChange = () => {
+    if (this.state.preference === 'system')
+      this.update('system');
   };
 
-  private updateMediaListener() {
-    if (this.snapshot.preference === 'system') {
-      if (!this.listeningToMedia) {
-        this.mediaQuery.addEventListener('change', this.onMediaChange);
-        this.listeningToMedia = true;
-      }
+  private readonly onStorage = (event: StorageEvent) => {
+    if (event.key !== null && event.key !== this.config.storageKey)
+      return;
+    try {
+      if (event.storageArea !== localStorage)
+        return;
+    }
+    catch {
       return;
     }
-    this.stopMediaListener();
-  }
+    this.update(event.newValue);
+  };
 
-  private stopMediaListener() {
-    if (!this.listeningToMedia)
+  private update(preference: string | null) {
+    if (this.disposed)
       return;
-    this.mediaQuery.removeEventListener('change', this.onMediaChange);
-    this.listeningToMedia = false;
-  }
-
-  private apply() {
-    const { fontSize, resolvedTheme } = this.snapshot;
-    document.documentElement.dataset.theme = resolvedTheme;
-    document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
-    document.documentElement.style.colorScheme = resolvedTheme;
-    document.documentElement.style.setProperty('--app-content-font-size', `${fontSize}px`);
+    const next = applyTheme(this.config, preference);
+    if (next.preference === this.state.preference && next.resolvedTheme === this.state.resolvedTheme)
+      return;
+    this.state = next;
     for (const listener of [...this.listeners]) listener();
   }
 }
 
-function getPreference(value: string | null): ThemePreference {
-  return value === 'light' || value === 'dark' || value === 'system' ? value : 'system';
+/** Place this script in the HTML head before the application loads. */
+export function getThemeScript(config: ThemeConfig = {}) {
+  const serialized = JSON.stringify(resolveConfig(config)).replace(/</g, '\\u003c');
+  return `(${applyTheme.toString()})(${serialized});`;
 }
 
-function getStoredFontSize(value: string | null) {
-  const fontSize = Number(value);
-  return Number.isFinite(fontSize) && fontSize >= MIN_FONT_SIZE && fontSize <= MAX_FONT_SIZE ? fontSize : DEFAULT_FONT_SIZE;
+function resolveConfig(config: ThemeConfig): Required<ThemeConfig> {
+  if (!config || typeof config !== 'object' || Array.isArray(config))
+    throw new TypeError('theme config must be an object');
+  const {
+    storageKey = 'react-cordis:theme',
+    defaultTheme = 'system',
+    attribute = 'data-theme',
+    enableColorScheme = true,
+  } = config;
+  if (typeof storageKey !== 'string' || !storageKey.trim())
+    throw new TypeError('theme storageKey must be a non-empty string');
+  if (!['light', 'dark', 'system'].includes(defaultTheme))
+    throw new TypeError('theme defaultTheme must be light, dark or system');
+  if (typeof attribute !== 'string' || (attribute !== 'class' && !/^data-[a-z][a-z0-9-]*$/.test(attribute)))
+    throw new TypeError('theme attribute must be class or a lowercase data-* attribute');
+  if (typeof enableColorScheme !== 'boolean')
+    throw new TypeError('theme enableColorScheme must be a boolean');
+  return { storageKey, defaultTheme, attribute, enableColorScheme };
 }
 
-function resolveTheme(preference: ThemePreference, dark: boolean): ResolvedTheme {
-  return preference === 'system' ? (dark ? 'dark' : 'light') : preference;
-}
-
-function readStorage(key: string) {
-  try {
-    return localStorage.getItem(key);
+// Keep this function self-contained: the bootstrap serializes the same DOM logic.
+function applyTheme(config: Required<ThemeConfig>, value?: string | null): ThemeSnapshot {
+  if (value === undefined) {
+    try {
+      value = localStorage.getItem(config.storageKey);
+    }
+    catch {}
   }
-  catch {
-    return null;
+  const preference = value === 'light' || value === 'dark' || value === 'system' ? value : config.defaultTheme;
+  const resolvedTheme = preference === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : preference;
+  const root = document.documentElement;
+  if (config.attribute === 'class') {
+    root.classList.remove('light', 'dark');
+    root.classList.add(resolvedTheme);
   }
-}
-
-function writeStorage(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
+  else {
+    root.setAttribute(config.attribute, resolvedTheme);
   }
-  catch {}
+  if (config.enableColorScheme)
+    root.style.colorScheme = resolvedTheme;
+  return Object.freeze({ preference, resolvedTheme });
 }

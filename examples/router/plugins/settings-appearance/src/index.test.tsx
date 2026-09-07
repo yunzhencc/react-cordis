@@ -52,7 +52,6 @@ describe('appearance settings extension', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    document.head.querySelector('style[data-cordis-ui-theme]')?.remove();
   });
 
   it('registers Appearance as a settings page while its fiber is active', async () => {
@@ -75,7 +74,6 @@ describe('appearance settings extension', () => {
     expect(container.textContent).toContain('系统');
     expect(container.querySelectorAll('input[type="radio"]')).toHaveLength(3);
     expect(container.querySelectorAll('[data-theme-preview]')).toHaveLength(3);
-    expect(container.querySelector('input[type="range"]')).not.toBeNull();
     await act(async () => unmount());
     await dispose();
   });

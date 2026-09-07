@@ -61,7 +61,7 @@ packages/
 | `@react-cordis/i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
 | `examples/router/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Router 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
 | `examples/router/plugins/settings-layout` | Router 示例的 `/settings` 路由壳、设置侧栏、底部 Settings 入口与 `ctx.settings.register()`。 |
-| `packages/theme` | ThemeRuntime、token 与 DOM 同步；具体设置页面由独立扩展提供。 |
+| `packages/theme` | 可配置的主题偏好、持久化、跨标签同步与 DOM 标记；提供首屏脚本生成器，不依赖 renderer，不内置皮肤或字号。 |
 
 旧的 `core/runtime`、`react/bridge`、`router/react-router` 与 `ui/shell` 分层已不属于当前实现。
 
@@ -85,6 +85,12 @@ packages/
 未配置时使用 `react-cordis:locale`；不会自动迁移旧 key `@yunzhen/cordis-ui-i18n:locale`，需要沿用旧偏好时可显式配置为该值。
 
 `pnpm start:i18n` 启动独立国际化示例，使用 `examples:i18n:locale` 隔离其语言偏好。`examples/i18n` 只启用 i18n、renderer 和三个示例插件：`page` 与 `greeting` 各自注册中英文命名空间；`locale-ja` 注册日语并向两个命名空间补充翻译，故意省略 greeting 正文以演示英文回退。语言选择使用原生下拉框，刷新后恢复偏好，不依赖 router、layout 或 settings。
+
+## 主题
+
+`@react-cordis/theme` 提供 `ctx.theme`，默认支持 light/dark/system，以只读快照和订阅向消费方暴露状态。应用可配置 `storageKey`、`defaultTheme`、`attribute` 和 `enableColorScheme`，详见 [theme 使用说明](../packages/theme/README.md)。
+
+Router 示例沿用旧主题存储键；Vite 从同一份 `cordis.yml` 读取配置，通过 `getThemeScript()` 在 HTML head 注入首屏脚本。配色、字体栈与页面基础样式由 `examples/router/src/styles.css` 提前加载，示例字号由 CSS 固定为 14px，settings-appearance 仅提供主题选择。主题核心不注入皮肤，也不依赖 React 或 renderer。
 
 ## Vite 接入
 

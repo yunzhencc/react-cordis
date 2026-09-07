@@ -81,45 +81,6 @@
   outline-offset: 3px;
 }
 
-.controls {
-  overflow: hidden;
-  background: var(--app-input);
-  border: 1px solid var(--app-border);
-  border-radius: 12px;
-}
-
-.fontSizeRow {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 56px;
-  padding: 0 16px;
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.fontSizeControl {
-  display: flex;
-  flex: 0 1 320px;
-  gap: 12px;
-  align-items: center;
-}
-
-.fontSizeControl input {
-  flex: 1;
-  min-width: 96px;
-  accent-color: var(--app-accent);
-}
-
-.fontSizeControl output {
-  width: 48px;
-  color: var(--app-text-muted);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
 @media (max-width: 512px) {
   .themeOptions {
     gap: 8px;
@@ -127,16 +88,5 @@
 
   .preview {
     height: 112px;
-  }
-
-  .fontSizeRow {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-    padding-block: 16px;
-  }
-
-  .fontSizeControl {
-    width: 100%;
   }
 }

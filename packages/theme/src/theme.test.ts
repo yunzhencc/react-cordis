@@ -1,120 +1,173 @@
 // @vitest-environment jsdom
 
+import type { ThemeConfig } from './theme';
+import { runInNewContext } from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  FONT_SIZE_STORAGE_KEY,
-  PREFERENCE_STORAGE_KEY,
-  ThemeRuntime,
-} from './theme';
+import * as themeModule from './theme';
 
 class MediaQuery {
   matches = true;
-  private readonly listeners = new Set<(event: MediaQueryListEvent) => void>();
-
-  addEventListener(_type: 'change', listener: (event: MediaQueryListEvent) => void) {
-    this.listeners.add(listener);
-  }
-
-  removeEventListener(_type: 'change', listener: (event: MediaQueryListEvent) => void) {
-    this.listeners.delete(listener);
-  }
-
+  listeners = new Set<() => void>();
+  addEventListener(_type: string, listener: () => void) { this.listeners.add(listener); }
+  removeEventListener(_type: string, listener: () => void) { this.listeners.delete(listener); }
   emit(matches: boolean) {
     this.matches = matches;
-    for (const listener of this.listeners) listener({ matches } as MediaQueryListEvent);
-  }
-
-  get listenerCount() {
-    return this.listeners.size;
+    for (const listener of this.listeners) listener();
   }
 }
 
 describe('themeRuntime', () => {
-  let mediaQuery: MediaQuery;
-  let runtimes: ThemeRuntime[];
+  let media: MediaQuery;
+  let runtimes: themeModule.ThemeRuntime[];
+  const createTheme = (config?: ThemeConfig) => {
+    const runtime = new themeModule.ThemeRuntime(config);
+    runtimes.push(runtime);
+    return runtime;
+  };
+  const storage = (key: string | null, newValue: string | null) => window.dispatchEvent(new StorageEvent('storage', { key, newValue, storageArea: localStorage }));
 
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('data-mode');
+    document.documentElement.className = '';
     document.documentElement.style.cssText = '';
-    mediaQuery = new MediaQuery();
+    media = new MediaQuery();
     runtimes = [];
-    vi.stubGlobal('matchMedia', () => mediaQuery);
+    vi.stubGlobal('matchMedia', () => media);
   });
-
   afterEach(() => {
-    for (const runtime of runtimes) runtime.dispose();
+    for (const runtime of runtimes.reverse()) runtime.dispose();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  const createTheme = () => {
-    const runtime = new ThemeRuntime();
-    runtimes.push(runtime);
-    return runtime;
-  };
-
-  it('uses system dark mode when there is no saved preference', () => {
+  it('resolves system changes while preserving the selected preference', () => {
     const theme = createTheme();
-
-    expect(theme.snapshot).toMatchObject({ preference: 'system', resolvedTheme: 'dark', fontSize: 14 });
-    expect(document.documentElement.dataset.theme).toBe('dark');
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
-  });
-
-  it('restores valid storage and falls back from invalid font size', () => {
-    localStorage.setItem(PREFERENCE_STORAGE_KEY, 'light');
-    localStorage.setItem(FONT_SIZE_STORAGE_KEY, '200');
-
-    expect(createTheme().snapshot).toMatchObject({ preference: 'light', resolvedTheme: 'light', fontSize: 14 });
-  });
-
-  it('reacts to media changes only while preference is system', () => {
-    const theme = createTheme();
-    mediaQuery.emit(true);
+    expect(theme.snapshot).toEqual({ preference: 'system', resolvedTheme: 'dark' });
+    media.emit(false);
+    expect(theme.snapshot).toEqual({ preference: 'system', resolvedTheme: 'light' });
+    theme.setTheme('dark');
+    media.emit(false);
     expect(theme.snapshot.resolvedTheme).toBe('dark');
-    theme.setTheme('light');
-    expect(document.documentElement.classList.contains('dark')).toBe(false);
-    mediaQuery.emit(false);
-    expect(theme.snapshot.resolvedTheme).toBe('light');
+    expect(document.documentElement.dataset.theme).toBe('dark');
   });
 
-  it('clamps font size, persists it, and updates the CSS custom property', () => {
+  it('uses configured storage, default, attribute and color-scheme policy', () => {
+    localStorage.setItem('example:theme', 'invalid');
+    document.documentElement.style.colorScheme = 'light dark';
+    const theme = createTheme({ storageKey: 'example:theme', defaultTheme: 'light', attribute: 'data-mode', enableColorScheme: false });
+    expect(theme.snapshot.preference).toBe('light');
+    theme.setTheme('dark');
+    expect(localStorage.getItem('example:theme')).toBe('dark');
+    expect(localStorage.getItem('react-cordis:theme')).toBeNull();
+    expect(document.documentElement.dataset.mode).toBe('dark');
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+    expect(document.documentElement.style.colorScheme).toBe('light dark');
+  });
+
+  it('syncs storage changes and resets to the configured default without writing back', () => {
+    const theme = createTheme({ storageKey: 'example:theme', defaultTheme: 'light' });
+    const subscriber = vi.fn();
+    const unsubscribe = theme.subscribe(subscriber);
+    storage('unrelated', 'dark');
+    expect(subscriber).not.toHaveBeenCalled();
+    storage('example:theme', 'dark');
+    expect(theme.snapshot.resolvedTheme).toBe('dark');
+    expect(localStorage.getItem('example:theme')).toBeNull();
+    storage('example:theme', 'invalid');
+    expect(theme.snapshot.preference).toBe('light');
+    storage('example:theme', 'system');
+    expect(theme.snapshot.resolvedTheme).toBe('dark');
+    storage(null, null);
+    expect(theme.snapshot.preference).toBe('light');
+    expect(subscriber).toHaveBeenCalledTimes(4);
+    unsubscribe();
+    theme.setTheme('dark');
+    expect(subscriber).toHaveBeenCalledTimes(4);
+  });
+
+  it('ignores storage events from sessionStorage', () => {
+    const theme = createTheme({ defaultTheme: 'light' });
+    window.dispatchEvent(new StorageEvent('storage', { key: 'react-cordis:theme', newValue: 'dark', storageArea: sessionStorage }));
+    expect(theme.snapshot.preference).toBe('light');
+  });
+
+  it('keeps snapshots immutable and skips unchanged notifications', () => {
     const theme = createTheme();
-    theme.setFontSize(100);
-
-    expect(theme.snapshot.fontSize).toBe(17);
-    expect(localStorage.getItem(FONT_SIZE_STORAGE_KEY)).toBe('17');
-    expect(document.documentElement.style.getPropertyValue('--app-content-font-size')).toBe('17px');
+    const snapshot = theme.snapshot;
+    const subscriber = vi.fn();
+    theme.subscribe(subscriber);
+    theme.setTheme('system');
+    expect(theme.snapshot).toBe(snapshot);
+    expect(subscriber).not.toHaveBeenCalled();
+    expect(() => Object.assign(snapshot, { preference: 'light' })).toThrow();
   });
 
-  it('falls back to the default font size for non-finite input', () => {
+  it('restores only its owned DOM state and makes disposal final', () => {
+    const root = document.documentElement;
+    root.className = 'host light';
+    root.style.setProperty('color-scheme', 'light dark', 'important');
+    const theme = createTheme({ attribute: 'class' });
+    expect(root.className).toBe('host dark');
+    root.classList.add('later');
+    theme.dispose();
+    expect(root.classList.contains('light')).toBe(true);
+    expect(root.classList.contains('dark')).toBe(false);
+    expect(root.classList.contains('later')).toBe(true);
+    expect(root.style.colorScheme).toBe('light dark');
+    expect(root.style.getPropertyPriority('color-scheme')).toBe('important');
+    theme.setTheme('system');
+    theme.setTheme('dark');
+    storage('react-cordis:theme', 'light');
+    media.emit(false);
+    theme.dispose();
+    expect(media.listeners.size).toBe(0);
+    expect(localStorage.length).toBe(0);
+    expect(root.classList.contains('dark')).toBe(false);
+  });
+
+  it('restores a pre-existing data attribute on disposal', () => {
+    document.documentElement.dataset.theme = 'host';
+    createTheme().dispose();
+    expect(document.documentElement.dataset.theme).toBe('host');
+  });
+
+  it.each([null, [], { storageKey: '' }, { defaultTheme: 'blue' }, { attribute: 'onclick' }, { attribute: 'data-' }, { enableColorScheme: 'yes' }].map(config => ({ config })))('rejects invalid config $config before changing the DOM', ({ config }) => {
+    expect(() => createTheme(config as ThemeConfig)).toThrow(TypeError);
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+  });
+
+  it('rejects invalid theme values without corrupting state or storage', () => {
     const theme = createTheme();
-    theme.setFontSize(Number.NaN);
-
-    expect(theme.snapshot.fontSize).toBe(14);
-    expect(localStorage.getItem(FONT_SIZE_STORAGE_KEY)).toBe('14');
-    expect(document.documentElement.style.getPropertyValue('--app-content-font-size')).toBe('14px');
+    expect(() => theme.setTheme('blue' as 'dark')).toThrow(TypeError);
+    expect(theme.snapshot.preference).toBe('system');
+    expect(localStorage.length).toBe(0);
   });
 
-  it('keeps the page usable when localStorage is unavailable', () => {
+  it('keeps working when localStorage is blocked', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
     });
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('blocked');
     });
-
-    expect(() => createTheme()).not.toThrow();
+    const theme = createTheme({ defaultTheme: 'light' });
+    expect(theme.snapshot.resolvedTheme).toBe('light');
+    expect(() => theme.setTheme('dark')).not.toThrow();
+    expect(document.documentElement.dataset.theme).toBe('dark');
   });
 
-  it('ignores media changes after disposal', () => {
-    const theme = createTheme();
-    expect(mediaQuery.listenerCount).toBe(1);
-    theme.dispose();
-    expect(mediaQuery.listenerCount).toBe(0);
-    mediaQuery.emit(false);
-
-    expect(theme.snapshot.resolvedTheme).toBe('dark');
+  it.each(['class', 'data-mode'] as const)('executes the generated %s bootstrap with the runtime configuration', (attribute) => {
+    const key = 'example:</script><script>throw new Error("injected")</script>';
+    const config = { storageKey: key, defaultTheme: 'light' as const, attribute };
+    localStorage.setItem(key, 'system');
+    const doc = new DOMParser().parseFromString(`<html class="host"><head><script>${themeModule.getThemeScript(config)}</script></head><body></body></html>`, 'text/html');
+    expect(doc.querySelectorAll('script')).toHaveLength(1);
+    runInNewContext(doc.querySelector('script')!.textContent!, { document: doc, window, localStorage });
+    expect(doc.documentElement.getAttribute(attribute)).toBe(attribute === 'class' ? 'host dark' : 'dark');
+    expect(doc.documentElement.style.colorScheme).toBe('dark');
+    const runtime = createTheme(config);
+    expect(runtime.snapshot).toEqual({ preference: 'system', resolvedTheme: 'dark' });
   });
 });
