@@ -16,7 +16,9 @@ declare module '@deepseek-ai/cordis' {
 export const inject: string[] = [];
 
 export function apply(ctx: Context, config: I18nConfig = {}) {
-  ctx.provide('i18n', new I18nRuntime(config));
+  const i18n = new I18nRuntime(config);
+  ctx.effect(() => () => i18n.dispose(), 'i18n.dispose()');
+  ctx.provide('i18n', i18n);
 }
 
 export function I18nProvider({ children, i18n }: { children: ReactNode; i18n: I18nRuntime }) {

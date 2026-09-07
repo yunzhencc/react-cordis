@@ -158,6 +158,12 @@ export function apply(ctx: Context) {
 
 卸载语言定义会移除可选项，并重新解析生效语言，不会清除已保存的偏好。语言目录变化也会刷新 React 翻译：即使当前语言 ID 不变，移除或恢复中间回退语言后，页面仍会沿新的回退链取词。卸载字典会移除该次注册的资源，页面随之使用剩余的回退翻译。两种注册都返回可重复调用的释放函数，需分别交给 `ctx.effect()` 管理。
 
+### 运行时卸载
+
+Cordis 插件卸载时会自动调用 `dispose()`，解除运行时自己的 i18next 事件监听并清空 `subscribe()` 订阅。独立创建的 `new I18nRuntime()` 由调用方在结束使用时调用 `dispose()`。
+
+释放可重复调用。释放后，`setLocale()`、`addLanguage()`、`register()`、`subscribe()` 和已有的注册释放函数不再产生变更；已有语言目录和词典保留供读取，保存的偏好和文档语言也不会重置。旧实例不再同步文档语言，避免干扰重新启动的实例。通过底层 `instance.on()` 添加的外部监听仍由调用方释放；React Provider 子树应正常卸载，由 react-i18next 清理其订阅。
+
 ## API
 
 | API | 用途 |
@@ -169,6 +175,7 @@ export function apply(ctx: Context) {
 | `addLanguage({ id, label, fallback }): () => void` | 注册语言定义，返回释放函数 |
 | `register(namespace, dictionaries): () => void` | 注册按语言 ID 分组的字典，返回释放函数 |
 | `subscribe(listener): () => void` | 订阅语言切换流程和语言目录变化，返回取消订阅函数；字典变化不走此订阅 |
+| `dispose(): void` | 释放运行时自己的监听和订阅，停止后续变更；Cordis 自动调用 |
 | `instance` | 底层 i18next 实例，可用于翻译及格式化；资源注册和语言选择应通过运行时方法维护 |
 | `I18nProvider` | 向 React 子树提供指定运行时的 i18next 实例 |
 | `LOCALES` | 内置语言 ID `['zh', 'en']`；完整可选语言列表使用 `languages` |

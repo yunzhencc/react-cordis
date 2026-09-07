@@ -64,6 +64,7 @@ export class I18nRuntime {
 
   private readonly catalog = new Map<string, LocaleDefinition>();
   private readonly resources = new Map<string, Map<string, LocaleResources>>();
+  private disposed = false;
   private preference: Locale | undefined;
   private readonly storageKey: string;
   private readonly listeners = new Set<() => void>();
@@ -95,10 +96,7 @@ export class I18nRuntime {
       },
       resources: {},
     });
-    this.instance.on('languageChanged', () => {
-      this.syncDocumentLanguage();
-      this.emitChange();
-    });
+    this.instance.on('languageChanged', this.onLanguageChanged);
     this.syncDocumentLanguage();
   }
 
@@ -112,6 +110,8 @@ export class I18nRuntime {
   }
 
   async setLocale(locale: Locale): Promise<void> {
+    if (this.disposed)
+      return;
     const language = this.catalog.get(localeKey(locale));
     if (!language)
       throw new Error(`locale "${locale}" is not registered`);
@@ -125,6 +125,8 @@ export class I18nRuntime {
   }
 
   addLanguage(input: LanguageRegistration): () => void {
+    if (this.disposed)
+      return () => {};
     const language = normalizeLanguage(input);
     const key = localeKey(language.id);
     if (this.catalog.has(key))
@@ -143,7 +145,7 @@ export class I18nRuntime {
     this.publishLanguages();
     this.refreshActiveLocale();
     return () => {
-      if (this.catalog.get(key) !== language)
+      if (this.disposed || this.catalog.get(key) !== language)
         return;
       this.catalog.delete(key);
       this.publishLanguages();
@@ -156,6 +158,8 @@ export class I18nRuntime {
     dictionaries: D & CheckDictionaries<NoInfer<N>, NoInfer<D>>,
   ): () => void;
   register(namespace: string, dictionaries: Record<string, LocaleResources>): () => void {
+    if (this.disposed)
+      return () => {};
     if (!namespace)
       throw new Error('locale namespace must not be empty');
 
@@ -183,7 +187,7 @@ export class I18nRuntime {
 
     let disposed = false;
     return () => {
-      if (disposed)
+      if (this.disposed || disposed)
         return;
       disposed = true;
       for (const [locale, resources] of entries) {
@@ -197,9 +201,25 @@ export class I18nRuntime {
   }
 
   subscribe(listener: () => void): () => void {
-    this.listeners.add(listener);
+    if (!this.disposed)
+      this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
+
+  dispose(): void {
+    if (this.disposed)
+      return;
+    this.disposed = true;
+    this.instance.off('languageChanged', this.onLanguageChanged);
+    this.listeners.clear();
+  }
+
+  private readonly onLanguageChanged = () => {
+    if (this.disposed)
+      return;
+    this.syncDocumentLanguage();
+    this.emitChange();
+  };
 
   private refreshActiveLocale(): void {
     const active = this.resolveActive();
@@ -260,6 +280,8 @@ export class I18nRuntime {
 
   private emitChange(): void {
     for (const listener of [...this.listeners]) {
+      if (this.disposed)
+        return;
       try {
         listener();
       }
