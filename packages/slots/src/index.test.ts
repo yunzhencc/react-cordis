@@ -4,6 +4,46 @@ import { SlotCore } from './index';
 const Null = () => null;
 
 describe('slotCore', () => {
+  it.each(['register', 'declare'] as const)('rolls back %s and descendants even when rollback observers throw', (method) => {
+    const core = new SlotCore();
+    core.declare({ stable: { kind: 'list', scope: 'root' } });
+    core.register({ name: 'stable', id: 'existing' }, Null);
+    const failure = new Error('activation failed');
+    const children = {
+      first: { kind: 'single', scope: 'root' },
+      second: { kind: 'single', scope: 'root' },
+    } as const;
+    let disposeDescendant = () => {};
+    const stopFirst = core.subscribeDeclaration('first', () => {
+      if (core.spec('first')) {
+        disposeDescendant = core.register({ name: 'first', children: { nested: { kind: 'single', scope: 'root' } } }, Null);
+        core.register({ name: 'nested' }, Null);
+        throw failure;
+      }
+      throw new Error('cleanup failed');
+    });
+    const states: boolean[] = [];
+    core.subscribeDeclaration('first', () => states.push(core.spec('first') !== undefined));
+
+    expect(() => method === 'register'
+      ? core.register({ name: 'root', children }, Null)
+      : core.declare(children)).toThrow(failure);
+
+    expect(core.entries('root')).toEqual([]);
+    expect(core.entries('stable').map(entry => entry.id)).toEqual(['existing']);
+    for (const name of ['first', 'second', 'nested']) {
+      expect(core.spec(name)).toBeUndefined();
+      expect(core.entries(name)).toEqual([]);
+    }
+    expect(states.at(-1)).toBe(false);
+    stopFirst();
+    const disposeReplacement = core.register({ name: 'root', children }, Null);
+    core.register({ name: 'first' }, Null);
+    disposeDescendant();
+    expect(core.entries('first')).toHaveLength(1);
+    disposeReplacement();
+  });
+
   it('cascades a declarer disposal through descendants and contributions', () => {
     const core = new SlotCore();
     const disposeFrame = core.register({ name: 'root', children: { host: { kind: 'single', scope: 'root' } } }, Null);

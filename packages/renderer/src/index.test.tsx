@@ -80,6 +80,31 @@ describe('ui renderer', () => {
     }
   });
 
+  it('rolls back a registration when a render subscriber throws and publishes the restored state', async () => {
+    const { ctx, dispose } = await bootRenderer();
+    const failure = new Error('render subscriber failed');
+    const stop = ctx.slots.subscribe('root', () => {
+      throw failure;
+    });
+    const sizes: number[] = [];
+    const stopHealthy = ctx.slots.subscribe('root', () => sizes.push(ctx.slots.entries('root').length));
+
+    expect(() => ctx.slots.register({
+      name: 'root',
+      children: { child: { kind: 'single', scope: 'root' } },
+    }, Null)).toThrow(failure);
+
+    expect(ctx.slots.entries('root')).toEqual([]);
+    expect(ctx.slots.spec('child')).toBeUndefined();
+    expect(sizes.at(-1)).toBe(0);
+    stop();
+    stopHealthy();
+    const remove = ctx.slots.register({ name: 'root' }, Null);
+    expect(ctx.slots.entries('root')).toHaveLength(1);
+    remove();
+    await dispose();
+  });
+
   it('removes a contribution when its caller fiber is disposed', async () => {
     const { ctx, dispose } = await bootRenderer();
     ctx.slots.register({ name: 'root', children: { host: { kind: 'single', scope: 'root' } } }, Null);
@@ -161,6 +186,29 @@ describe('ui renderer', () => {
 
     expect(container.innerHTML).toBe('<main><h1>Settings</h1></main>');
     await act(async () => unmount());
+    await dispose();
+  });
+
+  it('notifies all owned slots after disposal even when a subscriber throws', async () => {
+    const { ctx, dispose } = await bootRenderer();
+    const owner = ctx.slots.createOwner('frame', {
+      first: { kind: 'single', scope: 'root' },
+      second: { kind: 'single', scope: 'root' },
+    });
+    const stop = ctx.slots.subscribe('first', () => {
+      throw new Error('cleanup subscriber failed');
+    });
+    let siblingRemoved = false;
+    const stopSecond = ctx.slots.subscribe('second', () => {
+      siblingRemoved = ctx.slots.spec('second') === undefined;
+    });
+
+    expect(() => owner.dispose()).toThrow('cleanup subscriber failed');
+    expect(siblingRemoved).toBe(true);
+    expect(ctx.slots.spec('first')).toBeUndefined();
+    expect(() => owner.dispose()).not.toThrow();
+    stop();
+    stopSecond();
     await dispose();
   });
 

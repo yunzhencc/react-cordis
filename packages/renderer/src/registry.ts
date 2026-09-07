@@ -53,11 +53,27 @@ export class SlotRegistry extends Service {
   register(options: SlotRegistration, component: ComponentType): () => void {
     const disposeEffect = this.ctx.effect(() => {
       const disposeRegistration = this.core.register(options, component);
-      this.publish(options.name);
-      return () => {
-        disposeRegistration();
-        this.publish(options.name);
+      const dispose = () => {
+        try {
+          disposeRegistration();
+        }
+        finally {
+          this.publish(options.name);
+        }
       };
+      try {
+        this.publish(options.name);
+      }
+      catch (error) {
+        try {
+          dispose();
+        }
+        catch {
+          // Report the original registration failure after rollback completes.
+        }
+        throw error;
+      }
+      return dispose;
     }, 'slots.register()');
     return () => {
       void disposeEffect();
@@ -152,9 +168,12 @@ export class SlotRegistry extends Service {
       if (!live)
         return;
       live = false;
-      disposeDeclaration();
-      for (const name of Object.keys(ownedChildren))
-        this.publish(name);
+      try {
+        disposeDeclaration();
+      }
+      finally {
+        this.publish(...Object.keys(ownedChildren));
+      }
     }, () => live);
   }
 
@@ -193,10 +212,21 @@ export class SlotRegistry extends Service {
     };
   }
 
-  private publish(name: string) {
-    this.versions.set(name, (this.versions.get(name) ?? 0) + 1);
-    for (const listener of [...this.listeners.get(name) ?? []])
-      listener();
+  private publish(...names: string[]) {
+    const errors: unknown[] = [];
+    for (const name of names) {
+      this.versions.set(name, (this.versions.get(name) ?? 0) + 1);
+      for (const listener of [...this.listeners.get(name) ?? []]) {
+        try {
+          listener();
+        }
+        catch (error) {
+          errors.push(error);
+        }
+      }
+    }
+    if (errors.length)
+      throw errors[0];
   }
 
   /** @internal */

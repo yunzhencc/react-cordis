@@ -69,9 +69,13 @@ export class SlotCore {
     };
     slot.entries.push(entry);
 
-    this.declareChildren(entry, children ?? {});
-
-    return () => this.remove(entry, slot);
+    const dispose = () => {
+      const changed: SlotRecord[] = [];
+      this.remove(entry, slot, changed);
+      this.notify(changed);
+    };
+    this.declareChildren(entry, children ?? {}, dispose);
+    return dispose;
   }
 
   /** @internal */
@@ -80,18 +84,13 @@ export class SlotCore {
     this.validateChildren(ownedChildren);
     const owner: DeclarationOwner = { children: ownedChildren, live: true };
 
-    this.declareChildren(owner, ownedChildren);
-
-    return () => {
-      if (!owner.live)
-        return;
-      owner.live = false;
-      for (const name of Object.keys(ownedChildren)) {
-        const child = this.records.get(name);
-        if (child?.declaredBy === owner)
-          this.removeDeclaration(child);
-      }
+    const dispose = () => {
+      const changed: SlotRecord[] = [];
+      this.removeChildren(owner, changed);
+      this.notify(changed);
     };
+    this.declareChildren(owner, ownedChildren, dispose);
+    return dispose;
   }
 
   spec(name: string): SlotSpec | undefined {
@@ -149,7 +148,7 @@ export class SlotCore {
     }
   }
 
-  private declareChildren(owner: DeclarationOwner, children: SlotMap) {
+  private declareChildren(owner: DeclarationOwner, children: SlotMap, rollback: () => void) {
     const declared: SlotRecord[] = [];
     for (const [name, spec] of Object.entries(children)) {
       const child = this.record(name);
@@ -158,28 +157,44 @@ export class SlotCore {
       child.epoch++;
       declared.push(child);
     }
-    for (const child of declared) this.notify(child);
-  }
-
-  private remove(entry: StoredEntry, slot: SlotRecord) {
-    if (!entry.live)
-      return;
-    entry.live = false;
-    slot.entries.splice(slot.entries.indexOf(entry), 1);
-
-    for (const name of Object.keys(entry.children ?? {})) {
-      const child = this.records.get(name);
-      if (child?.declaredBy === entry)
-        this.removeDeclaration(child);
+    try {
+      this.notify(declared);
+    }
+    catch (error) {
+      try {
+        rollback();
+      }
+      catch {
+        // Cleanup notifications must not replace the registration error.
+      }
+      throw error;
     }
   }
 
-  private removeDeclaration(slot: SlotRecord) {
+  private remove(entry: StoredEntry, slot: SlotRecord, changed: SlotRecord[]) {
+    if (!entry.live)
+      return;
+    slot.entries.splice(slot.entries.indexOf(entry), 1);
+    this.removeChildren(entry, changed);
+  }
+
+  private removeChildren(owner: DeclarationOwner, changed: SlotRecord[]) {
+    if (!owner.live)
+      return;
+    owner.live = false;
+    for (const name of Object.keys(owner.children ?? {})) {
+      const child = this.records.get(name);
+      if (child?.declaredBy === owner)
+        this.removeDeclaration(child, changed);
+    }
+  }
+
+  private removeDeclaration(slot: SlotRecord, changed: SlotRecord[]) {
     slot.spec = undefined;
     slot.declaredBy = undefined;
     slot.epoch++;
-    for (const entry of [...slot.entries]) this.remove(entry, slot);
-    this.notify(slot);
+    for (const entry of [...slot.entries]) this.remove(entry, slot, changed);
+    changed.push(slot);
   }
 
   private record(name: string): SlotRecord {
@@ -191,8 +206,20 @@ export class SlotCore {
     return slot;
   }
 
-  private notify(slot: SlotRecord) {
-    for (const listener of [...slot.listeners]) listener();
+  private notify(slots: SlotRecord[]) {
+    const errors: unknown[] = [];
+    for (const slot of slots) {
+      for (const listener of [...slot.listeners]) {
+        try {
+          listener();
+        }
+        catch (error) {
+          errors.push(error);
+        }
+      }
+    }
+    if (errors.length)
+      throw errors[0];
   }
 }
 
