@@ -80,6 +80,12 @@ importers:
       '@react-cordis/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
     devDependencies:
       '@react-cordis/vite':
         specifier: workspace:*
@@ -120,6 +126,9 @@ importers:
       react:
         specifier: ^19.2.8
         version: 19.2.8
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
     devDependencies:
       '@react-cordis/boot-config':
         specifier: workspace:*

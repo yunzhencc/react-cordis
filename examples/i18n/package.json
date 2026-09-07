@@ -13,7 +13,8 @@
     "@react-cordis/boot": "workspace:*",
     "@react-cordis/i18n": "workspace:*",
     "@react-cordis/renderer": "workspace:*",
-    "react": "^19.2.8"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@react-cordis/boot-config": "workspace:*",
