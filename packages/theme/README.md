@@ -30,6 +30,8 @@ const unsubscribe = ctx.theme.subscribe(() => {
 
 `preference` 表示用户选择，`resolvedTheme` 表示实际的 `light` 或 `dark`。快照只读且冻结，状态未变化时保持引用和订阅通知不变。React 可使用 `useSyncExternalStore(theme.subscribe, () => theme.snapshot)`，无需另一套 Provider 状态。
 
+订阅者的同步异常通过 `console.error` 报告，不会阻断其他订阅者或回滚已更新的主题。每轮通知使用开始时的订阅列表；通知期间新增或取消的订阅影响后续轮次。回调内再次修改主题会同步启动新一轮通知，回调始终读取最新快照；若回调销毁运行时，则立即停止当前轮剩余通知。
+
 每个文档应只有一个主题管理者。Cordis 卸载插件时移除所有监听、注销服务，并恢复激活前的主题属性和 `color-scheme`；若提前执行了首屏脚本，恢复的是脚本设置后的值。其他模块不应同时写入所配置的主题属性。销毁后的修改和订阅不会再产生副作用，也不会清除用户已保存的偏好。
 
 ## 首屏初始化

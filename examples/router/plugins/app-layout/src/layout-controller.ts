@@ -62,7 +62,14 @@ export class LayoutController {
     if (next.sidebarOpen === this.current.sidebarOpen && next.workbenchOpen === this.current.workbenchOpen)
       return;
     this.current = Object.freeze(next);
-    for (const listener of [...this.listeners]) listener();
+    for (const listener of [...this.listeners]) {
+      try {
+        listener();
+      }
+      catch (error) {
+        console.error('app-layout subscriber failed:', error);
+      }
+    }
   }
 }
 

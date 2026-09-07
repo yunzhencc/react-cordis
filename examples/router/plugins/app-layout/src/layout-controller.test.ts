@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from 'vitest';
-import { getSidebarBounds, getWorkbenchBounds, getWorkspaceWidth, MAIN_MIN_WIDTH, readStorage } from './layout-controller';
+import { describe, expect, it, vi } from 'vitest';
+import { getSidebarBounds, getWorkbenchBounds, getWorkspaceWidth, LayoutController, MAIN_MIN_WIDTH, readStorage } from './layout-controller';
 
 describe('router layout constraints', () => {
   it('clamps the sidebar while preserving 240px for the remaining shell', () => {
@@ -27,4 +27,44 @@ it('uses the panel default when storage has no value', () => {
   localStorage.clear();
   const bounds = getSidebarBounds(1600);
   expect(readStorage('sidebar-width') ?? bounds.defaultSize).toBe(275);
+});
+
+it('continues notifying layout subscribers after a failure and respects unsubscribe', () => {
+  const controller = new LayoutController();
+  const failure = new Error('broken subscriber');
+  const report = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const stopBroken = controller.subscribe(() => {
+    throw failure;
+  });
+  const observed: ReturnType<LayoutController['snapshot']>[] = [];
+  const stopHealthy = controller.subscribe(() => observed.push(controller.snapshot()));
+  try {
+    expect(() => controller.closeSidebar()).not.toThrow();
+    expect(observed).toEqual([{ sidebarOpen: false, workbenchOpen: false }]);
+    expect(report).toHaveBeenCalledWith('app-layout subscriber failed:', failure);
+    const snapshot = controller.snapshot();
+    controller.closeSidebar();
+    expect(controller.snapshot()).toBe(snapshot);
+    expect(observed).toHaveLength(1);
+    stopHealthy();
+    stopBroken();
+    controller.openWorkbench();
+    expect(observed).toHaveLength(1);
+    expect(report).toHaveBeenCalledTimes(1);
+  }
+  finally { report.mockRestore(); }
+});
+
+it('exposes the latest layout snapshot after a subscriber updates another panel', () => {
+  const controller = new LayoutController();
+  controller.subscribe(() => controller.openWorkbench());
+  const observed: ReturnType<LayoutController['snapshot']>[] = [];
+  controller.subscribe(() => observed.push(controller.snapshot()));
+
+  controller.closeSidebar();
+
+  expect(observed).toEqual([
+    { sidebarOpen: false, workbenchOpen: true },
+    { sidebarOpen: false, workbenchOpen: true },
+  ]);
 });

@@ -111,7 +111,16 @@ export class ThemeRuntime {
     if (next.preference === this.state.preference && next.resolvedTheme === this.state.resolvedTheme)
       return;
     this.state = next;
-    for (const listener of [...this.listeners]) listener();
+    for (const listener of [...this.listeners]) {
+      if (this.disposed)
+        return;
+      try {
+        listener();
+      }
+      catch (error) {
+        console.error('theme subscriber failed:', error);
+      }
+    }
   }
 }
 

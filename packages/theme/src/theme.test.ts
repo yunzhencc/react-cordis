@@ -104,6 +104,65 @@ describe('themeRuntime', () => {
     expect(() => Object.assign(snapshot, { preference: 'light' })).toThrow();
   });
 
+  it.each(['selection', 'system', 'storage'])('continues notifying after a subscriber throws during %s changes', (source) => {
+    const theme = createTheme();
+    const failure = new Error('broken subscriber');
+    const report = vi.spyOn(console, 'error').mockImplementation(() => {});
+    theme.subscribe(() => {
+      throw failure;
+    });
+    const observed: themeModule.ThemeSnapshot[] = [];
+    const stop = theme.subscribe(() => observed.push(theme.snapshot));
+
+    expect(() => {
+      if (source === 'system')
+        media.emit(false);
+      else if (source === 'storage')
+        storage('react-cordis:theme', 'light');
+      else
+        theme.setTheme('light');
+    }).not.toThrow();
+
+    expect(observed).toEqual([theme.snapshot]);
+    expect(theme.snapshot.resolvedTheme).toBe('light');
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(report).toHaveBeenCalledWith('theme subscriber failed:', failure);
+    stop();
+    theme.setTheme('dark');
+    expect(observed).toHaveLength(1);
+  });
+
+  it('stops the current notification round when a subscriber disposes the runtime', () => {
+    const theme = createTheme();
+    theme.subscribe(() => theme.dispose());
+    const later = vi.fn();
+    theme.subscribe(later);
+
+    theme.setTheme('light');
+
+    expect(later).not.toHaveBeenCalled();
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+    theme.subscribe(later);
+    theme.setTheme('dark');
+    expect(later).not.toHaveBeenCalled();
+  });
+
+  it('exposes the latest snapshot after a subscriber changes the theme again', () => {
+    const theme = createTheme({ defaultTheme: 'light' });
+    theme.subscribe(() => {
+      if (theme.snapshot.preference === 'dark')
+        theme.setTheme('light');
+    });
+    const observed: string[] = [];
+    theme.subscribe(() => observed.push(theme.snapshot.preference));
+
+    theme.setTheme('dark');
+
+    expect(observed).toEqual(['light', 'light']);
+    expect(theme.snapshot.preference).toBe('light');
+    expect(localStorage.getItem('react-cordis:theme')).toBe('light');
+  });
+
   it('restores only its owned DOM state and makes disposal final', () => {
     const root = document.documentElement;
     root.className = 'host light';
