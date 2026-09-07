@@ -13,15 +13,9 @@ interface CatalogRow {
   config?: unknown;
 }
 
-interface ClientMetadata {
-  platform: unknown;
-  inject?: unknown;
-  immediately?: unknown;
-}
-
 interface PackageManifest {
   exports?: unknown;
-  yunzhen?: { client?: ClientMetadata };
+  cordis?: unknown;
 }
 
 export function loadWebBootGraph(configPath: string): WebBootGraph {
@@ -62,20 +56,17 @@ function loadEntry(value: unknown, index: number, configPath: string): WebBootEn
   if (!hasClientExport(manifest.exports))
     throw new TypeError(`web boot catalog exports./client missing: ${row.name}`);
 
-  const client = manifest.yunzhen?.client;
-  if (!client || client.platform !== 'web')
-    throw new TypeError(`web boot catalog client metadata must target web: ${row.name}`);
-  if (client.inject !== undefined && (!Array.isArray(client.inject) || client.inject.some(name => typeof name !== 'string')))
+  if (manifest.cordis !== undefined && !isRecord(manifest.cordis))
+    throw new TypeError(`web boot catalog cordis metadata must be an object: ${row.name}`);
+  const inject = manifest.cordis?.inject;
+  if (inject !== undefined && (!Array.isArray(inject) || inject.some(name => typeof name !== 'string')))
     throw new TypeError(`web boot catalog inject must be package names: ${row.name}`);
-  if (client.immediately !== undefined && typeof client.immediately !== 'boolean')
-    throw new TypeError(`web boot catalog immediately must be boolean: ${row.name}`);
 
   const config = parseJsonConfig(row.config, row.name);
   return [{
     id: row.id,
     name: row.name,
-    inject: client.inject as readonly string[] | undefined ?? [],
-    immediately: client.immediately as boolean | undefined ?? false,
+    inject: inject as readonly string[] | undefined ?? [],
     ...(config === undefined ? {} : { config }),
   }];
 }

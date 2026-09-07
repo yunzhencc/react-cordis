@@ -17,7 +17,19 @@ examples/router/cordis.yml
                   └─ Cordis Context → ctx.uiRenderer.mount(container)
 ```
 
-`examples/router/cordis.yml` 是该示例应用唯一的启用来源。catalog 在 Node 构建阶段读取它和每个包的 `yunzhen.client` 元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
+`examples/router/cordis.yml` 是该示例应用唯一的启用来源。catalog 在 Node 构建阶段读取它和每个包的 `cordis.inject` 包依赖元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
+
+插件通过 `exports["./client"]` 提供浏览器入口，`package.json` 的可选 `cordis.inject` 声明包名依赖，用于校验和排序启动图；没有包依赖时可省略整个 `cordis` 字段。代码中的 `export const inject` 仍声明 Cordis 服务名依赖。
+
+```json
+"cordis": {
+  "inject": ["@react-cordis/ui-i18n"]
+}
+```
+
+原 `yunzhen.client` 元数据已替换，不再使用 `platform` 和 `immediately`，所有启用插件并发导入，模块到达后立即创建 Cordis 插件；代码中的服务 `inject` 决定何时执行 `apply()`。包级依赖仍用于启动图校验与排序，但不串行等待激活。启动器等待所有已创建插件的生命周期工作稳定，确认没有激活失败或缺失服务后才挂载 UI。失败时清理已创建插件，迟到的模块不会再创建插件。
+
+插件注册和可清理副作用应放在 `apply()` 或 `ctx.effect()` 中；ESM 导入不能取消，模块顶层副作用不属于插件回滚范围。
 
 ## 包职责
 

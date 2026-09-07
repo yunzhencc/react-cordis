@@ -24,10 +24,10 @@ function fixture(config: string, packages: Record<string, object>) {
   return join(root, 'cordis.yml');
 }
 
-function client(metadata: object = {}) {
+function client(metadata?: object) {
   return {
     exports: { './client': './client.ts' },
-    yunzhen: { client: { platform: 'web', ...metadata } },
+    ...(metadata === undefined ? {} : { cordis: metadata }),
   };
 }
 
@@ -39,7 +39,7 @@ it('omits disabled rows before topology validation', () => {
   name: '@fixture/dashboard'
   disabled: true
 `, {
-    '@fixture/renderer': client({ immediately: true }),
+    '@fixture/renderer': client(),
     '@fixture/dashboard': client({ inject: ['@fixture/missing'] }),
   });
 
@@ -53,15 +53,33 @@ it('sorts enabled entries by their package metadata dependencies', () => {
 - id: renderer
   name: '@fixture/renderer'
 `, {
-    '@fixture/renderer': client({ immediately: true }),
+    '@fixture/renderer': client(),
     '@fixture/dashboard': client({ inject: ['@fixture/renderer'] }),
   });
 
   expect(loadWebBootGraph(configPath).entries.map(entry => entry.id)).toEqual(['renderer', 'dashboard']);
 });
 
+it.each([client(), client({})])('accepts plugins without package dependencies', (manifest) => {
+  const configPath = fixture(`- id: renderer\n  name: '@fixture/renderer'\n`, {
+    '@fixture/renderer': manifest,
+  });
+
+  expect(loadWebBootGraph(configPath).entries).toEqual([
+    { id: 'renderer', name: '@fixture/renderer', inject: [] },
+  ]);
+});
+
+it.each([null, 'web', [], { inject: null }, { inject: 'renderer' }, { inject: [42] }].map(cordis => ({ cordis })))('rejects malformed cordis metadata: $cordis', ({ cordis }) => {
+  const configPath = fixture(`- id: renderer\n  name: '@fixture/renderer'\n`, {
+    '@fixture/renderer': { ...client(), cordis },
+  });
+
+  expect(() => loadWebBootGraph(configPath)).toThrow(/cordis|inject/);
+});
+
 it.each([
-  [() => fixture(`- id: missing-client\n  name: '@fixture/missing-client'\n`, { '@fixture/missing-client': { yunzhen: { client: { platform: 'web' } } } }), /exports\.\/client/],
+  [() => fixture(`- id: missing-client\n  name: '@fixture/missing-client'\n`, { '@fixture/missing-client': {} }), /exports\.\/client/],
   [() => fixture(`- id: dashboard\n  name: '@fixture/dashboard'\n`, { '@fixture/dashboard': client({ inject: ['@fixture/missing'] }) }), /injects inactive package/],
   [() => fixture(`- id: invalid\n  name: '@fixture/invalid'\n  config: !!js/function >\n    function () {}\n`, { '@fixture/invalid': client() }), /!!js/],
 ])('rejects invalid catalog input', (createFixture, error) => {

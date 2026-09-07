@@ -19,15 +19,11 @@
     "@react-cordis/ui-router": "workspace:*",
     "react-dom": "^19.2.8"
   },
-  "yunzhen": {
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@react-cordis/ui-i18n",
-        "@examples/router-settings-general",
-        "@react-cordis/ui-renderer"
-      ],
-      "immediately": false
-    }
+  "cordis": {
+    "inject": [
+      "@react-cordis/ui-i18n",
+      "@examples/router-settings-general",
+      "@react-cordis/ui-renderer"
+    ]
   }
 }

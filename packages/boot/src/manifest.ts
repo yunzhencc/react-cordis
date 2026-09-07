@@ -4,7 +4,6 @@ export interface WebBootEntry {
   id: string;
   name: string;
   inject: readonly string[];
-  immediately: boolean;
   config?: JsonValue;
 }
 
@@ -69,8 +68,6 @@ function assertWebBootEntry(entry: WebBootEntry) {
     throw new TypeError('web boot graph entry name must be a non-empty string');
   if (!Array.isArray(entry.inject) || entry.inject.some(name => typeof name !== 'string'))
     throw new TypeError(`web boot graph inject must be package names: ${entry.name}`);
-  if (typeof entry.immediately !== 'boolean')
-    throw new TypeError(`web boot graph immediately must be boolean: ${entry.name}`);
   if (entry.config !== undefined && !isJsonValue(entry.config))
     throw new TypeError(`web boot graph config must be JSON-safe: ${entry.name}`);
 }

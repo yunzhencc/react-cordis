@@ -17,15 +17,11 @@
     "react-i18next": "^16.5.9",
     "react-router-dom": "^7.18.3"
   },
-  "yunzhen": {
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@react-cordis/ui-i18n",
-        "@react-cordis/ui-renderer",
-        "@react-cordis/ui-router"
-      ],
-      "immediately": false
-    }
+  "cordis": {
+    "inject": [
+      "@react-cordis/ui-i18n",
+      "@react-cordis/ui-renderer",
+      "@react-cordis/ui-router"
+    ]
   }
 }

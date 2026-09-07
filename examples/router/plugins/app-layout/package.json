@@ -11,14 +11,10 @@
     "@react-cordis/ui-layout": "workspace:*",
     "@react-cordis/ui-router": "workspace:*"
   },
-  "yunzhen": {
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@react-cordis/ui-layout",
-        "@react-cordis/ui-router"
-      ],
-      "immediately": false
-    }
+  "cordis": {
+    "inject": [
+      "@react-cordis/ui-layout",
+      "@react-cordis/ui-router"
+    ]
   }
 }

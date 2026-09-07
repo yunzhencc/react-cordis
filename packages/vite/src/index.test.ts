@@ -5,7 +5,7 @@ import { cordisWebBoot, emitWebBootGraph, renderWebBootVirtualModule } from './i
 
 const graph = {
   revision: 'r1',
-  entries: [{ id: 'renderer', name: '@app/renderer', inject: [], immediately: true }],
+  entries: [{ id: 'renderer', name: '@app/renderer', inject: [] }],
 };
 
 it('maps each catalog package to its client import', () => {

@@ -16,11 +16,9 @@
   "devDependencies": {
     "react-dom": "^19.2.8"
   },
-  "yunzhen": {
-    "client": {
-      "platform": "web",
-      "inject": ["@react-cordis/ui-renderer"],
-      "immediately": false
-    }
+  "cordis": {
+    "inject": [
+      "@react-cordis/ui-renderer"
+    ]
   }
 }

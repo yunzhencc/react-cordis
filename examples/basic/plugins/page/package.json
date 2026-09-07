@@ -12,11 +12,9 @@
     "@react-cordis/ui-renderer": "workspace:*",
     "react": "^19.2.8"
   },
-  "yunzhen": {
-    "client": {
-      "platform": "web",
-      "inject": ["@react-cordis/ui-layout"],
-      "immediately": false
-    }
+  "cordis": {
+    "inject": [
+      "@react-cordis/ui-layout"
+    ]
   }
 }

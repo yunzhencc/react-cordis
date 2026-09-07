@@ -14,11 +14,9 @@
     "react-dom": "^19.2.8",
     "react-i18next": "^16.5.9"
   },
-  "yunzhen": {
-    "client": {
-      "platform": "web",
-      "inject": ["@react-cordis/ui-i18n"],
-      "immediately": true
-    }
+  "cordis": {
+    "inject": [
+      "@react-cordis/ui-i18n"
+    ]
   }
 }

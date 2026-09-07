@@ -26,10 +26,11 @@ export class BootFailure extends Error {
 
 export async function activateWebBootGraph(ctx: Context, graph: WebBootGraph, registry: PluginRegistry) {
   assertWebBootGraph(graph);
-  const fibers: Fiber[] = [];
+  const created: { entryId: string; fiber: Fiber }[] = [];
+  let stopped = false;
 
   try {
-    for (const entry of graph.entries) {
+    await Promise.all(graph.entries.map(async (entry) => {
       const importer = registry.get(entry.name);
       if (!importer)
         throw new BootFailure(entry.id, 'registry', new Error(`registry entry missing for ${entry.name}`));
@@ -42,22 +43,51 @@ export async function activateWebBootGraph(ctx: Context, graph: WebBootGraph, re
         throw new BootFailure(entry.id, 'import', error);
       }
 
+      // Dynamic imports cannot be cancelled; ignore arrivals after boot has failed.
+      if (stopped)
+        return;
       try {
         const fiber = ctx.plugin(module, entry.config);
-        fibers.push(fiber);
-        await fiber.await();
+        created.push({ entryId: entry.id, fiber });
       }
       catch (error) {
         throw new BootFailure(entry.id, 'activate', error);
       }
+    }));
+
+    // A provider settling can start another fiber, so wait for the whole graph.
+    while (true) {
+      const tasks = created.flatMap(({ fiber }) => fiber.inertia ? [fiber.inertia] : []);
+      if (tasks.length === 0)
+        break;
+      await Promise.all(tasks);
+    }
+
+    await Promise.all(created.map(async ({ entryId, fiber }) => {
+      try {
+        await fiber.await();
+      }
+      catch (error) {
+        throw new BootFailure(entryId, 'activate', error);
+      }
+    }));
+    for (const { entryId, fiber } of created) {
+      // After lifecycle work settles, only a loaded fiber retains its service snapshot.
+      if (fiber.uid !== null && fiber.store !== undefined)
+        continue;
+      const missing = Object.keys(fiber.inject).filter(name => fiber.ctx.get(name) === undefined);
+      throw new BootFailure(entryId, 'activate', new Error(
+        missing.length ? `missing services: ${missing.join(', ')}` : 'plugin did not become active',
+      ));
     }
   }
   catch (error) {
-    await disposeFibers(fibers);
+    stopped = true;
+    await disposeFibers(created.map(({ fiber }) => fiber));
     throw error;
   }
 
-  return fibers;
+  return created.map(({ fiber }) => fiber);
 }
 
 export async function bootWebApp({ container, graph, registry }: BootWebAppOptions) {
