@@ -95,6 +95,35 @@ it('waits for service dependencies and their asynchronous activation before moun
   expect(mount).toHaveBeenCalledOnce();
 });
 
+it('disposes every plugin even when the renderer unmount throws', async () => {
+  const calls: string[] = [];
+  const failure = new Error('unmount failed');
+  const registry: PluginRegistry = new Map<string, () => Promise<PluginModule>>([
+    ['@app/resource', async () => ({ apply: () => () => {
+      calls.push('resource');
+    } })],
+    ['@app/renderer', async () => ({ apply: (ctx) => {
+      ctx.provide('uiRenderer', {
+        slots: {},
+        mount: () => () => {
+          throw failure;
+        },
+      } as never);
+      return () => {
+        calls.push('renderer');
+      };
+    } })],
+  ]);
+  const dispose = await bootWebApp({
+    container: document.createElement('div'),
+    graph: { revision: 'test', entries: [...registry.keys()].map(name => ({ id: name, name, inject: [] })) },
+    registry,
+  });
+
+  await expect(dispose()).rejects.toBe(failure);
+  expect(calls).toEqual(['renderer', 'resource']);
+});
+
 it('rejects unresolved services instead of mounting an incomplete application', async () => {
   const container = document.createElement('div');
   await expect(bootWebApp({

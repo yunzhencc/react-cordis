@@ -34,6 +34,43 @@ async function bootSettings() {
 }
 
 describe('settings registry', () => {
+  it('rolls back a failed publication and its route while preserving existing settings', async () => {
+    const { ctx, dispose } = await bootSettings();
+    ctx.settings.register(entry('existing'));
+    const failure = new Error('settings subscriber failed');
+    const stop = ctx.settings.subscribe(() => {
+      throw ctx.settings.snapshot().some(item => item.id === 'appearance') ? failure : new Error('cleanup subscriber failed');
+    });
+    const snapshots: string[][] = [];
+    const stopHealthy = ctx.settings.subscribe(() => snapshots.push(ctx.settings.snapshot().map(item => item.id)));
+
+    expect(() => ctx.settings.register(entry('appearance'))).toThrow(failure);
+    expect(ctx.settings.snapshot().map(item => item.id)).toEqual(['existing']);
+    expect(ctx.routes.snapshot().map(route => route.id)).toEqual(['app-layout', 'settings', 'settings.existing']);
+    expect(snapshots.at(-1)).toEqual(['existing']);
+    stop();
+    stopHealthy();
+    const remove = ctx.settings.register(entry('appearance'));
+    expect(ctx.settings.snapshot().map(item => item.id)).toEqual(['appearance', 'existing']);
+    remove();
+    await dispose();
+  });
+
+  it('removes a pending setting when route creation fails and allows a retry', async () => {
+    const { ctx, dispose } = await bootSettings();
+    const removeConflict = ctx.routes.register({ id: 'settings.appearance', parentId: 'settings', path: 'custom', Component: Null });
+
+    expect(() => ctx.settings.register(entry('appearance'))).toThrow('duplicate route id');
+    expect(ctx.settings.snapshot()).toEqual([]);
+    expect(ctx.routes.snapshot().find(route => route.id === 'settings.appearance')?.path).toBe('custom');
+    removeConflict();
+    const remove = ctx.settings.register(entry('appearance'));
+    expect(ctx.settings.snapshot().map(item => item.id)).toEqual(['appearance']);
+    expect(ctx.routes.snapshot().find(route => route.id === 'settings.appearance')?.path).toBe('appearance');
+    remove();
+    await dispose();
+  });
+
   it('sorts entries, creates child routes, and removes both with the caller fiber', async () => {
     const { ctx, dispose } = await bootSettings();
     const caller = ctx.plugin({

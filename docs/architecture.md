@@ -119,8 +119,8 @@ app-layout
 └─ shell.overlay (list)
 ```
 
-Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；app-layout 拥有默认侧栏及其样式，通过业务侧的 TypeScript 声明合并为 `RouteDefinition` 扩展 `Sidebar` 字段，并根据匹配路由选择侧栏；命中 Settings 时显示设置侧栏，基础 router 不解释该字段。Dashboard 向 `sidebar.navigation` 注册自己的 NavLink，菜单顺序由 Slot 的 `order` 决定。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。Router 的 app-layout 业务插件负责面板开关、拖拽尺寸持久化与响应式折叠，Dashboard 通过 `ctx.appLayout` 操作工作区。Basic 示例直接向 root Slot 注册自己的页面，不加载 i18n、布局或路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
+Router 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；app-layout 拥有默认侧栏及其样式，通过业务侧的 TypeScript 声明合并为 `RouteDefinition` 扩展 `Sidebar` 字段，并根据匹配路由选择侧栏；命中 Settings 时显示设置侧栏，基础 router 不解释该字段。Dashboard 向 `sidebar.navigation` 注册自己的 NavLink，菜单顺序由 Slot 的 `order` 决定。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面；注册或通知失败时回滚设置项及其路由，保留其他设置项。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。Router 的 app-layout 业务插件负责面板开关、拖拽尺寸持久化与响应式折叠，Dashboard 通过 `ctx.appLayout` 操作工作区。Basic 示例直接向 root Slot 注册自己的页面，不加载 i18n、布局或路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
 
 ## 部署边界
 
-开发期 Vite 进程可读取 `examples/router/cordis.yml` 生成虚拟 registry；生产环境仅托管 `examples/router/dist` 的静态文件和 ESM chunks。生产不运行 Node 配置扫描，不支持 HMR、远程插件、运行时安装或动态运行器。
+开发期 Vite 进程可读取 `examples/router/cordis.yml` 生成虚拟 registry；生产环境仅托管 `examples/router/dist` 的静态文件和 ESM chunks。生产不运行 Node 配置扫描，不支持 HMR、远程插件、运行时安装或动态运行器。应用卸载时，即使 renderer 的卸载函数抛错，boot 仍会完成插件清理后再报告错误。

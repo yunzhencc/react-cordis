@@ -47,22 +47,39 @@ export class SettingsRegistry extends Service {
     const copied = copyEntry(entry);
     this.validate(copied);
     const disposeEffect = this.ctx.effect(() => {
-      this.entries.set(copied.id, copied);
-      const disposeRoute = this.ctx.routes.inject('settings', () => this.ctx.routes.register({
-        id: `settings.${copied.id}`,
-        parentId: 'settings',
-        path: copied.id,
-        Component: copied.Component,
-        children: copied.children,
-      }));
-      this.publish();
-      return () => {
-        disposeRoute();
-        if (this.entries.get(copied.id) === copied) {
-          this.entries.delete(copied.id);
-          this.publish();
+      let disposeRoute: (() => void) | undefined;
+      const dispose = () => {
+        try {
+          disposeRoute?.();
+        }
+        finally {
+          if (this.entries.get(copied.id) === copied) {
+            this.entries.delete(copied.id);
+            this.publish();
+          }
         }
       };
+      this.entries.set(copied.id, copied);
+      try {
+        disposeRoute = this.ctx.routes.inject('settings', () => this.ctx.routes.register({
+          id: `settings.${copied.id}`,
+          parentId: 'settings',
+          path: copied.id,
+          Component: copied.Component,
+          children: copied.children,
+        }));
+        this.publish();
+      }
+      catch (error) {
+        try {
+          dispose();
+        }
+        catch {
+          // Cleanup notifications must not replace the registration error.
+        }
+        throw error;
+      }
+      return dispose;
     }, 'settings.register()');
     return () => {
       void disposeEffect();
@@ -92,7 +109,17 @@ export class SettingsRegistry extends Service {
     this.currentSnapshot = Object.freeze([...this.entries.values()]
       .sort((left, right) => left.group.order - right.group.order || left.order - right.order || left.id.localeCompare(right.id))
       .map(copyEntry));
-    for (const listener of [...this.listeners]) listener();
+    const errors: unknown[] = [];
+    for (const listener of [...this.listeners]) {
+      try {
+        listener();
+      }
+      catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length)
+      throw errors[0];
   }
 }
 

@@ -98,8 +98,12 @@ export async function bootWebApp({ container, graph, registry }: BootWebAppOptio
     fibers = await activateWebBootGraph(ctx, graph, registry);
     const unmount = ctx.uiRenderer.mount(container);
     return async () => {
-      unmount();
-      await disposeFibers(fibers);
+      try {
+        unmount();
+      }
+      finally {
+        await disposeFibers(fibers);
+      }
     };
   }
   catch (error) {
