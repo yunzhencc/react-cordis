@@ -1,5 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { EventEmitter } from 'node:events';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createServer } from 'vite';
 import { expect, it, vi } from 'vitest';
 import { cordisWebBoot, emitWebBootGraph, renderWebBootVirtualModule } from './index';
 
@@ -72,6 +75,140 @@ it('reloads the virtual boot graph when its boot config changes', () => {
     expect(Reflect.apply(plugin.load, undefined, [resolvedVirtualModuleId])).toContain('@react-cordis/renderer');
   }
   finally {
+    Reflect.apply(plugin.closeBundle, undefined, []);
     rmSync(root, { force: true, recursive: true });
+  }
+});
+
+function metadataFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'cordis-metadata-'));
+  const configPath = join(root, 'cordis.yml');
+  const manifestPath = join(root, 'node_modules/plugin/package.json');
+  mkdirSync(join(root, 'node_modules/plugin'), { recursive: true });
+  const manifest = { name: 'plugin', exports: { './client': './client.ts' } };
+  writeFileSync(manifestPath, JSON.stringify(manifest));
+  writeFileSync(configPath, '- id: plugin\n  name: plugin\n');
+  const plugin = cordisWebBoot({ configPath });
+  const module = { id: '\0virtual:cordis-boot' };
+  const invalidateModule = vi.fn();
+  const send = vi.fn();
+  const watcher = Object.assign(new EventEmitter(), { add: vi.fn() });
+  const server = { watcher, moduleGraph: { getModuleById: () => module, invalidateModule }, ws: { send } };
+  watcher.on('change', file => Reflect.apply(plugin.handleHotUpdate, undefined, [{ file, server }]));
+  Reflect.apply(plugin.configureServer, undefined, [server]);
+  return {
+    root,
+    configPath,
+    manifestPath,
+    manifest,
+    plugin,
+    send,
+    invalidateModule,
+    load: () => Reflect.apply(plugin.load, undefined, [module.id]) as string,
+    changeConfig: () => Reflect.apply(plugin.handleHotUpdate, undefined, [{ file: configPath, server }]),
+    close: () => Reflect.apply(plugin.closeBundle, undefined, []),
+  };
+}
+
+it('refreshes metadata under node_modules and recovers from invalid or deleted manifests', async () => {
+  const app = metadataFixture();
+  try {
+    const initial = app.load();
+    const previous = app.send.mock.calls.length;
+    writeFileSync(app.manifestPath, JSON.stringify({ ...app.manifest, cordis: { inject: ['missing'] } }));
+    await vi.waitFor(() => expect(app.send.mock.calls.length).toBeGreaterThan(previous), { timeout: 3000 });
+    expect(app.invalidateModule).toHaveBeenCalled();
+    expect(app.send).toHaveBeenLastCalledWith({ type: 'full-reload' });
+    expect(() => app.load()).toThrow('injects inactive package');
+
+    for (const content of ['{', null, JSON.stringify(app.manifest)]) {
+      const before = app.send.mock.calls.length;
+      if (content === null)
+        rmSync(app.manifestPath);
+      else
+        writeFileSync(app.manifestPath, content);
+      await vi.waitFor(() => expect(app.send.mock.calls.length).toBeGreaterThan(before), { timeout: 3000 });
+      if (content === JSON.stringify(app.manifest))
+        expect(app.load()).toBe(initial);
+      else
+        expect(() => app.load()).toThrow();
+    }
+  }
+  finally {
+    app.close();
+    rmSync(app.root, { force: true, recursive: true });
+  }
+});
+
+it('tracks newly enabled symlinked packages even when their first metadata read fails', async () => {
+  const app = metadataFixture();
+  const workspacePackage = join(app.root, 'workspace-plugin');
+  const manifestPath = join(workspacePackage, 'package.json');
+  mkdirSync(workspacePackage);
+  symlinkSync(workspacePackage, join(app.root, 'node_modules/workspace-plugin'), 'dir');
+  try {
+    app.load();
+    writeFileSync(manifestPath, '{');
+    writeFileSync(app.configPath, '- id: workspace\n  name: workspace-plugin\n');
+    app.changeConfig();
+    expect(() => app.load()).toThrow();
+    const before = app.send.mock.calls.length;
+    writeFileSync(manifestPath, JSON.stringify({ ...app.manifest, name: 'workspace-plugin' }));
+    await vi.waitFor(() => expect(app.send.mock.calls.length).toBeGreaterThan(before), { timeout: 3000 });
+    expect(app.load()).toContain('workspace-plugin/client');
+
+    // Removed packages and a closed development server must stop triggering reloads.
+    app.send.mockClear();
+    writeFileSync(app.manifestPath, '{}');
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    expect(app.send).not.toHaveBeenCalled();
+    app.close();
+    writeFileSync(manifestPath, '{}');
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    expect(app.send).not.toHaveBeenCalled();
+  }
+  finally {
+    app.close();
+    rmSync(app.root, { force: true, recursive: true });
+  }
+});
+
+it('updates dependency metadata with Vite default dependency optimization enabled', async () => {
+  const app = metadataFixture();
+  app.close();
+  writeFileSync(join(app.root, 'node_modules/plugin/client.ts'), 'export const version = 1;');
+  mkdirSync(join(app.root, 'node_modules/provider'));
+  writeFileSync(join(app.root, 'node_modules/provider/package.json'), JSON.stringify({ ...app.manifest, name: 'provider' }));
+  writeFileSync(join(app.root, 'node_modules/provider/client.ts'), 'export const value = true;');
+  writeFileSync(app.configPath, '- id: plugin\n  name: plugin\n- id: provider\n  name: provider\n');
+  const server = await createServer({
+    root: app.root,
+    configFile: false,
+    plugins: [cordisWebBoot({ configPath: app.configPath })],
+    server: { middlewareMode: true, ws: false, watch: null },
+    logLevel: 'silent',
+  });
+  try {
+    await server.environments.client.pluginContainer.buildStart({});
+    const before = await server.transformRequest('virtual:cordis-boot');
+    expect(before?.code).toContain('/node_modules/.vite/deps/');
+    expect(before?.code).toContain('"entries":[{"id":"plugin"');
+    writeFileSync(app.manifestPath, JSON.stringify({ ...app.manifest, cordis: { inject: ['provider'] } }));
+    await vi.waitFor(async () => {
+      const after = await server.transformRequest('virtual:cordis-boot');
+      expect(after?.code).toContain('"entries":[{"id":"provider"');
+      expect(after?.code).toContain('"inject":["provider"]');
+    }, { timeout: 3000 });
+
+    writeFileSync(app.manifestPath, JSON.stringify(app.manifest));
+    await vi.waitFor(async () => {
+      const after = await server.transformRequest('virtual:cordis-boot');
+      expect(after?.code).toContain('"entries":[{"id":"plugin"');
+      expect(after?.code).not.toContain('"inject":["provider"]');
+    }, { timeout: 3000 });
+  }
+  finally {
+    await server.close();
+    rmSync(app.root, { force: true, recursive: true });
   }
 });

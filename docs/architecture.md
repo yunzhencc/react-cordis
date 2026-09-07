@@ -101,6 +101,12 @@ export default defineConfig({ plugins: [cordisWebBoot()] });
 
 默认读取 Vite `root` 下的 `cordis.yml`，生成 `virtual:cordis-boot`。调用方可以通过 `configPath` 和 `virtualModuleId` 覆盖；配置路径相对 Vite `root` 解析，也接受绝对路径。应用入口将虚拟模块导出的 `graph`、`registry` 传给 `bootWebApp`。目录解析以配置文件为基准，所以应用需直接声明清单中的插件依赖。
 
+开发服务同时监听启用插件实际读取的 `package.json`，支持 `cordis.inject` 依赖元数据自动生效。`boot-config` 通过可选的 `onPackageManifest` 回调在读取前报告文件路径，不改变 `WebBootGraph` 的结构。Vite 默认忽略 `node_modules`，因此插件在首次读取前记录文件状态，用一个共享定时器每 500ms 检查变化，清除启动图缓存并触发整页刷新；下次加载会重新校验依赖并排序。
+
+文件监听不代表所有包元数据都能热更新。修改 `exports`（包括 `exports["./client"]`）后需要重启开发服务；如果入口已被 Vite 预构建，重启时加 `--force` 强制重新预构建，例如 Router 示例运行 `pnpm --filter @examples/router exec vite --force`。本插件保留默认依赖优化策略，不自动重启或管理预构建缓存。
+
+工作区软链接解析到真实文件路径。同一文件只监听一次；配置成功加载后停止监听已移除或禁用的包，开发服务关闭时释放所有监听。JSON 损坏或文件删除时保留监听，修复后自动刷新；错误期间不回退到旧启动图。未能解析到路径的包不在监听范围，安装缺失的包或更换包链接目标后仍需重启开发服务。这是开发期整页刷新，页面临时状态会重置，不提供插件原位热替换。
+
 ## Slot、Route 与布局
 
 ### 插槽类型契约

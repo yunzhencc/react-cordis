@@ -18,7 +18,8 @@ interface PackageManifest {
   cordis?: unknown;
 }
 
-export function loadWebBootGraph(configPath: string): WebBootGraph {
+/** Reports resolved manifests before reading them, including reads that fail. */
+export function loadWebBootGraph(configPath: string, onPackageManifest?: (path: string) => void): WebBootGraph {
   const source = readFileSync(configPath, 'utf8');
   if (/!!js(?:\/\S+)?\b/.test(source))
     throw new TypeError('web boot config rejects !!js tags');
@@ -31,7 +32,7 @@ export function loadWebBootGraph(configPath: string): WebBootGraph {
   if (!Array.isArray(rows))
     throw new TypeError('web boot config must be a top-level array');
 
-  const entries = rows.flatMap((value, index) => loadEntry(value, index, configPath));
+  const entries = rows.flatMap((value, index) => loadEntry(value, index, configPath, onPackageManifest));
   const graph = {
     revision: createHash('sha256').update(JSON.stringify(entries)).digest('hex').slice(0, 12),
     entries: sortWebBootEntries(entries),
@@ -40,7 +41,7 @@ export function loadWebBootGraph(configPath: string): WebBootGraph {
   return graph;
 }
 
-function loadEntry(value: unknown, index: number, configPath: string): WebBootEntry[] {
+function loadEntry(value: unknown, index: number, configPath: string, onPackageManifest?: (path: string) => void): WebBootEntry[] {
   if (!isRecord(value))
     throw new TypeError(`web boot config entry ${index} must be an object`);
 
@@ -52,7 +53,7 @@ function loadEntry(value: unknown, index: number, configPath: string): WebBootEn
   if (typeof row.id !== 'string' || typeof row.name !== 'string')
     throw new TypeError(`web boot config entry ${index} requires id and name`);
 
-  const manifest = loadPackageManifest(row.name, configPath);
+  const manifest = loadPackageManifest(row.name, configPath, onPackageManifest);
   if (!hasClientExport(manifest.exports))
     throw new TypeError(`web boot config exports./client missing: ${row.name}`);
 
@@ -71,10 +72,11 @@ function loadEntry(value: unknown, index: number, configPath: string): WebBootEn
   }];
 }
 
-function loadPackageManifest(name: string, configPath: string): PackageManifest {
+function loadPackageManifest(name: string, configPath: string, onPackageManifest?: (path: string) => void): PackageManifest {
   const packagePath = findPackageJSON(name, pathToFileURL(configPath));
   if (!packagePath)
     throw new TypeError(`web boot config package not found: ${name}`);
+  onPackageManifest?.(packagePath);
   return JSON.parse(readFileSync(packagePath, 'utf8')) as PackageManifest;
 }
 

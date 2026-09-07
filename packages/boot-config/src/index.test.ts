@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, expect, it } from 'vitest';
 import { loadWebBootGraph } from './index';
 
@@ -58,6 +58,25 @@ it('sorts enabled entries by their package metadata dependencies', () => {
   });
 
   expect(loadWebBootGraph(configPath).entries.map(entry => entry.id)).toEqual(['renderer', 'dashboard']);
+});
+
+it('reports only enabled package manifests before parsing them so failed reads remain watchable', () => {
+  const configPath = fixture(`
+- id: renderer
+  name: '@fixture/renderer'
+- id: disabled
+  name: '@fixture/disabled'
+  disabled: true
+`, { '@fixture/renderer': client() });
+  const manifestPath = join(dirname(configPath), 'node_modules/@fixture/renderer/package.json');
+  const files: string[] = [];
+  loadWebBootGraph(configPath, file => files.push(file));
+  expect(files).toEqual([manifestPath]);
+
+  writeFileSync(manifestPath, '{');
+  files.length = 0;
+  expect(() => loadWebBootGraph(configPath, file => files.push(file))).toThrow();
+  expect(files).toEqual([manifestPath]);
 });
 
 it.each([client(), client({})])('accepts plugins without package dependencies', (manifest) => {
