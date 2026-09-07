@@ -212,3 +212,35 @@ it('updates dependency metadata with Vite default dependency optimization enable
     rmSync(app.root, { force: true, recursive: true });
   }
 });
+
+it('discovers dependencies behind a virtual boot module before browser requests', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cordis-cold-start-'));
+  mkdirSync(join(root, 'node_modules/dep'), { recursive: true });
+  mkdirSync(join(root, 'workspace-plugin'));
+  symlinkSync(join(root, 'workspace-plugin'), join(root, 'node_modules/plugin'), 'dir');
+  writeFileSync(join(root, 'workspace-plugin/package.json'), JSON.stringify({ name: 'plugin', exports: { './client': './client.js' } }));
+  writeFileSync(join(root, 'workspace-plugin/client.js'), 'export { value } from "dep";');
+  writeFileSync(join(root, 'node_modules/dep/package.json'), JSON.stringify({ name: 'dep', main: './index.js' }));
+  writeFileSync(join(root, 'node_modules/dep/index.js'), 'exports.value = 42;');
+  writeFileSync(join(root, 'cordis.yml'), '- id: plugin\n  name: plugin\n');
+  writeFileSync(join(root, 'index.html'), '<script type="module" src="/main.js"></script>');
+  writeFileSync(join(root, 'main.js'), 'import { registry } from "virtual:custom-boot"; window.registry = registry;');
+  const server = await createServer({
+    root,
+    configFile: false,
+    plugins: [cordisWebBoot({ virtualModuleId: 'virtual:custom-boot' })],
+    server: { middlewareMode: true, ws: false, watch: null },
+    logLevel: 'silent',
+  });
+  try {
+    const optimizer = server.environments.client.depsOptimizer!;
+    await optimizer.init();
+    await optimizer.scanProcessing;
+    await vi.waitFor(() => expect(optimizer.metadata.optimized.dep).toBeDefined());
+    expect(optimizer.metadata.optimized['plugin/client']).toBeUndefined();
+  }
+  finally {
+    await server.close();
+    rmSync(root, { force: true, recursive: true });
+  }
+});

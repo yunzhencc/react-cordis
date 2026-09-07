@@ -63,6 +63,27 @@ export function cordisWebBoot({
 
   return {
     name: 'cordis-web-boot',
+    config() {
+      return {
+        optimizeDeps: {
+          rolldownOptions: {
+            // Vite's scanner externalizes virtual IDs. Expose the boot imports
+            // to it so plugin dependencies are found before the browser loads.
+            plugins: [{
+              name: 'cordis-web-boot-scan',
+              resolveId(id) {
+                if (id === virtualModuleId)
+                  return resolvedVirtualModuleId;
+              },
+              load(id) {
+                if (id === resolvedVirtualModuleId)
+                  return { code: renderWebBootVirtualModule(loadGraph()), moduleType: 'js' };
+              },
+            }],
+          },
+        },
+      };
+    },
     configResolved(config) {
       resolvedConfigPath = resolve(config.root, configPath);
     },
