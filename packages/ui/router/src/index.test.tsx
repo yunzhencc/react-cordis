@@ -2,8 +2,8 @@
 
 import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
-import { apply as applyI18n } from '@yunzhen/cordis-ui-i18n';
-import { apply as applyRenderer, inject as rendererInject, Slot } from '@yunzhen/cordis-ui-renderer';
+import { apply as applyI18n } from '@react-cordis/ui-i18n';
+import { apply as applyRenderer, inject as rendererInject, Slot } from '@react-cordis/ui-renderer';
 import { act, StrictMode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';

@@ -1,8 +1,8 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@examples/router-settings-layout';
-import type {} from '@yunzhen/cordis-ui-i18n';
-import type {} from '@yunzhen/cordis-ui-renderer';
-import { Slot } from '@yunzhen/cordis-ui-renderer';
+import type {} from '@react-cordis/ui-i18n';
+import type {} from '@react-cordis/ui-renderer';
+import { Slot } from '@react-cordis/ui-renderer';
 import { Settings } from 'lucide-react';
 import styles from './index.module.css';
 

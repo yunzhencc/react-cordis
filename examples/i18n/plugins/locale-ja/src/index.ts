@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type {} from '@yunzhen/cordis-ui-i18n';
+import type {} from '@react-cordis/ui-i18n';
 
 export const inject = ['i18n'];
 

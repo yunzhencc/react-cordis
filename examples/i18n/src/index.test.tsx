@@ -2,12 +2,12 @@
 
 // @vitest-environment jsdom
 
-import type { PluginRegistry } from '@yunzhen/cordis-client-modules';
+import type { PluginRegistry } from '@react-cordis/client-modules';
 import { resolve } from 'node:path';
-import { bootWebApp } from '@yunzhen/cordis-client-modules';
-import { loadWebBootGraph } from '@yunzhen/cordis-host-plugin-catalog';
-import * as i18n from '@yunzhen/cordis-ui-i18n';
-import * as renderer from '@yunzhen/cordis-ui-renderer';
+import { bootWebApp } from '@react-cordis/client-modules';
+import { loadWebBootGraph } from '@react-cordis/host-plugin-catalog';
+import * as i18n from '@react-cordis/ui-i18n';
+import * as renderer from '@react-cordis/ui-renderer';
 import { act } from 'react';
 import { expect, it, vi } from 'vitest';
 import * as greeting from '../plugins/greeting/src';
@@ -23,8 +23,8 @@ it('switches isolated namespaces, falls back to English, and restores the select
   const container = document.createElement('div');
   const graph = loadWebBootGraph(resolve(import.meta.dirname, '../cordis.yml'));
   const registry: PluginRegistry = new Map([
-    ['@yunzhen/cordis-ui-i18n', async () => i18n],
-    ['@yunzhen/cordis-ui-renderer', async () => renderer],
+    ['@react-cordis/ui-i18n', async () => i18n],
+    ['@react-cordis/ui-renderer', async () => renderer],
     ['@examples/i18n-page', async () => page],
     ['@examples/i18n-greeting', async () => greeting],
     ['@examples/i18n-locale-ja', async () => japanese],

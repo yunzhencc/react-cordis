@@ -1,5 +1,5 @@
 import type { Fiber, Plugin } from '@deepseek-ai/cordis';
-import type {} from '@yunzhen/cordis-ui-renderer';
+import type {} from '@react-cordis/ui-renderer';
 import type { WebBootGraph } from './manifest';
 import { Context } from '@deepseek-ai/cordis';
 import { assertWebBootGraph } from './manifest';

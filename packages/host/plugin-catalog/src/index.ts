@@ -1,9 +1,9 @@
-import type { JsonValue, WebBootEntry, WebBootGraph } from '@yunzhen/cordis-client-modules/manifest';
+import type { JsonValue, WebBootEntry, WebBootGraph } from '@react-cordis/client-modules/manifest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { findPackageJSON } from 'node:module';
 import { pathToFileURL } from 'node:url';
-import { assertWebBootGraph, sortWebBootEntries } from '@yunzhen/cordis-client-modules/manifest';
+import { assertWebBootGraph, sortWebBootEntries } from '@react-cordis/client-modules/manifest';
 import { parseDocument } from 'yaml';
 
 interface CatalogRow {

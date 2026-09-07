@@ -1,4 +1,4 @@
-import type { ThemeRuntime } from '@yunzhen/cordis-ui-theme';
+import type { ThemeRuntime } from '@react-cordis/ui-theme';
 import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import styles from './appearance-settings.module.css';

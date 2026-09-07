@@ -8,14 +8,14 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@yunzhen/cordis-ui-layout": "workspace:*",
-    "@yunzhen/cordis-ui-renderer": "workspace:*",
+    "@react-cordis/ui-layout": "workspace:*",
+    "@react-cordis/ui-renderer": "workspace:*",
     "react": "^19.2.8"
   },
   "yunzhen": {
     "client": {
       "platform": "web",
-      "inject": ["@yunzhen/cordis-ui-layout"],
+      "inject": ["@react-cordis/ui-layout"],
       "immediately": false
     }
   }

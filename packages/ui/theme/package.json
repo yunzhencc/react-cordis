@@ -1,5 +1,5 @@
 {
-  "name": "@yunzhen/cordis-ui-theme",
+  "name": "@react-cordis/ui-theme",
   "type": "module",
   "private": true,
   "exports": {
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@yunzhen/cordis-ui-renderer": "workspace:*",
+    "@react-cordis/ui-renderer": "workspace:*",
     "react": "^19.2.8"
   },
   "devDependencies": {
@@ -19,7 +19,7 @@
   "yunzhen": {
     "client": {
       "platform": "web",
-      "inject": ["@yunzhen/cordis-ui-renderer"],
+      "inject": ["@react-cordis/ui-renderer"],
       "immediately": false
     }
   }

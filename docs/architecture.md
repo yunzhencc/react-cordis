@@ -23,15 +23,15 @@ examples/router/cordis.yml
 
 | 包 | 职责 |
 | --- | --- |
-| `@yunzhen/cordis-client-modules` | WebBootGraph 验证、浏览器 ESM 导入/激活、失败呈现与 UI 挂载。 |
-| `@yunzhen/cordis-host-plugin-catalog` | 构建期读取配置和包元数据，验证并排序启动图。 |
-| `@yunzhen/cordis-host-vite` | 生成虚拟 registry 和构建清单，开发期配置变化时重载启动图。 |
-| `@yunzhen/cordis-ui-slots` | 纯 `SlotMap` / `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
-| `@yunzhen/cordis-ui-renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的唯一 React 根挂载。 |
-| `@yunzhen/cordis-ui-router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner。 |
-| `@yunzhen/cordis-ui-layout` | 可选的三栏布局组件和 `ctx.layout` 面板动作，不依赖 router。 |
+| `@react-cordis/client-modules` | WebBootGraph 验证、浏览器 ESM 导入/激活、失败呈现与 UI 挂载。 |
+| `@react-cordis/host-plugin-catalog` | 构建期读取配置和包元数据，验证并排序启动图。 |
+| `@react-cordis/host-vite` | 生成虚拟 registry 和构建清单，开发期配置变化时重载启动图。 |
+| `@react-cordis/ui-slots` | 纯 `SlotMap` / `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
+| `@react-cordis/ui-renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的唯一 React 根挂载。 |
+| `@react-cordis/ui-router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner。 |
+| `@react-cordis/ui-layout` | 可选的三栏布局组件和 `ctx.layout` 面板动作，不依赖 router。 |
 | `@examples/router-app-layout` | Router 示例的根路由插件，显式注册 `app-layout`。 |
-| `@yunzhen/cordis-ui-i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
+| `@react-cordis/ui-i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
 | `examples/router/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Router 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
 | `examples/router/plugins/settings-layout` | Router 示例的 `/settings` 路由壳、设置侧栏、底部 Settings 入口与 `ctx.settings.register()`。 |
 | `ui/theme` | ThemeRuntime、token 与 DOM 同步；具体设置页面由独立扩展提供。 |
@@ -50,7 +50,7 @@ examples/router/cordis.yml
 
 ```yaml
 - id: i18n
-  name: '@yunzhen/cordis-ui-i18n'
+  name: '@react-cordis/ui-i18n'
   config:
     storageKey: 'my-app:locale'
 ```
@@ -62,7 +62,7 @@ examples/router/cordis.yml
 ## Vite 接入
 
 ```ts
-import { cordisWebBoot } from '@yunzhen/cordis-host-vite';
+import { cordisWebBoot } from '@react-cordis/host-vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({ plugins: [cordisWebBoot()] });

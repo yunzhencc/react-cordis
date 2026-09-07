@@ -10,13 +10,13 @@
     "@deepseek-ai/cordis": "^4.0.2",
     "@examples/i18n-greeting": "workspace:*",
     "@examples/i18n-page": "workspace:*",
-    "@yunzhen/cordis-ui-i18n": "workspace:*"
+    "@react-cordis/ui-i18n": "workspace:*"
   },
   "yunzhen": {
     "client": {
       "platform": "web",
       "inject": [
-        "@yunzhen/cordis-ui-i18n",
+        "@react-cordis/ui-i18n",
         "@examples/i18n-page",
         "@examples/i18n-greeting"
       ],

@@ -1,5 +1,5 @@
 {
-  "name": "@yunzhen/cordis-ui-router",
+  "name": "@react-cordis/ui-router",
   "type": "module",
   "private": true,
   "exports": {
@@ -8,9 +8,9 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@yunzhen/cordis-ui-i18n": "workspace:*",
-    "@yunzhen/cordis-ui-renderer": "workspace:*",
-    "@yunzhen/cordis-ui-slots": "workspace:*",
+    "@react-cordis/ui-i18n": "workspace:*",
+    "@react-cordis/ui-renderer": "workspace:*",
+    "@react-cordis/ui-slots": "workspace:*",
     "react": "^19.2.8",
     "react-i18next": "^16.5.9",
     "react-router-dom": "^7.18.3"
@@ -18,7 +18,7 @@
   "yunzhen": {
     "client": {
       "platform": "web",
-      "inject": ["@yunzhen/cordis-ui-renderer"],
+      "inject": ["@react-cordis/ui-renderer"],
       "immediately": false
     }
   }

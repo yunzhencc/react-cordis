@@ -8,15 +8,15 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@yunzhen/cordis-ui-layout": "workspace:*",
-    "@yunzhen/cordis-ui-router": "workspace:*"
+    "@react-cordis/ui-layout": "workspace:*",
+    "@react-cordis/ui-router": "workspace:*"
   },
   "yunzhen": {
     "client": {
       "platform": "web",
       "inject": [
-        "@yunzhen/cordis-ui-layout",
-        "@yunzhen/cordis-ui-router"
+        "@react-cordis/ui-layout",
+        "@react-cordis/ui-router"
       ],
       "immediately": false
     }

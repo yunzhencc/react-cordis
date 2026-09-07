@@ -1,7 +1,7 @@
-import type { WebBootGraph } from '@yunzhen/cordis-client-modules/manifest';
+import type { WebBootGraph } from '@react-cordis/client-modules/manifest';
 import type { Plugin, Rolldown } from 'vite';
 import { resolve } from 'node:path';
-import { loadWebBootGraph } from '@yunzhen/cordis-host-plugin-catalog';
+import { loadWebBootGraph } from '@react-cordis/host-plugin-catalog';
 
 interface CordisWebBootOptions {
   configPath?: string;

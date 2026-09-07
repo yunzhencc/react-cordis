@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { I18nRuntime } from '@yunzhen/cordis-ui-i18n';
-import { Slot } from '@yunzhen/cordis-ui-renderer';
+import type { I18nRuntime } from '@react-cordis/ui-i18n';
+import { Slot } from '@react-cordis/ui-renderer';
 import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 

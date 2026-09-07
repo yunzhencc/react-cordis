@@ -1,5 +1,5 @@
 {
-  "name": "@yunzhen/cordis-client-modules",
+  "name": "@react-cordis/client-modules",
   "type": "module",
   "private": true,
   "exports": {
@@ -8,6 +8,6 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@yunzhen/cordis-ui-renderer": "workspace:*"
+    "@react-cordis/ui-renderer": "workspace:*"
   }
 }

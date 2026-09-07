@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { Context } from '@deepseek-ai/cordis';
-import { apply as applyI18n } from '@yunzhen/cordis-ui-i18n';
+import { apply as applyI18n } from '@react-cordis/ui-i18n';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';

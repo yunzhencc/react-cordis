@@ -1,5 +1,5 @@
 {
-  "name": "@yunzhen/cordis-host-vite",
+  "name": "@react-cordis/host-vite",
   "type": "module",
   "private": true,
   "exports": "./src/index.ts",
@@ -7,11 +7,11 @@
     "vite": "^8.2.2"
   },
   "dependencies": {
-    "@yunzhen/cordis-client-modules": "workspace:*",
-    "@yunzhen/cordis-host-plugin-catalog": "workspace:*"
+    "@react-cordis/client-modules": "workspace:*",
+    "@react-cordis/host-plugin-catalog": "workspace:*"
   },
   "devDependencies": {
-    "@yunzhen/cordis-ui-i18n": "workspace:*",
-    "@yunzhen/cordis-ui-renderer": "workspace:*"
+    "@react-cordis/ui-i18n": "workspace:*",
+    "@react-cordis/ui-renderer": "workspace:*"
   }
 }

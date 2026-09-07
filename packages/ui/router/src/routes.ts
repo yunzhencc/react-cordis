@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { SlotSpec } from '@yunzhen/cordis-ui-slots';
+import type { SlotSpec } from '@react-cordis/ui-slots';
 import type { ComponentType } from 'react';
 import { Service } from '@deepseek-ai/cordis';
 

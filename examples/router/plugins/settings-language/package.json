@@ -10,22 +10,22 @@
     "@deepseek-ai/cordis": "^4.0.2",
     "@examples/router-settings-general": "workspace:*",
     "@examples/router-settings-layout": "workspace:*",
-    "@yunzhen/cordis-ui-i18n": "workspace:*",
-    "@yunzhen/cordis-ui-renderer": "workspace:*",
+    "@react-cordis/ui-i18n": "workspace:*",
+    "@react-cordis/ui-renderer": "workspace:*",
     "react": "^19.2.8",
     "react-i18next": "^16.5.9"
   },
   "devDependencies": {
-    "@yunzhen/cordis-ui-router": "workspace:*",
+    "@react-cordis/ui-router": "workspace:*",
     "react-dom": "^19.2.8"
   },
   "yunzhen": {
     "client": {
       "platform": "web",
       "inject": [
-        "@yunzhen/cordis-ui-i18n",
+        "@react-cordis/ui-i18n",
         "@examples/router-settings-general",
-        "@yunzhen/cordis-ui-renderer"
+        "@react-cordis/ui-renderer"
       ],
       "immediately": false
     }

@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type {} from '@yunzhen/cordis-ui-i18n';
-import type {} from '@yunzhen/cordis-ui-renderer';
+import type {} from '@react-cordis/ui-i18n';
+import type {} from '@react-cordis/ui-renderer';
 import { useTranslation } from 'react-i18next';
 
 export const inject = ['i18n', 'slots'];

@@ -1,8 +1,8 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { SlotOwnerHandle, SlotRenderer } from '@yunzhen/cordis-ui-renderer';
+import type { SlotOwnerHandle, SlotRenderer } from '@react-cordis/ui-renderer';
 import type { PanelImperativeHandle, PanelSize } from 'react-resizable-panels';
 import type { PanelBounds } from './layout-controller';
-import { Slot, SlotOwner } from '@yunzhen/cordis-ui-renderer';
+import { Slot, SlotOwner } from '@react-cordis/ui-renderer';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import styles from './index.module.css';
