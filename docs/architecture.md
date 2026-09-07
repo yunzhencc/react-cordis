@@ -69,7 +69,7 @@ packages/
 
 `packages/i18n` 内置 `zh` 与 `en`，按浏览器语言优先级匹配已注册语言；用户选择写入 localStorage，默认 key 为 `react-cordis:locale`，可通过 i18n 插件的 `config.storageKey` 覆盖。`addLanguage({ id, label, fallback })` 可注册更多语言，返回注销函数。renderer 在唯一 React 根部包裹 i18next Provider，语言变更会刷新 Slot 与 Route 组件，语言设置列表也会响应注册和注销。
 
-功能包通过 `ctx.effect(() => ctx.i18n.register('dashboard', { zh: ..., en: ... }))` 注册独立命名空间，卸载时自动移除资源。组件使用 `useTranslation('dashboard')`，跨插件的 Route 导航和设置项使用完整 `labelKey`，例如 `dashboard:dashboard.title`。内置公共文案使用 `common` 命名空间。
+功能包通过 `ctx.effect(() => ctx.i18n.register('dashboard', { zh: ..., en: ... }))` 注册独立命名空间，卸载时自动移除资源。组件使用 `useTranslation('dashboard')`，跨插件的 Route 导航和设置项使用完整 `labelKey`，例如 `dashboard:dashboard.title`。i18n 不内置业务文案或固定的公共命名空间回退；语言包、资源生命周期与事件职责见 [i18n 使用说明](../packages/i18n/README.md)。
 
 旧接口 `register(resources)` 和旧语言标识 `zh-CN/en-US` 已替换。已有应用升级时需要同时迁移词典、调用方和持久化偏好；核心不会把旧偏好自动重写成新标识。
 
