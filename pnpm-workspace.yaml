@@ -1,7 +1,7 @@
 packages:
   - examples/*
   - examples/*/plugins/*
-  - packages/*/*
+  - packages/*
 
 allowBuilds:
   esbuild: true

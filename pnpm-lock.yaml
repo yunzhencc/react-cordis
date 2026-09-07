@@ -73,23 +73,23 @@ importers:
         version: link:plugins/page
       '@react-cordis/client-modules':
         specifier: workspace:*
-        version: link:../../packages/client/modules
+        version: link:../../packages/boot
       '@react-cordis/host-plugin-catalog':
         specifier: workspace:*
-        version: link:../../packages/host/plugin-catalog
+        version: link:../../packages/plugin-catalog
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../packages/ui/i18n
+        version: link:../../packages/i18n
       '@react-cordis/ui-layout':
         specifier: workspace:*
-        version: link:../../packages/ui/layout
+        version: link:../../packages/layout
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../packages/ui/renderer
+        version: link:../../packages/renderer
     devDependencies:
       '@react-cordis/host-vite':
         specifier: workspace:*
-        version: link:../../packages/host/vite
+        version: link:../../packages/vite
 
   examples/basic/plugins/page:
     dependencies:
@@ -98,10 +98,10 @@ importers:
         version: 4.0.2
       '@react-cordis/ui-layout':
         specifier: workspace:*
-        version: link:../../../../packages/ui/layout
+        version: link:../../../../packages/layout
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../../../packages/ui/renderer
+        version: link:../../../../packages/renderer
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -119,23 +119,23 @@ importers:
         version: link:plugins/page
       '@react-cordis/client-modules':
         specifier: workspace:*
-        version: link:../../packages/client/modules
+        version: link:../../packages/boot
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../packages/ui/i18n
+        version: link:../../packages/i18n
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../packages/ui/renderer
+        version: link:../../packages/renderer
       react:
         specifier: ^19.2.8
         version: 19.2.8
     devDependencies:
       '@react-cordis/host-plugin-catalog':
         specifier: workspace:*
-        version: link:../../packages/host/plugin-catalog
+        version: link:../../packages/plugin-catalog
       '@react-cordis/host-vite':
         specifier: workspace:*
-        version: link:../../packages/host/vite
+        version: link:../../packages/vite
 
   examples/i18n/plugins/greeting:
     dependencies:
@@ -144,10 +144,10 @@ importers:
         version: 4.0.2
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../../../packages/ui/i18n
+        version: link:../../../../packages/i18n
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../../../packages/ui/renderer
+        version: link:../../../../packages/renderer
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -168,7 +168,7 @@ importers:
         version: link:../page
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../../../packages/ui/i18n
+        version: link:../../../../packages/i18n
 
   examples/i18n/plugins/page:
     dependencies:
@@ -177,10 +177,10 @@ importers:
         version: 4.0.2
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../../../packages/ui/i18n
+        version: link:../../../../packages/i18n
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../../../packages/ui/renderer
+        version: link:../../../../packages/renderer
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -210,25 +210,25 @@ importers:
         version: link:plugins/settings-layout
       '@react-cordis/client-modules':
         specifier: workspace:*
-        version: link:../../packages/client/modules
+        version: link:../../packages/boot
       '@react-cordis/host-plugin-catalog':
         specifier: workspace:*
-        version: link:../../packages/host/plugin-catalog
+        version: link:../../packages/plugin-catalog
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../packages/ui/i18n
+        version: link:../../packages/i18n
       '@react-cordis/ui-layout':
         specifier: workspace:*
-        version: link:../../packages/ui/layout
+        version: link:../../packages/layout
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../packages/ui/renderer
+        version: link:../../packages/renderer
       '@react-cordis/ui-router':
         specifier: workspace:*
-        version: link:../../packages/ui/router
+        version: link:../../packages/router
       '@react-cordis/ui-theme':
         specifier: workspace:*
-        version: link:../../packages/ui/theme
+        version: link:../../packages/theme
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -238,7 +238,7 @@ importers:
     devDependencies:
       '@react-cordis/host-vite':
         specifier: workspace:*
-        version: link:../../packages/host/vite
+        version: link:../../packages/vite
 
   examples/router/plugins/app-layout:
     dependencies:
@@ -247,10 +247,10 @@ importers:
         version: 4.0.2
       '@react-cordis/ui-layout':
         specifier: workspace:*
-        version: link:../../../../packages/ui/layout
+        version: link:../../../../packages/layout
       '@react-cordis/ui-router':
         specifier: workspace:*
-        version: link:../../../../packages/ui/router
+        version: link:../../../../packages/router
 
   examples/router/plugins/dashboard:
     dependencies:
@@ -259,16 +259,16 @@ importers:
         version: 4.0.2
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../../../packages/ui/i18n
+        version: link:../../../../packages/i18n
       '@react-cordis/ui-layout':
         specifier: workspace:*
-        version: link:../../../../packages/ui/layout
+        version: link:../../../../packages/layout
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../../../packages/ui/renderer
+        version: link:../../../../packages/renderer
       '@react-cordis/ui-router':
         specifier: workspace:*
-        version: link:../../../../packages/ui/router
+        version: link:../../../../packages/router
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -286,10 +286,10 @@ importers:
         version: link:../settings-layout
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../../../packages/ui/i18n
+        version: link:../../../../packages/i18n
       '@react-cordis/ui-theme':
         specifier: workspace:*
-        version: link:../../../../packages/ui/theme
+        version: link:../../../../packages/theme
       lucide-react:
         specifier: ^0.576.0
         version: 0.576.0(react@19.2.8)
@@ -302,10 +302,10 @@ importers:
     devDependencies:
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../../../packages/ui/renderer
+        version: link:../../../../packages/renderer
       '@react-cordis/ui-router':
         specifier: workspace:*
-        version: link:../../../../packages/ui/router
+        version: link:../../../../packages/router
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
@@ -320,10 +320,10 @@ importers:
         version: link:../settings-layout
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../../../packages/ui/i18n
+        version: link:../../../../packages/i18n
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../../../packages/ui/renderer
+        version: link:../../../../packages/renderer
       lucide-react:
         specifier: ^1.38.0
         version: 1.38.0(react@19.2.8)
@@ -344,10 +344,10 @@ importers:
         version: link:../settings-layout
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../../../packages/ui/i18n
+        version: link:../../../../packages/i18n
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../../../packages/ui/renderer
+        version: link:../../../../packages/renderer
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -357,7 +357,7 @@ importers:
     devDependencies:
       '@react-cordis/ui-router':
         specifier: workspace:*
-        version: link:../../../../packages/ui/router
+        version: link:../../../../packages/router
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
@@ -369,16 +369,16 @@ importers:
         version: 4.0.2
       '@react-cordis/ui-i18n':
         specifier: workspace:*
-        version: link:../../../../packages/ui/i18n
+        version: link:../../../../packages/i18n
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../../../packages/ui/renderer
+        version: link:../../../../packages/renderer
       '@react-cordis/ui-router':
         specifier: workspace:*
-        version: link:../../../../packages/ui/router
+        version: link:../../../../packages/router
       '@react-cordis/ui-slots':
         specifier: workspace:*
-        version: link:../../../../packages/ui/slots
+        version: link:../../../../packages/slots
       lucide-react:
         specifier: ^1.38.0
         version: 1.38.0(react@19.2.8)
@@ -392,44 +392,16 @@ importers:
         specifier: ^7.18.3
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
 
-  packages/client/modules:
+  packages/boot:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
       '@react-cordis/ui-renderer':
         specifier: workspace:*
-        version: link:../../ui/renderer
+        version: link:../renderer
 
-  packages/host/plugin-catalog:
-    dependencies:
-      '@react-cordis/client-modules':
-        specifier: workspace:*
-        version: link:../../client/modules
-      yaml:
-        specifier: ^2.9.0
-        version: 2.9.0
-
-  packages/host/vite:
-    dependencies:
-      '@react-cordis/client-modules':
-        specifier: workspace:*
-        version: link:../../client/modules
-      '@react-cordis/host-plugin-catalog':
-        specifier: workspace:*
-        version: link:../plugin-catalog
-      vite:
-        specifier: ^8.2.2
-        version: 8.2.2(@types/node@26.4.0)(jiti@2.6.1)(yaml@2.9.0)
-    devDependencies:
-      '@react-cordis/ui-i18n':
-        specifier: workspace:*
-        version: link:../../ui/i18n
-      '@react-cordis/ui-renderer':
-        specifier: workspace:*
-        version: link:../../ui/renderer
-
-  packages/ui/i18n:
+  packages/i18n:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -444,7 +416,7 @@ importers:
         specifier: ^16.5.9
         version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
 
-  packages/ui/layout:
+  packages/layout:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -466,7 +438,16 @@ importers:
         specifier: workspace:*
         version: link:../i18n
 
-  packages/ui/renderer:
+  packages/plugin-catalog:
+    dependencies:
+      '@react-cordis/client-modules':
+        specifier: workspace:*
+        version: link:../boot
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
+
+  packages/renderer:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -487,7 +468,7 @@ importers:
         specifier: ^16.5.9
         version: 16.6.6(i18next@25.10.10(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
 
-  packages/ui/router:
+  packages/router:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -511,9 +492,9 @@ importers:
         specifier: ^7.18.3
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
 
-  packages/ui/slots: {}
+  packages/slots: {}
 
-  packages/ui/theme:
+  packages/theme:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -528,6 +509,25 @@ importers:
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
+
+  packages/vite:
+    dependencies:
+      '@react-cordis/client-modules':
+        specifier: workspace:*
+        version: link:../boot
+      '@react-cordis/host-plugin-catalog':
+        specifier: workspace:*
+        version: link:../plugin-catalog
+      vite:
+        specifier: ^8.2.2
+        version: 8.2.2(@types/node@26.4.0)(jiti@2.6.1)(yaml@2.9.0)
+    devDependencies:
+      '@react-cordis/ui-i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@react-cordis/ui-renderer':
+        specifier: workspace:*
+        version: link:../renderer
 
 packages:
 

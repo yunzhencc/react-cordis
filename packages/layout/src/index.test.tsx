@@ -13,7 +13,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const Workbench = () => <section>Workbench</section>;
 const EmptyPage = () => null;
-const layoutStyles = readFileSync('packages/ui/layout/src/index.module.css', 'utf8');
+const layoutStyles = readFileSync('packages/layout/src/index.module.css', 'utf8');
 
 async function bootLayout() {
   const ctx = new Context();

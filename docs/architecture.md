@@ -10,16 +10,31 @@
 
 ```text
 examples/router/cordis.yml
-  └─ host/plugin-catalog 读取包元数据
+  └─ plugin-catalog 读取包元数据
       └─ WebBootGraph
           └─ Vite 虚拟 registry（开发）/ cordis.boot.json + chunks（构建）
-              └─ client/modules Boot Loader
+              └─ boot Boot Loader
                   └─ Cordis Context → ctx.uiRenderer.mount(container)
 ```
 
 `examples/router/cordis.yml` 是该示例应用唯一的启用来源。catalog 在 Node 构建阶段读取它和每个包的 `yunzhen.client` 元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
 
 ## 包职责
+
+`packages/` 采用单层目录，按包职责命名；目录调整不改变 `@react-cordis/*` 包名。`boot` 目录对应 `@react-cordis/client-modules`，`plugin-catalog` 和 `vite` 仍属于 Node 构建工具。
+
+```text
+packages/
+├── boot
+├── plugin-catalog
+├── vite
+├── i18n
+├── layout
+├── renderer
+├── router
+├── slots
+└── theme
+```
 
 | 包 | 职责 |
 | --- | --- |
@@ -34,13 +49,13 @@ examples/router/cordis.yml
 | `@react-cordis/ui-i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
 | `examples/router/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Router 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
 | `examples/router/plugins/settings-layout` | Router 示例的 `/settings` 路由壳、设置侧栏、底部 Settings 入口与 `ctx.settings.register()`。 |
-| `ui/theme` | ThemeRuntime、token 与 DOM 同步；具体设置页面由独立扩展提供。 |
+| `packages/theme` | ThemeRuntime、token 与 DOM 同步；具体设置页面由独立扩展提供。 |
 
 旧的 `core/runtime`、`react/bridge`、`router/react-router` 与 `ui/shell` 分层已不属于当前实现。
 
 ## 多语言
 
-`ui/i18n` 内置 `zh` 与 `en`，按浏览器语言优先级匹配已注册语言；用户选择写入 localStorage，默认 key 为 `react-cordis:locale`，可通过 i18n 插件的 `config.storageKey` 覆盖。`addLanguage({ id, label, fallback })` 可注册更多语言，返回注销函数。renderer 在唯一 React 根部包裹 i18next Provider，语言变更会刷新 Slot 与 Route 组件，语言设置列表也会响应注册和注销。
+`packages/i18n` 内置 `zh` 与 `en`，按浏览器语言优先级匹配已注册语言；用户选择写入 localStorage，默认 key 为 `react-cordis:locale`，可通过 i18n 插件的 `config.storageKey` 覆盖。`addLanguage({ id, label, fallback })` 可注册更多语言，返回注销函数。renderer 在唯一 React 根部包裹 i18next Provider，语言变更会刷新 Slot 与 Route 组件，语言设置列表也会响应注册和注销。
 
 功能包通过 `ctx.effect(() => ctx.i18n.register('dashboard', { zh: ..., en: ... }))` 注册独立命名空间，卸载时自动移除资源。组件使用 `useTranslation('dashboard')`，跨插件的 Route 导航和设置项使用完整 `labelKey`，例如 `dashboard:dashboard.title`。内置公共文案使用 `common` 命名空间。
 

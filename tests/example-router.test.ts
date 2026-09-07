@@ -9,11 +9,11 @@ it('keeps the runnable router example under examples/router', () => {
 
 it.each(['app-layout', 'dashboard', 'settings-general', 'settings-appearance', 'settings-language', 'settings-layout'])('keeps the %s plugin with the router example', (plugin) => {
   expect(existsSync(new URL(`../examples/router/plugins/${plugin}/package.json`, import.meta.url))).toBe(true);
-  expect(existsSync(new URL(`../packages/feature/${plugin}/package.json`, import.meta.url))).toBe(false);
+  expect(existsSync(new URL(`../packages/${plugin}/package.json`, import.meta.url))).toBe(false);
 });
 
-it('does not keep the router example settings layout in the UI package layer', () => {
-  expect(existsSync(new URL('../packages/ui/settings-layout/package.json', import.meta.url))).toBe(false);
+it('does not keep the router example settings layout in the shared package layer', () => {
+  expect(existsSync(new URL('../packages/settings-layout/package.json', import.meta.url))).toBe(false);
 });
 
 it('names router packages in the @examples namespace', () => {
