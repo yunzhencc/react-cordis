@@ -6,6 +6,8 @@
   name: '@yunzhen/cordis-ui-layout'
 - id: router
   name: '@yunzhen/cordis-ui-router'
+- id: app-layout
+  name: '@examples/app-layout'
 - id: theme
   name: '@yunzhen/cordis-ui-theme'
 - id: models

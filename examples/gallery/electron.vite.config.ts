@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
+import { cordisWebBoot } from '@yunzhen/cordis-host-vite';
 import { defineConfig } from 'electron-vite';
-import { cordisWebBoot } from '../agent/vite-plugin.ts';
 
 export default defineConfig({
   main: {},

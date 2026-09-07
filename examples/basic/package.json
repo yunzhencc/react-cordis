@@ -13,5 +13,8 @@
     "@yunzhen/cordis-ui-i18n": "workspace:*",
     "@yunzhen/cordis-ui-layout": "workspace:*",
     "@yunzhen/cordis-ui-renderer": "workspace:*"
+  },
+  "devDependencies": {
+    "@yunzhen/cordis-host-vite": "workspace:*"
   }
 }

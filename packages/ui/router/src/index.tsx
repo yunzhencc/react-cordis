@@ -1,17 +1,17 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type {} from '@yunzhen/cordis-ui-layout';
 import type { SlotOwnerHandle, SlotRenderer } from '@yunzhen/cordis-ui-renderer';
 import type { RouteObject } from 'react-router-dom';
 import { Slot, SlotOwner } from '@yunzhen/cordis-ui-renderer';
 import { createElement, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, matchRoutes, NavLink, Outlet, useLocation, useRoutes } from 'react-router-dom';
+import styles from './index.module.css';
 import { RouteRegistry } from './routes';
 
 export { RouteRegistry } from './routes';
 export type { RouteDefinition, RouteSnapshot } from './routes';
 
-export const inject = ['layout', 'slots'];
+export const inject = ['slots'];
 
 interface RouteRenderer {
   snapshot: RouteRegistry['snapshot'];
@@ -26,7 +26,6 @@ export function apply(ctx: Context) {
     snapshot: () => routes.snapshot(),
     subscribe: listener => routes.subscribe(listener),
   };
-  routes.register({ id: 'app-layout', Component: ctx.layout.Root });
   slotService.register({ name: 'root' }, () => <RouterRoot routes={routeRenderer} slots={slots} />);
   slotService.inject('main', () => slotService.register({ name: 'main' }, RouteOutlet));
   slotService.inject('sidebar', () => slotService.register({
@@ -88,15 +87,17 @@ function NavigationSidebar({ routes }: { routes: RouteRenderer }) {
     .sort((left, right) => left.navigation!.order - right.navigation!.order);
 
   return (
-    <>
-      <nav>
-        {links.map(route => (
-          <NavLink key={route.id} to={routeHref(route, byId)}>{route.navigation!.labelKey ? t(route.navigation!.labelKey) : route.navigation!.label}</NavLink>
-        ))}
-        <Slot name="sidebar.navigation" />
-      </nav>
-      <footer><Slot name="sidebar.footer" /></footer>
-    </>
+    <div className={styles.sidebar}>
+      <div className={styles.scroll} data-sidebar-scroll>
+        <nav className={styles.navigation}>
+          {links.map(route => (
+            <NavLink key={route.id} to={routeHref(route, byId)}>{route.navigation!.labelKey ? t(route.navigation!.labelKey) : route.navigation!.label}</NavLink>
+          ))}
+          <Slot name="sidebar.navigation" />
+        </nav>
+      </div>
+      <footer className={styles.footer}><Slot name="sidebar.footer" /></footer>
+    </div>
   );
 }
 

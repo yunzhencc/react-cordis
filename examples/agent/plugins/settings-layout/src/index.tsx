@@ -17,7 +17,7 @@ export const inject = ['routes', 'slots', 'i18n'];
 
 export function apply(ctx: Context) {
   const i18n = ctx.i18n;
-  i18n.register(settingsLayoutMessages);
+  ctx.effect(() => i18n.register('settings-layout', settingsLayoutMessages));
   const settings = new SettingsRegistry(ctx);
   ctx.routes.inject('app-layout', () => ctx.routes.register({
     id: 'settings',
@@ -33,7 +33,7 @@ export function apply(ctx: Context) {
 }
 
 function SettingsLayout({ settings }: { settings: SettingsRegistry }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings-layout');
   const entries = useSettingsEntries(settings);
   const location = useLocation();
   if (!entries.length) {
@@ -57,7 +57,7 @@ function SettingsLayout({ settings }: { settings: SettingsRegistry }) {
 }
 
 function SettingsSidebar({ settings }: { settings: SettingsRegistry }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings-layout');
   const entries = useSettingsEntries(settings);
   const groups = Map.groupBy(entries, entry => entry.group.id);
   return (
@@ -81,7 +81,7 @@ function SettingsSidebar({ settings }: { settings: SettingsRegistry }) {
 }
 
 function SettingsFooterLink() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings-layout');
   return (
     <NavLink className={styles.footerLink} to="/settings">
       <Settings size={18} />

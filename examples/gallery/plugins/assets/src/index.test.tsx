@@ -3,6 +3,7 @@
 import type { Context as CordisContext, Plugin } from '@deepseek-ai/cordis';
 import type { AssetRecord, GalleryMediaApi, Thumbnail } from '@yunzhen/gallery-formats';
 import { Context } from '@deepseek-ai/cordis';
+import * as appLayout from '@examples/app-layout';
 import * as i18n from '@yunzhen/cordis-ui-i18n';
 import * as layout from '@yunzhen/cordis-ui-layout';
 import * as renderer from '@yunzhen/cordis-ui-renderer';
@@ -236,7 +237,7 @@ async function mountGallery(modules: readonly Plugin.Object<unknown>[]) {
   window.history.replaceState({}, '', '/');
   const ctx = new Context();
   const fibers: ReturnType<CordisContext['plugin']>[] = [];
-  for (const module of [i18n, renderer, router, layout, ...modules]) {
+  for (const module of [i18n, renderer, router, layout, appLayout, ...modules]) {
     const fiber = ctx.plugin(module);
     fibers.push(fiber);
     await fiber.await();

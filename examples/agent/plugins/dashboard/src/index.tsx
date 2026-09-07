@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { dashboardMessages } from './locales';
 
 export function DashboardPage({ closeWorkbench, openWorkbench }: { closeWorkbench: () => void; openWorkbench: () => void }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
   useEffect(() => () => closeWorkbench(), [closeWorkbench]);
 
   return (
@@ -19,7 +19,7 @@ export function DashboardPage({ closeWorkbench, openWorkbench }: { closeWorkbenc
 }
 
 function DashboardWorkbench() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
   return (
     <section>
       <h2>{t('dashboard.workbenchTitle')}</h2>
@@ -31,7 +31,7 @@ function DashboardWorkbench() {
 export const inject = ['i18n', 'layout', 'routes', 'slots'];
 
 export function apply(ctx: Context) {
-  ctx.i18n.register(dashboardMessages);
+  ctx.effect(() => ctx.i18n.register('dashboard', dashboardMessages));
   const { closeWorkbench, openWorkbench } = ctx.layout;
   ctx.slots.inject('dashboard.workbench', () => ctx.slots.inject('workbench', () => ctx.slots.register(
     { name: 'workbench' },
@@ -43,6 +43,6 @@ export function apply(ctx: Context) {
     index: true,
     Component: () => <DashboardPage closeWorkbench={closeWorkbench} openWorkbench={openWorkbench} />,
     children: { 'dashboard.workbench': { kind: 'single', scope: 'root' } },
-    navigation: { label: 'Dashboard', labelKey: 'dashboard.title', order: 0 },
+    navigation: { label: 'Dashboard', labelKey: 'dashboard:dashboard.title', order: 0 },
   }));
 }

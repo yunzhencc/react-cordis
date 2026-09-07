@@ -1,5 +1,6 @@
 import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
+import * as appLayout from '@examples/app-layout';
 import { apply as applyI18n } from '@yunzhen/cordis-ui-i18n';
 import { apply as applyLayout, inject as layoutInject } from '@yunzhen/cordis-ui-layout';
 import { apply as applyRenderer, inject as rendererInject } from '@yunzhen/cordis-ui-renderer';
@@ -18,6 +19,7 @@ async function bootSettings() {
     { apply: applyRenderer, inject: rendererInject },
     { apply: applyLayout, inject: layoutInject },
     { inject: ['layout', 'slots'], apply: applyRouter },
+    appLayout,
     { inject: ['i18n', 'routes', 'slots'], apply },
   ]) {
     const fiber = ctx.plugin(module);

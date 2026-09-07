@@ -7,11 +7,11 @@ import { Settings } from 'lucide-react';
 import styles from './index.module.css';
 
 const messages = {
-  'zh-CN': {
+  zh: {
     general: { title: '常规' },
     settings: { groups: { personal: '个人' } },
   },
-  'en-US': {
+  en: {
     general: { title: 'General' },
     settings: { groups: { personal: 'Personal' } },
   },
@@ -20,12 +20,12 @@ const messages = {
 export const inject = ['i18n', 'settings', 'slots'];
 
 export function apply(ctx: Context) {
-  ctx.i18n.register(messages);
+  ctx.effect(() => ctx.i18n.register('settings-general', messages));
   ctx.settings.register({
     id: 'general',
-    group: { id: 'personal', label: 'Personal', labelKey: 'settings.groups.personal', order: 100 },
+    group: { id: 'personal', label: 'Personal', labelKey: 'common:settings.groups.personal', order: 100 },
     label: 'General',
-    labelKey: 'general.title',
+    labelKey: 'settings-general:general.title',
     Icon: Settings,
     order: 0,
     Component: GeneralSettings,

@@ -1,5 +1,5 @@
 export const appearanceMessages = {
-  'zh-CN': {
+  zh: {
     appearance: {
       fontSize: '内容字号',
       preference: {
@@ -13,7 +13,7 @@ export const appearanceMessages = {
       groups: { personal: '个人' },
     },
   },
-  'en-US': {
+  en: {
     appearance: {
       fontSize: 'Content font size',
       preference: {

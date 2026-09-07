@@ -1,12 +1,12 @@
 export const settingsLayoutMessages = {
-  'zh-CN': {
+  zh: {
     settings: {
       empty: '暂无可用设置。',
       returnToApp: '返回应用',
       title: '设置',
     },
   },
-  'en-US': {
+  en: {
     settings: {
       empty: 'No settings available.',
       returnToApp: 'Return to app',

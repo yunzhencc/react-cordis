@@ -6,6 +6,8 @@
   name: '@yunzhen/cordis-ui-router'
 - id: layout
   name: '@yunzhen/cordis-ui-layout'
+- id: app-layout
+  name: '@examples/app-layout'
 - id: theme
   name: '@yunzhen/cordis-ui-theme'
 - id: formats

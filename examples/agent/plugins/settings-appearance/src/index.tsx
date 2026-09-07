@@ -8,13 +8,13 @@ import { appearanceMessages } from './locales';
 export const inject = ['i18n', 'settings', 'theme'];
 
 export function apply(ctx: Context) {
-  ctx.i18n.register(appearanceMessages);
+  ctx.effect(() => ctx.i18n.register('settings-appearance', appearanceMessages));
   const theme = ctx.theme;
   ctx.settings.register({
     id: 'appearance',
-    group: { id: 'personal', label: 'Personal', labelKey: 'settings.groups.personal', order: 100 },
+    group: { id: 'personal', label: 'Personal', labelKey: 'common:settings.groups.personal', order: 100 },
     label: 'Appearance',
-    labelKey: 'appearance.title',
+    labelKey: 'settings-appearance:appearance.title',
     Icon: Palette,
     order: 100,
     Component: () => <AppearanceSettings theme={theme} />,

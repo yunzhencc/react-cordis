@@ -10,6 +10,7 @@
     "start": "electron-vite preview"
   },
   "dependencies": {
+    "@examples/app-layout": "workspace:*",
     "@examples/gallery-assets": "workspace:*",
     "@examples/gallery-format-jxl": "workspace:*",
     "@yunzhen/cordis-client-modules": "workspace:*",
@@ -28,6 +29,7 @@
     "@types/node": "^26.4.0",
     "@types/yauzl": "3.4.0",
     "@types/yazl": "^3.3.1",
+    "@yunzhen/cordis-host-vite": "workspace:*",
     "electron": "^44.1.0",
     "electron-vite": "^5.0.0",
     "yazl": "3.3.1"

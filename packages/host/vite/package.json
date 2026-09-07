@@ -1,0 +1,17 @@
+{
+  "name": "@yunzhen/cordis-host-vite",
+  "type": "module",
+  "private": true,
+  "exports": "./src/index.ts",
+  "peerDependencies": {
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "@yunzhen/cordis-client-modules": "workspace:*",
+    "@yunzhen/cordis-host-plugin-catalog": "workspace:*"
+  },
+  "devDependencies": {
+    "@yunzhen/cordis-ui-i18n": "workspace:*",
+    "@yunzhen/cordis-ui-renderer": "workspace:*"
+  }
+}

@@ -1,5 +1,5 @@
-import type { WebBootGraph } from '@yunzhen/cordis-client-modules';
-import type { Plugin, PluginContext } from 'vite';
+import type { WebBootGraph } from '@yunzhen/cordis-client-modules/manifest';
+import type { Plugin, Rolldown } from 'vite';
 import { resolve } from 'node:path';
 import { loadWebBootGraph } from '@yunzhen/cordis-host-plugin-catalog';
 
@@ -14,21 +14,24 @@ export function renderWebBootVirtualModule(graph: WebBootGraph) {
   return `${loaders}\nexport const graph = ${JSON.stringify(graph)};\nexport const registry = new Map([\n${registry}\n]);\n`;
 }
 
-export function emitWebBootGraph(bundle: Pick<PluginContext, 'emitFile'>, graph: WebBootGraph) {
+export function emitWebBootGraph(bundle: Pick<Rolldown.PluginContext, 'emitFile'>, graph: WebBootGraph) {
   bundle.emitFile({ fileName: 'cordis.boot.json', source: JSON.stringify(graph, null, 2), type: 'asset' });
 }
 
 export function cordisWebBoot({
-  configPath = resolve(import.meta.dirname, 'cordis.yml'),
-  virtualModuleId = 'virtual:cordis-example-agent-boot',
-}: CordisWebBootOptions = {}): Plugin {
-  const resolvedConfigPath = resolve(configPath);
+  configPath = 'cordis.yml',
+  virtualModuleId = 'virtual:cordis-boot',
+}: CordisWebBootOptions = {}) {
+  let resolvedConfigPath = resolve(configPath);
   const resolvedVirtualModuleId = `\0${virtualModuleId}`;
   let graph: WebBootGraph | undefined;
   const loadGraph = () => graph ??= loadWebBootGraph(resolvedConfigPath);
 
   return {
-    name: 'cordis-example-agent-boot',
+    name: 'cordis-web-boot',
+    configResolved(config) {
+      resolvedConfigPath = resolve(config.root, configPath);
+    },
     buildStart() {
       loadGraph();
     },
@@ -56,5 +59,5 @@ export function cordisWebBoot({
       server.ws.send({ type: 'full-reload' });
       return [];
     },
-  };
+  } satisfies Plugin;
 }

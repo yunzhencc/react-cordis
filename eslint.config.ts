@@ -2,7 +2,7 @@ import antfu from '@antfu/eslint-config';
 
 export default antfu(
   {
-    ignores: ['.superpowers/**', 'docs/**'],
+    ignores: ['.superpowers/**', 'docs/**', '**/out/**'],
     stylistic: {
       semi: true,
       indent: 2,

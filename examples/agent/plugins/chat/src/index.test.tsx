@@ -3,6 +3,7 @@
 import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import type { ModelStreamRequest } from '../../models/src';
 import { Context } from '@deepseek-ai/cordis';
+import * as appLayout from '@examples/app-layout';
 import * as i18n from '@yunzhen/cordis-ui-i18n';
 import * as layout from '@yunzhen/cordis-ui-layout';
 import * as renderer from '@yunzhen/cordis-ui-renderer';
@@ -28,6 +29,7 @@ async function bootChat() {
     renderer,
     router,
     layout,
+    appLayout,
     {
       apply(pluginCtx: Context) {
         pluginCtx.reflect.provide('models', {

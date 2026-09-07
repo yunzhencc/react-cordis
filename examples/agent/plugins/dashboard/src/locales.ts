@@ -1,5 +1,5 @@
 export const dashboardMessages = {
-  'zh-CN': {
+  zh: {
     dashboard: {
       description: '仪表盘的上下文工具。',
       openWorkbench: '打开工作台',
@@ -7,7 +7,7 @@ export const dashboardMessages = {
       workbenchTitle: '仪表盘工作台',
     },
   },
-  'en-US': {
+  en: {
     dashboard: {
       description: 'Contextual tools for the Dashboard.',
       openWorkbench: 'Open workbench',

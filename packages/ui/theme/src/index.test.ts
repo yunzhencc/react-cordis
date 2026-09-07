@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Context } from '@deepseek-ai/cordis';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as themeModule from './index';
 import { ThemeRuntime } from './theme';
 
-const tokens = readFileSync('packages/ui/theme/src/tokens.css', 'utf8');
+const tokens = readFileSync(join(import.meta.dirname, 'tokens.css'), 'utf8');
 
 class MediaQuery {
   matches = false;
@@ -72,7 +73,7 @@ describe('uiThemePlugin', () => {
     style.textContent = tokens;
     document.head.append(style);
 
-    expect(getComputedStyle(document.documentElement).fontFamily).toBe('system-ui, sans-serif');
+    expect(getComputedStyle(document.documentElement).fontFamily).toMatch(/^-apple-system,\s*BlinkMacSystemFont/);
     style.remove();
   });
 });

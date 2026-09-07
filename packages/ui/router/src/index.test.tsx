@@ -3,7 +3,6 @@
 import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
 import { apply as applyI18n } from '@yunzhen/cordis-ui-i18n';
-import { apply as applyLayout, inject as layoutInject } from '@yunzhen/cordis-ui-layout';
 import { apply as applyRenderer, inject as rendererInject, Slot } from '@yunzhen/cordis-ui-renderer';
 import { act, StrictMode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
@@ -23,11 +22,22 @@ async function boot() {
   await i18n.await();
   const renderer = ctx.plugin({ apply: applyRenderer, inject: rendererInject });
   await renderer.await();
-  const layout = ctx.plugin({ apply: applyLayout, inject: layoutInject });
-  await layout.await();
   const router = ctx.plugin({ inject: routerInject, apply: applyRouter });
   await router.await();
-  const fibers = [router, layout, renderer, i18n];
+  ctx.routes.register({
+    id: 'app-layout',
+    Component: () => (
+      <>
+        <Slot name="sidebar" />
+        <Slot name="main" />
+      </>
+    ),
+    children: {
+      sidebar: { kind: 'single', scope: 'root' },
+      main: { kind: 'single', scope: 'root' },
+    },
+  });
+  const fibers = [router, renderer, i18n];
   return {
     ctx,
     container: document.createElement('div'),
@@ -46,23 +56,23 @@ async function bootRouterWithLayout() {
   const layout = app.ctx.plugin({
     inject: ['routes', 'slots', 'i18n'],
     apply(ctx) {
-      ctx.i18n.register({
-        'zh-CN': { navigation: { dashboard: '仪表盘', settings: '设置' } },
-        'en-US': { navigation: { dashboard: 'Dashboard', settings: 'Settings' } },
+      ctx.i18n.register('router-test', {
+        zh: { navigation: { dashboard: '仪表盘', settings: '设置' } },
+        en: { navigation: { dashboard: 'Dashboard', settings: 'Settings' } },
       });
       ctx.routes.inject('app-layout', () => ctx.routes.register({
         id: 'settings',
         parentId: 'app-layout',
         path: 'settings',
         Component: Settings,
-        navigation: { label: 'Settings', labelKey: 'navigation.settings', order: 2 },
+        navigation: { label: 'Settings', labelKey: 'router-test:navigation.settings', order: 2 },
       }));
       ctx.routes.inject('app-layout', () => ctx.routes.register({
         id: 'dashboard',
         parentId: 'app-layout',
         path: 'dashboard',
         Component: () => null,
-        navigation: { label: 'Dashboard', labelKey: 'navigation.dashboard', order: 1 },
+        navigation: { label: 'Dashboard', labelKey: 'router-test:navigation.dashboard', order: 1 },
       }));
       ctx.slots.inject('sidebar.navigation', () => ctx.slots.register(
         { name: 'sidebar.navigation', id: 'custom' },
@@ -141,14 +151,6 @@ async function bootRouterWithRouteSidebar() {
 }
 
 describe('router host', () => {
-  it('provides the layout as the app route', async () => {
-    const { ctx, dispose } = await boot();
-
-    expect(ctx.routes.snapshot().map(route => route.id)).toContain('app-layout');
-
-    await dispose();
-  });
-
   it('rejects children below an index route instead of dropping them', async () => {
     const { ctx, dispose } = await boot();
     ctx.routes.register({ id: 'index-parent', index: true, Component: () => null });
@@ -206,6 +208,24 @@ describe('router host', () => {
     ]);
     expect(container.textContent).toContain('Custom');
     expect(container.textContent).toContain('Account');
+    await act(async () => unmount());
+    await dispose();
+  });
+
+  it('keeps the footer outside the sidebar scroll region', async () => {
+    window.history.replaceState({}, '', '/settings');
+    const { ctx, container, dispose } = await bootRouterWithLayout();
+    let unmount!: () => void;
+
+    await act(async () => {
+      unmount = ctx.uiRenderer.mount(container);
+    });
+
+    const scrollRegion = container.querySelector('[data-sidebar-scroll]')!;
+    expect(scrollRegion.querySelector('nav')).not.toBeNull();
+    expect(scrollRegion.querySelector('footer')).toBeNull();
+    expect(container.querySelector('footer')?.parentElement).not.toBe(scrollRegion);
+
     await act(async () => unmount());
     await dispose();
   });

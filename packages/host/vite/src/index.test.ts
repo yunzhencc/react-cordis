@@ -1,0 +1,77 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { expect, it, vi } from 'vitest';
+import { cordisWebBoot, emitWebBootGraph, renderWebBootVirtualModule } from './index';
+
+const graph = {
+  revision: 'r1',
+  entries: [{ id: 'renderer', name: '@app/renderer', inject: [], immediately: true }],
+};
+
+it('maps each catalog package to its client import', () => {
+  const source = renderWebBootVirtualModule(graph);
+
+  expect(source).toContain('import(\'@app/renderer/client\')');
+  expect(source).toContain('[\'@app/renderer\', load0]');
+});
+
+it('emits the same graph as cordis.boot.json', () => {
+  const output: unknown[] = [];
+  emitWebBootGraph({ emitFile: (file) => {
+    output.push(file);
+    return 'graph';
+  } }, graph);
+
+  expect(output).toEqual([{ type: 'asset', fileName: 'cordis.boot.json', source: JSON.stringify(graph, null, 2) }]);
+});
+
+it('resolves a supplied virtual module id', () => {
+  const plugin = cordisWebBoot({ virtualModuleId: 'virtual:cordis-gallery-boot' });
+
+  expect(Reflect.apply(plugin.resolveId, undefined, ['virtual:cordis-gallery-boot'])).toBe('\0virtual:cordis-gallery-boot');
+});
+
+it('resolves the default catalog from the consuming Vite root', () => {
+  const root = mkdtempSync(join(import.meta.dirname, '.cordis-vite-plugin-'));
+  writeFileSync(join(root, 'cordis.yml'), '[]');
+  const plugin = cordisWebBoot();
+
+  try {
+    Reflect.apply(plugin.configResolved, undefined, [{ root }]);
+    expect(Reflect.apply(plugin.load, undefined, ['\0virtual:cordis-boot'])).toContain('"entries":[]');
+  }
+  finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
+it('reloads the virtual boot graph when its catalog changes', () => {
+  const root = mkdtempSync(join(import.meta.dirname, '.cordis-vite-plugin-'));
+  const configPath = join(root, 'cordis.yml');
+  const virtualModuleId = 'virtual:cordis-agent-test-boot';
+  const resolvedVirtualModuleId = `\0${virtualModuleId}`;
+  writeFileSync(configPath, '- id: i18n\n  name: \'@yunzhen/cordis-ui-i18n\'\n');
+  const plugin = cordisWebBoot({ configPath, virtualModuleId });
+  const module = { id: resolvedVirtualModuleId };
+  const add = vi.fn();
+  const invalidateModule = vi.fn();
+  const send = vi.fn();
+
+  try {
+    Reflect.apply(plugin.configureServer, undefined, [{ watcher: { add } }]);
+    expect(add).toHaveBeenCalledWith(configPath);
+    expect(Reflect.apply(plugin.load, undefined, [resolvedVirtualModuleId])).not.toContain('@yunzhen/cordis-ui-renderer');
+    writeFileSync(configPath, '- id: i18n\n  name: \'@yunzhen/cordis-ui-i18n\'\n- id: renderer\n  name: \'@yunzhen/cordis-ui-renderer\'\n');
+    Reflect.apply(plugin.handleHotUpdate, undefined, [{
+      file: configPath,
+      server: { moduleGraph: { getModuleById: () => module, invalidateModule }, ws: { send } },
+    }]);
+
+    expect(invalidateModule).toHaveBeenCalledWith(module);
+    expect(send).toHaveBeenCalledWith({ type: 'full-reload' });
+    expect(Reflect.apply(plugin.load, undefined, [resolvedVirtualModuleId])).toContain('@yunzhen/cordis-ui-renderer');
+  }
+  finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});

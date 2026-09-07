@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import styles from './index.module.css';
 
 const messages = {
-  'zh-CN': {
+  zh: {
     models: {
       apiKey: 'API 密钥',
       saved: '已保存',
@@ -15,7 +15,7 @@ const messages = {
     },
     settings: { groups: { coding: '编码' } },
   },
-  'en-US': {
+  en: {
     models: {
       apiKey: 'API key',
       saved: 'Saved',
@@ -29,13 +29,13 @@ const messages = {
 export const inject = ['i18n', 'models', 'settings'];
 
 export function apply(ctx: Context) {
-  ctx.i18n.register(messages);
+  ctx.effect(() => ctx.i18n.register('settings-models', messages));
   const models = ctx.models;
   ctx.settings.register({
     id: 'models',
-    group: { id: 'coding', label: 'Coding', labelKey: 'settings.groups.coding', order: 200 },
+    group: { id: 'coding', label: 'Coding', labelKey: 'settings-models:settings.groups.coding', order: 200 },
     label: 'Model providers',
-    labelKey: 'models.title',
+    labelKey: 'settings-models:models.title',
     Icon: Bot,
     order: 0,
     Component: () => <ModelSettings models={models} />,
@@ -43,7 +43,7 @@ export function apply(ctx: Context) {
 }
 
 function ModelSettings({ models }: Pick<Context, 'models'>) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings-models');
   const [apiKey, setApiKey] = useState(() => models.settings().apiKey ?? '');
   const [saved, setSaved] = useState(false);
 

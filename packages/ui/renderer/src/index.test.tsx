@@ -121,12 +121,12 @@ describe('ui renderer', () => {
   it('refreshes slot content when the active language changes', async () => {
     const { ctx, dispose } = await bootRenderer();
     const Greeting = () => {
-      const { t } = useTranslation();
+      const { t } = useTranslation('renderer-test');
       return <h1>{t('greeting')}</h1>;
     };
-    ctx.i18n.register({
-      'zh-CN': { greeting: '你好' },
-      'en-US': { greeting: 'Hello' },
+    ctx.i18n.register('renderer-test', {
+      zh: { greeting: '你好' },
+      en: { greeting: 'Hello' },
     });
     ctx.slots.register({ name: 'root' }, Greeting);
     const container = document.createElement('div');
@@ -137,8 +137,35 @@ describe('ui renderer', () => {
     });
     expect(container.textContent).toBe('你好');
 
-    await act(async () => ctx.i18n.setLocale('en-US'));
+    await act(async () => ctx.i18n.setLocale('en'));
     expect(container.textContent).toBe('Hello');
+
+    await act(async () => unmount());
+    await dispose();
+  });
+
+  it('refreshes active content when a language pack adds its dictionary', async () => {
+    const { ctx, dispose } = await bootRenderer();
+    const Greeting = () => {
+      const { t } = useTranslation('late-pack');
+      return <h1>{t('greeting')}</h1>;
+    };
+    ctx.i18n.addLanguage({ id: 'ja', label: '日本語', fallback: 'en' });
+    ctx.i18n.register('late-pack', { en: { greeting: 'Hello' } });
+    await ctx.i18n.setLocale('ja');
+    ctx.slots.register({ name: 'root' }, Greeting);
+    const container = document.createElement('div');
+
+    let unmount!: () => void;
+    await act(async () => {
+      unmount = ctx.uiRenderer.mount(container);
+    });
+    expect(container.textContent).toBe('Hello');
+
+    await act(async () => {
+      ctx.i18n.register('late-pack', { ja: { greeting: 'こんにちは' } });
+    });
+    expect(container.textContent).toBe('こんにちは');
 
     await act(async () => unmount());
     await dispose();

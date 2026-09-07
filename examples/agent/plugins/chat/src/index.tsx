@@ -14,7 +14,7 @@ interface ChatMessage {
 }
 
 const messages = {
-  'zh-CN': {
+  zh: {
     chat: {
       message: '消息',
       model: '模型',
@@ -24,7 +24,7 @@ const messages = {
       title: '聊天',
     },
   },
-  'en-US': {
+  en: {
     chat: {
       message: 'Message',
       model: 'Model',
@@ -39,11 +39,11 @@ const messages = {
 export const inject = ['i18n', 'models', 'routes'];
 
 export function apply(ctx: Context) {
-  ctx.i18n.register(messages);
+  ctx.effect(() => ctx.i18n.register('chat', messages));
   const models = ctx.models;
   ctx.routes.inject('app-layout', () => ctx.routes.register({
     id: 'chat',
-    navigation: { label: 'Chat', labelKey: 'chat.title', order: 10 },
+    navigation: { label: 'Chat', labelKey: 'chat:chat.title', order: 10 },
     parentId: 'app-layout',
     path: 'chat',
     Component: () => <ChatPage models={models} />,
@@ -51,7 +51,7 @@ export function apply(ctx: Context) {
 }
 
 function ChatPage({ models }: Pick<Context, 'models'>) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chat');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>(models.defaultModelId);
   const [streaming, setStreaming] = useState(false);

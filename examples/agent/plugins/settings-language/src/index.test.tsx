@@ -4,6 +4,7 @@ import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
 import { apply as applyGeneral, inject as generalInject } from '@examples/agent-settings-general';
 import { apply as applySettingsLayout } from '@examples/agent-settings-layout';
+import * as appLayout from '@examples/app-layout';
 import { apply as applyI18n } from '@yunzhen/cordis-ui-i18n';
 import { apply as applyLayout, inject as layoutInject } from '@yunzhen/cordis-ui-layout';
 import { apply as applyRenderer, inject as rendererInject } from '@yunzhen/cordis-ui-renderer';
@@ -28,6 +29,7 @@ async function bootLanguageSettings() {
     { apply: applyRenderer, inject: rendererInject },
     { apply: applyLayout, inject: layoutInject },
     { apply: applyRouter, inject: ['layout', 'slots'] },
+    appLayout,
     { apply: applySettingsLayout, inject: ['i18n', 'routes', 'slots'] },
     { apply: applyGeneral, inject: generalInject },
     { apply, inject },
@@ -59,17 +61,25 @@ describe('language settings extension', () => {
     expect([...container.querySelectorAll('[data-settings-menu] a')].map(link => link.textContent)).toEqual(['常规']);
     expect(container.textContent).toContain('应用 UI 语言');
     const select = container.querySelector('select')!;
-    expect(select.value).toBe('zh-CN');
+    expect(select.value).toBe('zh');
 
     await act(async () => {
-      select.value = 'en-US';
+      select.value = 'en';
       select.dispatchEvent(new Event('change', { bubbles: true }));
     });
 
     expect(container.querySelector('h1')?.textContent).toBe('General');
     expect(container.textContent).toContain('Application UI language');
     expect(container.textContent).toContain('Return to app');
-    expect(select.value).toBe('en-US');
+    expect(select.value).toBe('en');
+
+    let removeLanguage!: () => void;
+    await act(async () => {
+      removeLanguage = ctx.i18n.addLanguage({ id: 'ja', label: '日本語', fallback: 'en' });
+    });
+    expect(select.querySelector('option[value="ja"]')?.textContent).toBe('日本語');
+    await act(async () => removeLanguage());
+    expect(select.querySelector('option[value="ja"]')).toBeNull();
 
     await act(async () => unmount());
     await dispose();

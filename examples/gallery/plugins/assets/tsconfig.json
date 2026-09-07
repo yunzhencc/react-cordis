@@ -1,4 +1,4 @@
 {
   "extends": "@yunzhen/tsconfig/web.json",
-  "include": ["src"]
+  "include": ["src", "../../src/renderer/src/vite-env.d.ts"]
 }

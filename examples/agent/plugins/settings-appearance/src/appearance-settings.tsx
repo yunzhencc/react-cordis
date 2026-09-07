@@ -9,7 +9,7 @@ import systemPreview from './assets/theme-preview-system.svg';
 const themePreviews = { dark: darkPreview, light: lightPreview, system: systemPreview } as const;
 
 export function AppearanceSettings({ theme }: { theme: ThemeRuntime }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings-appearance');
   const snapshot = useSyncExternalStore(theme.subscribe, () => theme.snapshot);
 
   return (

@@ -2,6 +2,7 @@
 
 import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
+import * as appLayout from '@examples/app-layout';
 import * as i18n from '@yunzhen/cordis-ui-i18n';
 import * as layout from '@yunzhen/cordis-ui-layout';
 import * as renderer from '@yunzhen/cordis-ui-renderer';
@@ -17,7 +18,7 @@ async function bootDashboard() {
   const ctx = new Context();
   const fibers: ReturnType<CordisContext['plugin']>[] = [];
 
-  for (const module of [i18n, renderer, layout, router, dashboard]) {
+  for (const module of [i18n, renderer, layout, router, appLayout, dashboard]) {
     const fiber = ctx.plugin(module);
     fibers.push(fiber);
     await fiber.await();

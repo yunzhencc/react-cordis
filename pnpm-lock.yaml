@@ -23,6 +23,12 @@ importers:
       '@eslint-react/eslint-plugin':
         specifier: ^5.18.6
         version: 5.18.6(eslint@10.9.1(jiti@2.6.1))(typescript@6.0.3)
+      '@examples/app-layout':
+        specifier: workspace:*
+        version: link:examples/shared/app-layout
+      '@types/node':
+        specifier: ^26.4.0
+        version: 26.4.0
       '@types/react':
         specifier: ^19.2.18
         version: 19.2.18
@@ -86,6 +92,9 @@ importers:
       '@examples/agent-settings-models':
         specifier: workspace:*
         version: link:plugins/settings-models
+      '@examples/app-layout':
+        specifier: workspace:*
+        version: link:../shared/app-layout
       '@yunzhen/cordis-client-modules':
         specifier: workspace:*
         version: link:../../packages/client/modules
@@ -113,6 +122,10 @@ importers:
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
+    devDependencies:
+      '@yunzhen/cordis-host-vite':
+        specifier: workspace:*
+        version: link:../../packages/host/vite
 
   examples/agent/plugins/chat:
     dependencies:
@@ -356,6 +369,10 @@ importers:
       '@yunzhen/cordis-ui-renderer':
         specifier: workspace:*
         version: link:../../packages/ui/renderer
+    devDependencies:
+      '@yunzhen/cordis-host-vite':
+        specifier: workspace:*
+        version: link:../../packages/host/vite
 
   examples/basic/plugins/page:
     dependencies:
@@ -374,6 +391,9 @@ importers:
 
   examples/gallery:
     dependencies:
+      '@examples/app-layout':
+        specifier: workspace:*
+        version: link:../shared/app-layout
       '@examples/gallery-assets':
         specifier: workspace:*
         version: link:plugins/assets
@@ -423,6 +443,9 @@ importers:
       '@types/yazl':
         specifier: ^3.3.1
         version: 3.3.1
+      '@yunzhen/cordis-host-vite':
+        specifier: workspace:*
+        version: link:../../packages/host/vite
       electron:
         specifier: ^44.1.0
         version: 44.1.0
@@ -489,6 +512,18 @@ importers:
         specifier: 3.3.1
         version: 3.3.1
 
+  examples/shared/app-layout:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2
+      '@yunzhen/cordis-ui-layout':
+        specifier: workspace:*
+        version: link:../../../packages/ui/layout
+      '@yunzhen/cordis-ui-router':
+        specifier: workspace:*
+        version: link:../../../packages/ui/router
+
   packages/client/modules:
     dependencies:
       '@deepseek-ai/cordis':
@@ -515,6 +550,25 @@ importers:
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
+
+  packages/host/vite:
+    dependencies:
+      '@yunzhen/cordis-client-modules':
+        specifier: workspace:*
+        version: link:../../client/modules
+      '@yunzhen/cordis-host-plugin-catalog':
+        specifier: workspace:*
+        version: link:../plugin-catalog
+      vite:
+        specifier: ^8.2.2
+        version: 8.2.2(@types/node@26.4.0)(jiti@2.6.1)(yaml@2.9.0)
+    devDependencies:
+      '@yunzhen/cordis-ui-i18n':
+        specifier: workspace:*
+        version: link:../../ui/i18n
+      '@yunzhen/cordis-ui-renderer':
+        specifier: workspace:*
+        version: link:../../ui/renderer
 
   packages/ui/i18n:
     dependencies:
@@ -582,9 +636,6 @@ importers:
       '@yunzhen/cordis-ui-i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@yunzhen/cordis-ui-layout':
-        specifier: workspace:*
-        version: link:../layout
       '@yunzhen/cordis-ui-renderer':
         specifier: workspace:*
         version: link:../renderer

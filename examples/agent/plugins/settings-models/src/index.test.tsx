@@ -4,6 +4,7 @@ import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import { Context } from '@deepseek-ai/cordis';
 import { apply as applyModels, inject as modelsInject } from '@examples/agent-models';
 import { apply as applySettingsLayout } from '@examples/agent-settings-layout';
+import * as appLayout from '@examples/app-layout';
 import { apply as applyI18n } from '@yunzhen/cordis-ui-i18n';
 import { apply as applyLayout, inject as layoutInject } from '@yunzhen/cordis-ui-layout';
 import { apply as applyRenderer, inject as rendererInject } from '@yunzhen/cordis-ui-renderer';
@@ -32,6 +33,7 @@ async function bootModelSettings() {
     { inject: rendererInject, apply: applyRenderer },
     { inject: layoutInject, apply: applyLayout },
     { inject: ['layout', 'slots'], apply: applyRouter },
+    appLayout,
     { inject: ['routes', 'slots', 'i18n'], apply: applySettingsLayout },
     { inject: modelsInject, apply: applyModels, config: modelsConfig },
     { inject, apply },
