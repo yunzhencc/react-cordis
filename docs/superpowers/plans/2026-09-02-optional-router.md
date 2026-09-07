@@ -71,7 +71,7 @@ Expected: PASS, including the new static-root test.
 - Modify: `packages/ui/router/src/index.tsx`
 - Modify: `packages/ui/router/package.json`
 - Modify: `packages/ui/router/src/index.test.tsx`
-- Modify: `examples/agent/cordis.yml`
+- Modify: `examples/layout/cordis.yml`
 
 **Interfaces:**
 - Consumes: `ctx.layout.Root` from Task 1.
@@ -116,8 +116,8 @@ Expected: PASS with nested routes still rendered in the layout main Slot.
 ### Task 3: Scope the dashboard workbench to its route
 
 **Files:**
-- Modify: `examples/agent/plugins/dashboard/src/index.tsx`
-- Modify: `examples/agent/plugins/dashboard/src/index.test.tsx`
+- Modify: `examples/layout/plugins/dashboard/src/index.tsx`
+- Modify: `examples/layout/plugins/dashboard/src/index.test.tsx`
 
 **Interfaces:**
 - Consumes: the router page Slot lifecycle and the layout's existing `workbench` Slot.
@@ -133,7 +133,7 @@ expect(container.querySelector('[data-workbench-column]')).toBeNull();
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm exec vitest run examples/agent/plugins/dashboard/src/index.test.tsx`
+Run: `pnpm exec vitest run examples/layout/plugins/dashboard/src/index.test.tsx`
 
 Expected: FAIL because dashboard contributes to the global `workbench` Slot after navigation.
 
@@ -152,7 +152,7 @@ Keep the dashboard page and panel controller API unchanged.
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `pnpm exec vitest run examples/agent/plugins/dashboard/src/index.test.tsx`
+Run: `pnpm exec vitest run examples/layout/plugins/dashboard/src/index.test.tsx`
 
 Expected: PASS for opening the workbench on dashboard and removing it after leaving dashboard.
 
@@ -208,7 +208,7 @@ Expected: PASS and emit a `cordis.boot.json` that contains no router entry.
 
 - [ ] **Step 1: Run focused tests**
 
-Run: `pnpm exec vitest run packages/ui/layout/src/index.test.tsx packages/ui/router/src/index.test.tsx examples/agent/plugins/dashboard/src/index.test.tsx packages/host/plugin-catalog/src/index.test.ts`
+Run: `pnpm exec vitest run packages/ui/layout/src/index.test.tsx packages/ui/router/src/index.test.tsx examples/layout/plugins/dashboard/src/index.test.tsx packages/host/plugin-catalog/src/index.test.ts`
 
 Expected: PASS.
 
@@ -220,7 +220,7 @@ Expected: exit code 0.
 
 - [ ] **Step 3: Build both examples**
 
-Run: `pnpm --filter @examples/agent build && pnpm --filter @examples/basic build`
+Run: `pnpm --filter @examples/layout build && pnpm --filter @examples/basic build`
 
 Expected: both builds exit 0.
 

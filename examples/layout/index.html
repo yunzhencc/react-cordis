@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cordis Layout Example</title>
+  </head>
+  <body>
+    <script>
+      (() => {
+        const preferenceKey = '@yunzhen/cordis-ui-theme:preference'
+        const fontSizeKey = '@yunzhen/cordis-ui-theme:font-size'
+        let preference = 'system'
+        let fontSize = 14
+        try {
+          const savedPreference = localStorage.getItem(preferenceKey)
+          if (savedPreference === 'light' || savedPreference === 'dark' || savedPreference === 'system') preference = savedPreference
+          const savedFontSize = localStorage.getItem(fontSizeKey)
+          const parsedFontSize = Number(savedFontSize)
+          if (savedFontSize !== null && Number.isFinite(parsedFontSize) && parsedFontSize >= 12 && parsedFontSize <= 17) fontSize = parsedFontSize
+        } catch {}
+        const dark = preference === 'dark' || (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+        const theme = dark ? 'dark' : 'light'
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = theme
+        document.documentElement.style.setProperty('--app-content-font-size', `${fontSize}px`)
+      })()
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

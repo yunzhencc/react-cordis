@@ -48,7 +48,7 @@ it('resolves the default catalog from the consuming Vite root', () => {
 it('reloads the virtual boot graph when its catalog changes', () => {
   const root = mkdtempSync(join(import.meta.dirname, '.cordis-vite-plugin-'));
   const configPath = join(root, 'cordis.yml');
-  const virtualModuleId = 'virtual:cordis-agent-test-boot';
+  const virtualModuleId = 'virtual:cordis-test-boot';
   const resolvedVirtualModuleId = `\0${virtualModuleId}`;
   writeFileSync(configPath, '- id: i18n\n  name: \'@yunzhen/cordis-ui-i18n\'\n');
   const plugin = cordisWebBoot({ configPath, virtualModuleId });

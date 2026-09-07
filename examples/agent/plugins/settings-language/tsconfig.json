@@ -1,4 +1,0 @@
-{
-  "extends": "@yunzhen/tsconfig/web.json",
-  "include": ["src"]
-}

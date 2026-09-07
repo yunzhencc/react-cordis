@@ -11,13 +11,13 @@ export default antfu(
     react: true,
   },
   {
-    files: ['examples/agent/index.test.ts'],
+    files: ['examples/layout/index.test.ts'],
     rules: {
       'no-eval': 'off',
     },
   },
   {
-    files: ['packages/**/*.tsx', 'examples/agent/plugins/**/*.tsx'],
+    files: ['packages/**/*.tsx', 'examples/layout/plugins/**/*.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

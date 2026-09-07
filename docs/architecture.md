@@ -4,10 +4,12 @@
 
 核心包以 `codex-desktop` 的 `2712dff` 实现为同步基准，底层继续使用 `@deepseek-ai/cordis`。本文描述当前实现；`superpowers` 目录保留历史设计记录。通用 Cordis 启动图在构建期确定，不提供生产 Node catalog 服务、远程模块或 YAML `!!js` 配置。
 
+示例分为 Basic（最小启动与插槽）和 Layout（布局、路由、工作台、主题、语言及设置扩展）。
+
 ## 静态启动链
 
 ```text
-examples/agent/cordis.yml
+examples/layout/cordis.yml
   └─ host/plugin-catalog 读取包元数据
       └─ WebBootGraph
           └─ Vite 虚拟 registry（开发）/ cordis.boot.json + chunks（构建）
@@ -15,7 +17,7 @@ examples/agent/cordis.yml
                   └─ Cordis Context → ctx.uiRenderer.mount(container)
 ```
 
-`examples/agent/cordis.yml` 是该示例应用唯一的启用来源。catalog 在 Node 构建阶段读取它和每个包的 `yunzhen.client` 元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
+`examples/layout/cordis.yml` 是该示例应用唯一的启用来源。catalog 在 Node 构建阶段读取它和每个包的 `yunzhen.client` 元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
 
 ## 包职责
 
@@ -28,10 +30,10 @@ examples/agent/cordis.yml
 | `@yunzhen/cordis-ui-renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的唯一 React 根挂载。 |
 | `@yunzhen/cordis-ui-router` | `ctx.routes` 的 RouteRegistry、React Router 适配和 Route 的 Slot owner。 |
 | `@yunzhen/cordis-ui-layout` | 可选的三栏布局组件和 `ctx.layout` 面板动作，不依赖 router。 |
-| `@examples/app-layout` | Agent 示例的根路由插件，显式注册 `app-layout`。 |
+| `@examples/layout-app-layout` | Layout 示例的根路由插件，显式注册 `app-layout`。 |
 | `@yunzhen/cordis-ui-i18n` | `ctx.i18n`、浏览器语言识别、用户选择持久化与 i18next React Provider。 |
-| `examples/agent/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Agent 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
-| `examples/agent/plugins/settings-layout` | Agent 示例的 `/settings` 路由壳、设置侧栏、底部 Settings 入口与 `ctx.settings.register()`。 |
+| `examples/layout/plugins/dashboard`、`settings-layout`、`settings-general`、`settings-appearance`、`settings-language` | Layout 示例的业务插件；通过 Cordis `inject` + `apply` 注册 Route、Slot 或设置贡献，并拥有各自文案资源。 |
+| `examples/layout/plugins/settings-layout` | Layout 示例的 `/settings` 路由壳、设置侧栏、底部 Settings 入口与 `ctx.settings.register()`。 |
 | `ui/theme` | ThemeRuntime、token 与 DOM 同步；具体设置页面由独立扩展提供。 |
 
 旧的 `core/runtime`、`react/bridge`、`router/react-router` 与 `ui/shell` 分层已不属于当前实现。
@@ -61,7 +63,7 @@ Slots 只有 `root` scope。父项的 `children` 是子 Slot 唯一声明授权�
 
 Router 是唯一向 `root` Slot 注册的路由宿主。`ctx.routes` 以 `id`、`parentId`、可选 `path` / `index`、`Component` 与页面 `children` Slots 描述路由；`path` 缺省表示不消费 URL 的 Layout Route。跨模块以 `parentId` 建立父子关系，不能修改彼此的 `children` 数组。
 
-router 不依赖布局，也不自动创建业务根路由。Agent 的 `@examples/app-layout` 显式注册无路径 `app-layout`，使用 `ctx.layout.Root`；布局组件声明以下 Slots：
+router 不依赖布局，也不自动创建业务根路由。Layout 的 `@examples/layout-app-layout` 显式注册无路径 `app-layout`，使用 `ctx.layout.Root`；布局组件声明以下 Slots：
 
 ```text
 app-layout
@@ -73,8 +75,8 @@ app-layout
 └─ shell.overlay (list)
 ```
 
-Agent 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命中 Settings 时其 route Sidebar 替换默认应用侧栏。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。可选 layout 包负责面板开关、拖拽尺寸持久化与响应式折叠。Basic 示例直接使用布局组件和 Slots，不启用 router 或根路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
+Layout 示例的 Dashboard 和 Settings 都是 `app-layout` 的子 Route；命中 Settings 时其 route Sidebar 替换默认应用侧栏。设置扩展通过 `ctx.settings.register()` 同时注册菜单与 `/settings/:id` 页面。`settings-general` 声明 `settings.general.items` 子 Slot，语言设置向其中贡献设置行；Appearance 仍是独立页面。可选 layout 包负责面板开关、拖拽尺寸持久化与响应式折叠。Basic 示例直接使用布局组件和 Slots，不启用 router 或根路由插件。消费项目也可提供自己的布局并注册多个独立根路由。
 
 ## 部署边界
 
-开发期 Vite 进程可读取 `examples/agent/cordis.yml` 生成虚拟 registry；生产环境仅托管 `examples/agent/dist` 的静态文件和 ESM chunks。生产不运行 Node catalog 扫描，不支持 HMR、远程插件、运行时安装或动态运行器。
+开发期 Vite 进程可读取 `examples/layout/cordis.yml` 生成虚拟 registry；生产环境仅托管 `examples/layout/dist` 的静态文件和 ESM chunks。生产不运行 Node catalog 扫描，不支持 HMR、远程插件、运行时安装或动态运行器。
