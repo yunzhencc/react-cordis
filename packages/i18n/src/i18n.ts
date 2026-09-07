@@ -61,7 +61,7 @@ export class I18nRuntime {
       load: 'currentOnly',
       lowerCaseLng: true,
       react: {
-        bindI18n: 'languageChanged',
+        bindI18n: 'languageChanged languageCatalogChanged',
         bindI18nStore: 'added removed',
       },
       resources: {},
@@ -166,10 +166,13 @@ export class I18nRuntime {
 
   private refreshActiveLocale(): void {
     const active = this.resolveActive();
-    if (this.locale === active)
+    if (this.locale === active) {
       this.emitChange();
-    else
+      this.instance.emit('languageCatalogChanged');
+    }
+    else {
       void this.instance.changeLanguage(active);
+    }
   }
 
   private publishLanguages(): void {
@@ -219,8 +222,14 @@ export class I18nRuntime {
   }
 
   private emitChange(): void {
-    for (const listener of this.listeners)
-      listener();
+    for (const listener of [...this.listeners]) {
+      try {
+        listener();
+      }
+      catch (error) {
+        console.error('i18n subscriber failed:', error);
+      }
+    }
   }
 }
 

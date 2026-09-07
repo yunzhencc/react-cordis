@@ -184,6 +184,49 @@ describe('ui renderer', () => {
     await dispose();
   });
 
+  it('refreshes translations when a fallback language definition is removed and restored', async () => {
+    const { ctx, dispose } = await bootRenderer();
+    const Greeting = () => {
+      const { t } = useTranslation('fallback-catalog');
+      return <h1>{t('greeting')}</h1>;
+    };
+    let removeFrench = ctx.i18n.addLanguage({ id: 'fr', label: 'Français', fallback: 'en' });
+    ctx.i18n.addLanguage({ id: 'fr-CA', label: 'Français (Canada)', fallback: 'fr' });
+    ctx.i18n.register('fallback-catalog', {
+      fr: { greeting: 'Bonjour' },
+      en: { greeting: 'Hello' },
+    });
+    await ctx.i18n.setLocale('fr-CA');
+    ctx.slots.register({ name: 'root' }, Greeting);
+    const container = document.createElement('div');
+    const languageChanges: string[] = [];
+    ctx.i18n.instance.on('languageChanged', locale => languageChanges.push(locale));
+    let unmount!: () => void;
+
+    try {
+      await act(async () => {
+        unmount = ctx.uiRenderer.mount(container);
+      });
+      expect(container.textContent).toBe('Bonjour');
+
+      await act(async () => removeFrench());
+      expect(container.textContent).toBe('Hello');
+      expect(ctx.i18n.locale).toBe('fr-CA');
+
+      await act(async () => {
+        removeFrench = ctx.i18n.addLanguage({ id: 'fr', label: 'Français', fallback: 'en' });
+      });
+      expect(container.textContent).toBe('Bonjour');
+      expect(ctx.i18n.locale).toBe('fr-CA');
+      expect(languageChanges).toEqual([]);
+    }
+    finally {
+      await act(async () => unmount());
+      removeFrench();
+      await dispose();
+    }
+  });
+
   it('provides a disposable owner for route-declared slots', async () => {
     const { ctx, dispose } = await bootRenderer();
     const owner = ctx.slots.createOwner('settings', {

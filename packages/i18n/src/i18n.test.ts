@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { I18nConfig } from './i18n';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nRuntime } from './i18n';
 
 describe('i18n runtime', () => {
@@ -98,5 +98,33 @@ describe('i18n runtime', () => {
     const dispose = runtime.register('duplicate-case', { en: { welcome: 'Hello' } });
     expect(runtime.instance.t('welcome', { ns: 'duplicate-case', lng: 'en' })).toBe('Hello');
     dispose();
+  });
+
+  it('isolates subscriber failures during language registration, disposal and switching', async () => {
+    const runtime = new I18nRuntime();
+    await runtime.setLocale('zh');
+    const error = new Error('subscriber failed');
+    const reported = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const counts: number[] = [];
+    runtime.subscribe(() => {
+      throw error;
+    });
+    runtime.subscribe(() => counts.push(runtime.languages.length));
+
+    try {
+      const dispose = runtime.addLanguage({ id: 'de', label: 'Deutsch', fallback: 'en' });
+      expect(counts).toEqual([3]);
+      dispose();
+      expect(runtime.languages.map(language => language.id)).toEqual(['zh', 'en']);
+      expect(counts).toEqual([3, 2]);
+
+      await runtime.setLocale('en');
+      expect(runtime.locale).toBe('en');
+      expect(counts).toEqual([3, 2, 2]);
+      expect(reported).toHaveBeenCalledWith('i18n subscriber failed:', error);
+    }
+    finally {
+      reported.mockRestore();
+    }
   });
 });

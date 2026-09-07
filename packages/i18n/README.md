@@ -104,7 +104,7 @@ export function apply(ctx: Context) {
 
 查找文案时，在请求的命名空间内依次尝试当前语言及其 fallback 链，最后回退到 key 本身。例如上述日语字典缺少 `welcome`，便使用 `greeting` 的英文翻译。本包不自动回退到 `common` 或其他命名空间，也不自动推导区域语言的回退关系；需要 `fr-CA → fr → en` 时，应显式注册这条链。
 
-卸载语言定义会移除可选项，并重新解析生效语言，不会清除已保存的偏好。卸载字典会移除该次注册的资源，页面随之使用剩余的回退翻译。两种注册都返回可重复调用的释放函数，需分别交给 `ctx.effect()` 管理。
+卸载语言定义会移除可选项，并重新解析生效语言，不会清除已保存的偏好。语言目录变化也会刷新 React 翻译：即使当前语言 ID 不变，移除或恢复中间回退语言后，页面仍会沿新的回退链取词。卸载字典会移除该次注册的资源，页面随之使用剩余的回退翻译。两种注册都返回可重复调用的释放函数，需分别交给 `ctx.effect()` 管理。
 
 ## API
 
@@ -132,9 +132,11 @@ export function apply(ctx: Context) {
 | 调用 i18next 语言切换流程 | `languageChanged` | `useTranslation()` 更新翻译 |
 | 字典注册 | 资源存储 `added` | 已挂载组件读取新翻译 |
 | 字典卸载 | 资源存储 `removed` | 已挂载组件重新解析回退翻译 |
-| 语言目录注册或卸载 | `runtime.subscribe()`；生效语言改变时另走语言切换流程 | 选择器更新可选项 |
+| 语言目录注册或卸载 | `runtime.subscribe()`；生效语言不变时发送 `languageCatalogChanged`，否则走语言切换流程 | 选择器更新可选项，`useTranslation()` 重新解析回退翻译 |
 
 字典刷新不发送 `languageChanged`。该事件仍遵循 i18next 的语义，重复选择当前语言也可能触发通知，不应直接当作一次新的用户操作。
+
+`languageCatalogChanged` 是运行时通过 i18next 实例发送的目录更新通知，React 接入已订阅该事件。`runtime.subscribe()` 的同步回调逐个执行，某个回调抛错时会通过 `console.error` 报告并继续通知其余订阅者，不会中断语言注册、卸载或切换。
 
 ## 当前限制
 
