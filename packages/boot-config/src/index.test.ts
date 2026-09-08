@@ -24,12 +24,27 @@ function fixture(config: string, packages: Record<string, object>) {
   return join(root, 'cordis.yml');
 }
 
-function client(metadata?: object) {
+function plugin(metadata?: object) {
   return {
-    exports: { './client': './client.ts' },
+    exports: { '.': './index.ts' },
     ...(metadata === undefined ? {} : { cordis: metadata }),
   };
 }
+
+it.each([
+  './index.ts',
+  { '.': './index.ts' },
+  { '.': { types: './index.d.ts', default: './index.ts' } },
+  { types: './index.d.ts', default: './index.ts' },
+])('accepts a package root export: %j', (exports) => {
+  const configPath = fixture('- id: plugin\n  name: plugin\n', { plugin: { exports } });
+  expect(loadWebBootGraph(configPath).entries).toEqual([{ id: 'plugin', name: 'plugin', inject: [] }]);
+});
+
+it.each([undefined, null, { './client': './index.ts' }, { '.': null }, { '.': { types: './index.d.ts' } }])('rejects packages without a runtime root export: %j', (exports) => {
+  const configPath = fixture('- id: plugin\n  name: plugin\n', { plugin: { exports } });
+  expect(() => loadWebBootGraph(configPath)).toThrow('root export missing');
+});
 
 it('omits disabled rows before topology validation', () => {
   const configPath = fixture(`
@@ -39,8 +54,8 @@ it('omits disabled rows before topology validation', () => {
   name: '@fixture/dashboard'
   disabled: true
 `, {
-    '@fixture/renderer': client(),
-    '@fixture/dashboard': client({ inject: ['@fixture/missing'] }),
+    '@fixture/renderer': plugin(),
+    '@fixture/dashboard': plugin({ inject: ['@fixture/missing'] }),
   });
 
   expect(loadWebBootGraph(configPath).entries.map(entry => entry.id)).toEqual(['renderer']);
@@ -53,8 +68,8 @@ it('sorts enabled entries by their package metadata dependencies', () => {
 - id: renderer
   name: '@fixture/renderer'
 `, {
-    '@fixture/renderer': client(),
-    '@fixture/dashboard': client({ inject: ['@fixture/renderer'] }),
+    '@fixture/renderer': plugin(),
+    '@fixture/dashboard': plugin({ inject: ['@fixture/renderer'] }),
   });
 
   expect(loadWebBootGraph(configPath).entries.map(entry => entry.id)).toEqual(['renderer', 'dashboard']);
@@ -67,7 +82,7 @@ it('reports only enabled package manifests before parsing them so failed reads r
 - id: disabled
   name: '@fixture/disabled'
   disabled: true
-`, { '@fixture/renderer': client() });
+`, { '@fixture/renderer': plugin() });
   const manifestPath = join(dirname(configPath), 'node_modules/@fixture/renderer/package.json');
   const files: string[] = [];
   loadWebBootGraph(configPath, file => files.push(file));
@@ -79,7 +94,7 @@ it('reports only enabled package manifests before parsing them so failed reads r
   expect(files).toEqual([manifestPath]);
 });
 
-it.each([client(), client({})])('accepts plugins without package dependencies', (manifest) => {
+it.each([plugin(), plugin({})])('accepts plugins without package dependencies', (manifest) => {
   const configPath = fixture(`- id: renderer\n  name: '@fixture/renderer'\n`, {
     '@fixture/renderer': manifest,
   });
@@ -91,16 +106,16 @@ it.each([client(), client({})])('accepts plugins without package dependencies', 
 
 it.each([null, 'web', [], { inject: null }, { inject: 'renderer' }, { inject: [42] }].map(cordis => ({ cordis })))('rejects malformed cordis metadata: $cordis', ({ cordis }) => {
   const configPath = fixture(`- id: renderer\n  name: '@fixture/renderer'\n`, {
-    '@fixture/renderer': { ...client(), cordis },
+    '@fixture/renderer': { ...plugin(), cordis },
   });
 
   expect(() => loadWebBootGraph(configPath)).toThrow(/cordis|inject/);
 });
 
 it.each([
-  [() => fixture(`- id: missing-client\n  name: '@fixture/missing-client'\n`, { '@fixture/missing-client': {} }), /exports\.\/client/],
-  [() => fixture(`- id: dashboard\n  name: '@fixture/dashboard'\n`, { '@fixture/dashboard': client({ inject: ['@fixture/missing'] }) }), /injects inactive package/],
-  [() => fixture(`- id: invalid\n  name: '@fixture/invalid'\n  config: !!js/function >\n    function () {}\n`, { '@fixture/invalid': client() }), /!!js/],
+  [() => fixture(`- id: missing-root\n  name: '@fixture/missing-root'\n`, { '@fixture/missing-root': {} }), /root export missing/],
+  [() => fixture(`- id: dashboard\n  name: '@fixture/dashboard'\n`, { '@fixture/dashboard': plugin({ inject: ['@fixture/missing'] }) }), /injects inactive package/],
+  [() => fixture(`- id: invalid\n  name: '@fixture/invalid'\n  config: !!js/function >\n    function () {}\n`, { '@fixture/invalid': plugin() }), /!!js/],
 ])('rejects invalid boot config input', (createFixture, error) => {
   expect(() => loadWebBootGraph(createFixture())).toThrow(error);
 });

@@ -180,7 +180,7 @@ Cordis 插件卸载时会自动调用 `dispose()`，解除运行时自己的 i18
 | `I18nProvider` | 向 React 子树提供指定运行时的 i18next 实例 |
 | `LOCALES` | 内置语言 ID `['zh', 'en']`；完整可选语言列表使用 `languages` |
 
-包根入口与 `./client` 导出同一实现。导出类型包括 `I18nConfig`、`Locale`、`LanguageRegistration`、`LocaleDefinition`、`TranslationNamespace` 和 `TranslationKey`。
+包根入口导出插件实现。导出类型包括 `I18nConfig`、`Locale`、`LanguageRegistration`、`LocaleDefinition`、`TranslationNamespace` 和 `TranslationKey`。
 
 ## 理解实现
 

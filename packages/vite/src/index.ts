@@ -15,7 +15,7 @@ function manifestStamp(file: string) {
 }
 
 export function renderWebBootVirtualModule(graph: WebBootGraph) {
-  const loaders = graph.entries.map((entry, index) => `const load${index} = () => import('${entry.name}/client');`).join('\n');
+  const loaders = graph.entries.map((entry, index) => `const load${index} = () => import('${entry.name}');`).join('\n');
   const registry = graph.entries.map((entry, index) => `  ['${entry.name}', load${index}],`).join('\n');
   return `${loaders}\nexport const graph = ${JSON.stringify(graph)};\nexport const registry = new Map([\n${registry}\n]);\n`;
 }

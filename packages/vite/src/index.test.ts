@@ -11,10 +11,10 @@ const graph = {
   entries: [{ id: 'renderer', name: '@app/renderer', inject: [] }],
 };
 
-it('maps each configured package to its client import', () => {
+it('maps each configured package to its root import', () => {
   const source = renderWebBootVirtualModule(graph);
 
-  expect(source).toContain('import(\'@app/renderer/client\')');
+  expect(source).toContain('import(\'@app/renderer\')');
   expect(source).toContain('[\'@app/renderer\', load0]');
 });
 
@@ -85,7 +85,7 @@ function metadataFixture() {
   const configPath = join(root, 'cordis.yml');
   const manifestPath = join(root, 'node_modules/plugin/package.json');
   mkdirSync(join(root, 'node_modules/plugin'), { recursive: true });
-  const manifest = { name: 'plugin', exports: { './client': './client.ts' } };
+  const manifest = { name: 'plugin', exports: { '.': './index.ts' } };
   writeFileSync(manifestPath, JSON.stringify(manifest));
   writeFileSync(configPath, '- id: plugin\n  name: plugin\n');
   const plugin = cordisWebBoot({ configPath });
@@ -155,7 +155,7 @@ it('tracks newly enabled symlinked packages even when their first metadata read 
     const before = app.send.mock.calls.length;
     writeFileSync(manifestPath, JSON.stringify({ ...app.manifest, name: 'workspace-plugin' }));
     await vi.waitFor(() => expect(app.send.mock.calls.length).toBeGreaterThan(before), { timeout: 3000 });
-    expect(app.load()).toContain('workspace-plugin/client');
+    expect(app.load()).toContain('import(\'workspace-plugin\')');
 
     // Removed packages and a closed development server must stop triggering reloads.
     app.send.mockClear();
@@ -176,10 +176,10 @@ it('tracks newly enabled symlinked packages even when their first metadata read 
 it('updates dependency metadata with Vite default dependency optimization enabled', async () => {
   const app = metadataFixture();
   app.close();
-  writeFileSync(join(app.root, 'node_modules/plugin/client.ts'), 'export const version = 1;');
+  writeFileSync(join(app.root, 'node_modules/plugin/index.ts'), 'export const version = 1;');
   mkdirSync(join(app.root, 'node_modules/provider'));
   writeFileSync(join(app.root, 'node_modules/provider/package.json'), JSON.stringify({ ...app.manifest, name: 'provider' }));
-  writeFileSync(join(app.root, 'node_modules/provider/client.ts'), 'export const value = true;');
+  writeFileSync(join(app.root, 'node_modules/provider/index.ts'), 'export const value = true;');
   writeFileSync(app.configPath, '- id: plugin\n  name: plugin\n- id: provider\n  name: provider\n');
   const server = await createServer({
     root: app.root,
@@ -218,8 +218,8 @@ it('discovers dependencies behind a virtual boot module before browser requests'
   mkdirSync(join(root, 'node_modules/dep'), { recursive: true });
   mkdirSync(join(root, 'workspace-plugin'));
   symlinkSync(join(root, 'workspace-plugin'), join(root, 'node_modules/plugin'), 'dir');
-  writeFileSync(join(root, 'workspace-plugin/package.json'), JSON.stringify({ name: 'plugin', exports: { './client': './client.js' } }));
-  writeFileSync(join(root, 'workspace-plugin/client.js'), 'export { value } from "dep";');
+  writeFileSync(join(root, 'workspace-plugin/package.json'), JSON.stringify({ name: 'plugin', exports: { '.': './index.js' } }));
+  writeFileSync(join(root, 'workspace-plugin/index.js'), 'export { value } from "dep";');
   writeFileSync(join(root, 'node_modules/dep/package.json'), JSON.stringify({ name: 'dep', main: './index.js' }));
   writeFileSync(join(root, 'node_modules/dep/index.js'), 'exports.value = 42;');
   writeFileSync(join(root, 'cordis.yml'), '- id: plugin\n  name: plugin\n');
@@ -237,7 +237,7 @@ it('discovers dependencies behind a virtual boot module before browser requests'
     await optimizer.init();
     await optimizer.scanProcessing;
     await vi.waitFor(() => expect(optimizer.metadata.optimized.dep).toBeDefined());
-    expect(optimizer.metadata.optimized['plugin/client']).toBeUndefined();
+    expect(optimizer.metadata.optimized.plugin).toBeUndefined();
   }
   finally {
     await server.close();

@@ -54,8 +54,8 @@ function loadEntry(value: unknown, index: number, configPath: string, onPackageM
     throw new TypeError(`web boot config entry ${index} requires id and name`);
 
   const manifest = loadPackageManifest(row.name, configPath, onPackageManifest);
-  if (!hasClientExport(manifest.exports))
-    throw new TypeError(`web boot config exports./client missing: ${row.name}`);
+  if (!hasRootExport(manifest.exports))
+    throw new TypeError(`web boot config root export missing: ${row.name}`);
 
   if (manifest.cordis !== undefined && !isRecord(manifest.cordis))
     throw new TypeError(`web boot config cordis metadata must be an object: ${row.name}`);
@@ -80,11 +80,9 @@ function loadPackageManifest(name: string, configPath: string, onPackageManifest
   return JSON.parse(readFileSync(packagePath, 'utf8')) as PackageManifest;
 }
 
-function hasClientExport(exports: unknown) {
-  if (!isRecord(exports))
-    return false;
-  const client = exports['./client'];
-  return typeof client === 'string' || (isRecord(client) && typeof client.default === 'string');
+function hasRootExport(exports: unknown) {
+  const root = isRecord(exports) && Object.hasOwn(exports, '.') ? exports['.'] : exports;
+  return typeof root === 'string' || (isRecord(root) && typeof root.default === 'string');
 }
 
 function parseJsonConfig(config: unknown, name: string) {

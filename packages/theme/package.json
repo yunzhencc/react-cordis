@@ -4,7 +4,6 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/index.ts",
     "./theme": "./src/theme.ts"
   },
   "dependencies": {

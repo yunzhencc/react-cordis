@@ -57,7 +57,7 @@ export function apply(ctx: Context) {
 }
 ```
 
-插件的 `package.json` 导出浏览器入口，并声明依赖的插件包：
+插件的 `package.json` 通过根入口导出插件，并声明依赖的插件包：
 
 ```json
 {
@@ -65,8 +65,7 @@ export function apply(ctx: Context) {
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./src/index.tsx",
-    "./client": "./src/index.tsx"
+    ".": "./src/index.tsx"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
