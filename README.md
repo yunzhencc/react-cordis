@@ -22,6 +22,7 @@ pnpm start
 | [Basic](examples/basic) | `pnpm start:basic` | 最小启动链与根插槽，不依赖路由。 |
 | [Router](examples/router) | `pnpm start:router` | 路由、三栏布局、工作台、设置扩展、主题与语言切换。 |
 | [i18n](examples/i18n) | `pnpm start:i18n` | 命名空间、语言包注册、翻译回退与语言偏好持久化。 |
+| [Cross-platform](examples/cross-platform) | `pnpm --filter @examples/cross-platform dev` | Tamagui 共享界面、Cordis 功能启停与平台存储；另提供 Electron 和 Expo 原生入口。 |
 
 ## 核心能力
 
@@ -37,6 +38,8 @@ pnpm start
 | `@react-cordis/theme` | 主题偏好、系统主题跟随、持久化与首屏初始化脚本。 |
 
 应用决定页面布局与业务服务。基础 router 不提供侧栏或设置页；这些能力由 Router 示例中的业务插件实现。
+
+`@react-cordis/renderer/react` 提供不依赖 DOM 的插槽服务与 React 组件，宿主负责挂载根节点；默认 `@react-cordis/renderer` 入口继续提供 DOM 挂载能力。跨端装配及运行方式见 [Cross-platform 示例](examples/cross-platform/README.md)。
 
 ## 最小插件接入
 
@@ -119,7 +122,7 @@ pnpm --filter @examples/router exec vite --force
 - 插件集合在构建期确定，生产部署使用静态文件与 ESM chunks；不提供运行时安装、远程插件或插件市场。
 - Slot 支持 `single`、`list` 与 `root` scope，子插槽由拥有它的父项声明；不提供任意 props 注入或会话级 scope。
 - 渲染异常按 Slot 注册项或路由页面隔离，故障区域显示空占位并记录日志。边界不自动重试，也不捕获普通事件回调和渲染之外的异步异常；Slot 装配错误会继续抛出。
-- 插件共享浏览器执行环境，渲染异常隔离不是不可信代码的安全沙箱。
+- 插件共享所在进程的执行环境，渲染异常隔离不是不可信代码的安全沙箱。
 
 ## 文档
 

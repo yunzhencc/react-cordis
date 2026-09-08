@@ -11,6 +11,12 @@ export interface SlotOwnerHandle {
   dispose: () => void;
 }
 
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    slots: SlotRegistry;
+  }
+}
+
 /** @internal */
 export interface SlotRenderer {
   createOwner: <const T extends SlotMap>(id: string, children: T & NoInfer<CheckedSlotMap<T>>) => SlotOwnerHandle;
@@ -47,7 +53,7 @@ export class SlotRegistry extends Service {
   private readonly listeners = new Map<string, Set<() => void>>();
   private readonly versions = new Map<string, number>();
 
-  constructor(ctx: Context) {
+  constructor(ctx: Context, private readonly renderErrorFallback: (name: SlotName) => ReactNode = () => null) {
     super(ctx, 'slots');
   }
 
@@ -204,6 +210,11 @@ export class SlotRegistry extends Service {
   }
 
   /** @internal */
+  errorFallback(name: SlotName) {
+    return this.renderErrorFallback(name);
+  }
+
+  /** @internal */
   subscribe(name: SlotName, listener: () => void) {
     const listeners = this.listeners.get(name) ?? new Set();
     listeners.add(listener);
@@ -250,7 +261,7 @@ function SlotView({ name, registry }: { name: SlotName; registry: SlotRegistry }
       {
         key: entry.sequence,
         label: `slot "${name}"${entry.id === undefined ? '' : ` entry "${entry.id}"`}`,
-        fallback: createElement('div', { 'data-slot-error': name }),
+        fallback: registry.errorFallback(name),
       },
       createElement(
         SlotOwner,

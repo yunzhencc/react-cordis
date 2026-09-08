@@ -13,6 +13,12 @@ minimumReleaseAgeExclude:
   - eslint-plugin-react-web-api@5.19.0
   - eslint-plugin-react-x@5.19.0
   - '@deepseek-ai/dsh-util-values@0.1.3-alpha.2'
+  - '@expo/cli@57.0.23'
+  - '@expo/metro-file-map@57.0.3'
+  - babel-preset-expo@57.0.11
+  - expo-modules-core@57.0.17
+  - expo-modules-jsi@57.1.0
+  - expo@57.0.21
 
 packages:
   - examples/*
@@ -20,5 +26,6 @@ packages:
   - packages/*
 
 allowBuilds:
+  electron: true
   esbuild: true
   simple-git-hooks: true

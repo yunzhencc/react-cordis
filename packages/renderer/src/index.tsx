@@ -3,9 +3,7 @@ import type { SlotRenderer } from './registry';
 import { createRoot } from 'react-dom/client';
 import { createSlotRenderer, Slot, SlotOwner, SlotRegistry } from './registry';
 
-export { Slot, SlotOwner, SlotRegistry };
-export { RenderErrorBoundary } from './error-boundary';
-export type { SlotOwnerHandle, SlotRenderer } from './registry';
+export * from './react';
 
 export interface UiRendererService {
   mount: (container: HTMLElement) => () => void;
@@ -15,7 +13,6 @@ export interface UiRendererService {
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
-    slots: SlotRegistry;
     uiRenderer: UiRendererService;
   }
 }
@@ -23,7 +20,7 @@ declare module '@deepseek-ai/cordis' {
 export const inject: string[] = [];
 
 export function apply(ctx: Context) {
-  const slots = new SlotRegistry(ctx);
+  const slots = new SlotRegistry(ctx, name => <div data-slot-error={name} />);
   const slotRenderer = createSlotRenderer(slots);
   ctx.provide('uiRenderer', {
     slots: slotRenderer,

@@ -3,7 +3,8 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./src/index.tsx"
+    ".": "./src/index.tsx",
+    "./react": "./src/react.ts"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
