@@ -19,6 +19,8 @@ examples/router/cordis.yml
 
 `examples/router/cordis.yml` 是该示例应用唯一的启用来源。`boot-config` 在 Node 构建阶段读取它和每个包的 `cordis.inject` 包依赖元数据，禁用条目在依赖验证前移除。Vite 将图转为 ESM `import()` registry，生产构建同时输出相同内容的 `cordis.boot.json`。浏览器只导入图中条目；缺失的 Dashboard 不会加载其 chunk 或注册路由。
 
+`boot` 使用 `@deepseek-ai/dsh-util-values` 的 `isJsonValue()` 校验启动图条目的 `config`，拒绝无法无损往返 JSON 的值，包括含 `undefined` 的属性、`-0` 和稀疏数组。
+
 插件通过包根入口提供浏览器可加载的插件模块，使用 `exports["."]` 或字符串形式的 `exports`；条件导出需提供字符串形式的 `default` 入口。启动器直接 `import('包名')`，不再使用 `./client` 子入口。`package.json` 的可选 `cordis.inject` 声明包名依赖，用于校验和排序启动图；没有包依赖时可省略整个 `cordis` 字段。代码中的 `export const inject` 仍声明 Cordis 服务名依赖。
 
 ```json

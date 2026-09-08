@@ -1,3 +1,5 @@
+import { isJsonValue } from '@deepseek-ai/dsh-util-values';
+
 export type JsonValue = null | boolean | number | string | readonly JsonValue[] | { readonly [key: string]: JsonValue };
 
 export interface WebBootEntry {
@@ -70,22 +72,4 @@ function assertWebBootEntry(entry: WebBootEntry) {
     throw new TypeError(`web boot graph inject must be package names: ${entry.name}`);
   if (entry.config !== undefined && !isJsonValue(entry.config))
     throw new TypeError(`web boot graph config must be JSON-safe: ${entry.name}`);
-}
-
-function isJsonValue(value: unknown, ancestors = new Set<object>()): value is JsonValue {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean')
-    return true;
-  if (typeof value === 'number')
-    return Number.isFinite(value);
-  if (typeof value !== 'object' || ancestors.has(value))
-    return false;
-
-  const prototype = Object.getPrototypeOf(value);
-  if (prototype !== Object.prototype && prototype !== null && !Array.isArray(value))
-    return false;
-
-  const nextAncestors = new Set(ancestors).add(value);
-  return Array.isArray(value)
-    ? value.every(item => isJsonValue(item, nextAncestors))
-    : Object.values(value).every(item => isJsonValue(item, nextAncestors));
 }

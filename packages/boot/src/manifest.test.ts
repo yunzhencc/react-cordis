@@ -32,9 +32,23 @@ it.each([
   expect(() => sortWebBootEntries(entries)).toThrow(error);
 });
 
-it('rejects non-JSON configuration', () => {
+it('accepts nested JSON configuration', () => {
   expect(() => assertWebBootGraph({
     revision: 'test',
-    entries: [{ id: 'renderer', name: '@app/renderer', inject: [], config: { value: undefined } as never }],
+    entries: [{ id: 'renderer', name: '@app/renderer', inject: [], config: { values: [null, true, 0, 'text', { enabled: false }] } }],
+  })).not.toThrow();
+});
+
+const sparseArray: number[] = [];
+sparseArray.length = 1;
+
+it.each([
+  { name: 'undefined properties', config: { value: undefined } },
+  { name: 'negative zero', config: { value: -0 } },
+  { name: 'sparse arrays', config: { value: sparseArray } },
+])('rejects configuration containing $name', ({ config }) => {
+  expect(() => assertWebBootGraph({
+    revision: 'test',
+    entries: [{ id: 'renderer', name: '@app/renderer', inject: [], config: config as never }],
   })).toThrow(/config must be JSON-safe/);
 });
