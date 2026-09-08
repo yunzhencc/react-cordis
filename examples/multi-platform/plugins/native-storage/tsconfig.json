@@ -1,0 +1,9 @@
+{
+  "extends": "@yunzhen/tsconfig/web.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "src"
+  ]
+}

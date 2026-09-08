@@ -1,0 +1,11 @@
+{
+  "name": "@examples/multi-platform-favorites",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  }
+}

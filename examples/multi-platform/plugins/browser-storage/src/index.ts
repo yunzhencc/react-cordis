@@ -1,0 +1,10 @@
+import type { Context } from '@deepseek-ai/cordis';
+import { provideStorage } from '@examples/multi-platform-storage';
+
+export const name = 'browser-storage';
+export function apply(ctx: Context) {
+  provideStorage(ctx, {
+    read: async name => localStorage.getItem(`cordis-cross-platform:${name}`),
+    write: async (name, value) => localStorage.setItem(`cordis-cross-platform:${name}`, value),
+  });
+}

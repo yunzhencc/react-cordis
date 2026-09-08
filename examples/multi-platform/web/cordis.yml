@@ -1,0 +1,10 @@
+- id: renderer
+  name: '@react-cordis/renderer/react'
+- id: storage
+  name: '@examples/multi-platform-browser-storage'
+- id: favorites
+  name: '@examples/multi-platform-favorites-feature'
+  config:
+    enabled: true
+- id: shell
+  name: '@examples/multi-platform-product-shell'

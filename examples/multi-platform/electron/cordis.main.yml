@@ -1,0 +1,6 @@
+- id: storage
+  name: '@examples/multi-platform-file-storage'
+- id: storage-ipc
+  name: '@examples/multi-platform-file-storage/ipc'
+  config:
+    allowedNames: [favorites]

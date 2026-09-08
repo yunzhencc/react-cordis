@@ -1,0 +1,13 @@
+{
+  "name": "@examples/multi-platform-favorites-repository",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-favorites": "workspace:*",
+    "@examples/multi-platform-storage": "workspace:*"
+  }
+}

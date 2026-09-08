@@ -61,6 +61,20 @@ it('omits disabled rows before topology validation', () => {
   expect(loadWebBootGraph(configPath).entries.map(entry => entry.id)).toEqual(['renderer']);
 });
 
+it.each(['plugin', '@fixture/plugin'])('loads explicit subpath exports from %s without changing the import specifier', (name) => {
+  const configPath = fixture(`- id: root\n  name: '${name}'\n- id: react\n  name: '${name}/react'\n`, {
+    [name]: { exports: { '.': './index.ts', './react': { types: './react.d.ts', default: './react.ts' } } },
+  });
+  expect(loadWebBootGraph(configPath).entries.map(entry => entry.name)).toEqual([name, `${name}/react`]);
+});
+
+it.each([undefined, null, { types: './react.d.ts' }])('rejects missing or type-only subpath exports: %j', (entry) => {
+  const configPath = fixture('- id: react\n  name: plugin/react\n', {
+    plugin: { exports: { '.': './index.ts', './react': entry } },
+  });
+  expect(() => loadWebBootGraph(configPath)).toThrow('./react export missing');
+});
+
 it('sorts enabled entries by their package metadata dependencies', () => {
   const configPath = fixture(`
 - id: dashboard

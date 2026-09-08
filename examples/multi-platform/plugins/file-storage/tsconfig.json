@@ -1,0 +1,11 @@
+{
+  "extends": "@yunzhen/tsconfig/web.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src"
+  ]
+}

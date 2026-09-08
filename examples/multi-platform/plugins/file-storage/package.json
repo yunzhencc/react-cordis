@@ -1,0 +1,16 @@
+{
+  "name": "@examples/multi-platform-file-storage",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./ipc": "./src/ipc.ts"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-storage": "workspace:*"
+  },
+  "devDependencies": {
+    "electron": "44.2.0"
+  }
+}

@@ -34,6 +34,26 @@ it('resolves a supplied virtual module id', () => {
   expect(Reflect.apply(plugin.resolveId, undefined, ['virtual:custom-boot'])).toBe('\0virtual:custom-boot');
 });
 
+it('keeps manifests separate when multiple hosts share a Vite build', () => {
+  const root = mkdtempSync(join(import.meta.dirname, '.cordis-multi-host-'));
+  writeFileSync(join(root, 'cordis.yml'), '[]');
+  const output: unknown[] = [];
+  try {
+    for (const host of ['web', 'desktop']) {
+      const plugin = cordisWebBoot({ configPath: join(root, 'cordis.yml'), manifestFileName: `${host}.boot.json` });
+      Reflect.apply(plugin.generateBundle, { emitFile: (file: unknown) => output.push(file) }, []);
+    }
+    expect(output).toEqual(['web', 'desktop'].map(host => ({
+      type: 'asset',
+      fileName: `${host}.boot.json`,
+      source: expect.any(String),
+    })));
+  }
+  finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
 it('resolves the default boot config from the consuming Vite root', () => {
   const root = mkdtempSync(join(import.meta.dirname, '.cordis-vite-plugin-'));
   writeFileSync(join(root, 'cordis.yml'), '[]');

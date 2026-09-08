@@ -2,11 +2,13 @@ import type { WebBootGraph } from '@react-cordis/boot/manifest';
 import type { Plugin, Rolldown, ViteDevServer } from 'vite';
 import { realpathSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { clearInterval, setInterval } from 'node:timers';
 import { loadWebBootGraph } from '@react-cordis/boot-config';
 
 interface CordisWebBootOptions {
   configPath?: string;
   virtualModuleId?: string;
+  manifestFileName?: string;
 }
 
 function manifestStamp(file: string) {
@@ -20,19 +22,20 @@ export function renderWebBootVirtualModule(graph: WebBootGraph) {
   return `${loaders}\nexport const graph = ${JSON.stringify(graph)};\nexport const registry = new Map([\n${registry}\n]);\n`;
 }
 
-export function emitWebBootGraph(bundle: Pick<Rolldown.PluginContext, 'emitFile'>, graph: WebBootGraph) {
-  bundle.emitFile({ fileName: 'cordis.boot.json', source: JSON.stringify(graph, null, 2), type: 'asset' });
+export function emitWebBootGraph(bundle: Pick<Rolldown.PluginContext, 'emitFile'>, graph: WebBootGraph, fileName = 'cordis.boot.json') {
+  bundle.emitFile({ fileName, source: JSON.stringify(graph, null, 2), type: 'asset' });
 }
 
 export function cordisWebBoot({
   configPath = 'cordis.yml',
   virtualModuleId = 'virtual:cordis-boot',
+  manifestFileName = 'cordis.boot.json',
 }: CordisWebBootOptions = {}) {
   let resolvedConfigPath = resolve(configPath);
   const resolvedVirtualModuleId = `\0${virtualModuleId}`;
   let graph: WebBootGraph | undefined;
   let server: ViteDevServer | undefined;
-  let poll: ReturnType<typeof setInterval> | undefined;
+  let poll: NodeJS.Timeout | undefined;
   const manifests = new Map<string, string | undefined>();
   const loadGraph = () => {
     if (graph)
@@ -95,6 +98,7 @@ export function cordisWebBoot({
       graph = undefined;
       server.watcher.add(resolvedConfigPath);
       clearInterval(poll);
+      // React Native also declares these globals; this plugin always runs in Node.
       poll = setInterval(() => {
         for (const [file, previous] of manifests) {
           try {
@@ -110,11 +114,11 @@ export function cordisWebBoot({
             devServer.config.logger.error(`web boot metadata watch failed for ${file}: ${String(error)}`);
           }
         }
-      }, 500);
+      }, 500) as unknown as NodeJS.Timeout;
       poll.unref();
     },
     generateBundle() {
-      emitWebBootGraph(this, loadGraph());
+      emitWebBootGraph(this, loadGraph(), manifestFileName);
     },
     load(id) {
       if (id === resolvedVirtualModuleId)

@@ -22,7 +22,7 @@ pnpm start
 | [Basic](examples/basic) | `pnpm start:basic` | 最小启动链与根插槽，不依赖路由。 |
 | [Router](examples/router) | `pnpm start:router` | 路由、三栏布局、工作台、设置扩展、主题与语言切换。 |
 | [i18n](examples/i18n) | `pnpm start:i18n` | 命名空间、语言包注册、翻译回退与语言偏好持久化。 |
-| [Cross-platform](examples/cross-platform) | `pnpm --filter @examples/cross-platform dev` | Tamagui 共享界面、Cordis 功能启停与平台存储；另提供 Electron 和 Expo 原生入口。 |
+| [多端产品](examples/multi-platform) | `pnpm --filter @examples/multi-platform dev` | Tamagui 共享界面、Cordis 功能启停与平台存储；另提供 Electron 和 Expo 原生入口。 |
 
 ## 核心能力
 
@@ -39,7 +39,7 @@ pnpm start
 
 应用决定页面布局与业务服务。基础 router 不提供侧栏或设置页；这些能力由 Router 示例中的业务插件实现。
 
-`@react-cordis/renderer/react` 提供不依赖 DOM 的插槽服务与 React 组件，宿主负责挂载根节点；默认 `@react-cordis/renderer` 入口继续提供 DOM 挂载能力。跨端装配及运行方式见 [Cross-platform 示例](examples/cross-platform/README.md)。
+`@react-cordis/renderer/react` 提供不依赖 DOM 的插槽服务与 React 组件，宿主负责挂载根节点；默认 `@react-cordis/renderer` 入口继续提供 DOM 挂载能力。多端装配及运行方式见 [多端产品示例](examples/multi-platform/README.md)。
 
 ## 最小插件接入
 
@@ -60,7 +60,7 @@ export function apply(ctx: Context) {
 }
 ```
 
-插件的 `package.json` 通过根入口导出插件，并声明依赖的插件包：
+插件的 `package.json` 通常通过根入口导出插件，并声明依赖的插件包；清单也支持显式导出的子入口，例如多端示例的 `@react-cordis/renderer/react`：
 
 ```json
 {

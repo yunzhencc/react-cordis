@@ -1,0 +1,28 @@
+{
+  "name": "@examples/multi-platform-favorites-view",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "cordis": {
+    "inject": [
+      "@examples/multi-platform-favorites",
+      "@examples/multi-platform-product-shell",
+      "@react-cordis/renderer/react"
+    ]
+  },
+  "peerDependencies": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-favorites": "workspace:*",
+    "@examples/multi-platform-product-shell": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
+    "@react-cordis/slots": "workspace:*",
+    "tamagui": "2.7.7"
+  }
+}

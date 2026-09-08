@@ -1,8 +1,0 @@
-{
-  "extends": "@yunzhen/tsconfig/web.json",
-  "compilerOptions": {
-    "types": ["node", "vite/client"],
-    "allowImportingTsExtensions": true
-  },
-  "include": ["src", "web", "native", "electron", "vite.config.ts"]
-}

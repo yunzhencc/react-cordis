@@ -1,0 +1,19 @@
+{
+  "name": "@examples/multi-platform-native-storage",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "expo": "~57.0.21",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-storage": "workspace:*",
+    "expo-sqlite": "~57.0.2"
+  }
+}

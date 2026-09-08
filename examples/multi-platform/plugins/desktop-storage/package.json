@@ -1,0 +1,12 @@
+{
+  "name": "@examples/multi-platform-desktop-storage",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-storage": "workspace:*"
+  }
+}
