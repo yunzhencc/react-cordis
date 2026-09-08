@@ -17,10 +17,10 @@ async function buildDesktop() {
         : [],
       build: {
         target: 'node24',
-        outDir: 'dist/host',
+        outDir: 'dist/main',
         emptyOutDir: entry === 'main',
         lib: {
-          entry: resolve(import.meta.dirname, `${entry}.ts`),
+          entry: resolve(import.meta.dirname, `src/${entry}.ts`),
           formats: [entry === 'main' ? 'es' : 'cjs'],
           fileName: () => `${entry}.${entry === 'main' ? 'mjs' : 'cjs'}`,
         },

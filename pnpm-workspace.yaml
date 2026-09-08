@@ -22,7 +22,9 @@ minimumReleaseAgeExclude:
 
 packages:
   - examples/*
+  - examples/*/apps/*
   - examples/*/plugins/*
+  - examples/*/shared
   - packages/*
 
 allowBuilds:

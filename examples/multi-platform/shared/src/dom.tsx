@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
-import { bootProduct } from '../src/product';
-import { ProductView } from '../src/ui';
+import { bootProduct } from './product';
+import { ProductView } from './ui';
 import './style.css';
 
 export async function mount(boot: Parameters<typeof bootProduct>[0], host: string) {

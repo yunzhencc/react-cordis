@@ -1,6 +1,6 @@
 import type { DesktopLifecycle } from './preload';
+import { mount } from '@examples/multi-platform-shared/dom';
 import * as config from 'virtual:cordis-desktop';
-import { mount } from '../web/mount';
 
 declare global {
   interface Window {

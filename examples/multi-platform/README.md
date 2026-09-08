@@ -1,6 +1,6 @@
 # Cordis 多端产品示例
 
-同一个收藏产品运行在 Web、Electron 和 React Native。共享业务插件、收藏仓库、界面组件和插件装配方式；三端适配插件提供统一的 `ctx.storage`，平台入口负责创建 React 根节点。
+同一个收藏产品运行在 Web、Electron 和 React Native。三个宿主位于 `apps/web`、`apps/desktop`、`apps/mobile`，共享业务插件、收藏仓库和界面组件；平台适配插件提供统一的 `ctx.storage`。
 
 ## 运行
 
@@ -14,9 +14,29 @@ pnpm --filter @examples/multi-platform android    # Expo Go / Android
 pnpm --filter @examples/multi-platform native     # Expo 开发服务器，可连接真机
 ```
 
-移动端需要与 Expo SDK 57 匹配的 Expo Go，模拟器或真机环境由 Expo 管理。Electron 首次安装需要下载平台二进制；若本机 pnpm 禁用了安装脚本，执行 `node examples/multi-platform/node_modules/electron/install.js`。
+这些命令转发到对应的 workspace 应用，也可以直接运行 `pnpm --filter @examples/multi-platform-web dev`、`pnpm --filter @examples/multi-platform-desktop dev` 或 `pnpm --filter @examples/multi-platform-mobile ios`。
+
+移动端需要与 Expo SDK 57 匹配的 Expo Go，模拟器或真机环境由 Expo 管理。Electron 首次安装需要下载平台二进制；若本机 pnpm 禁用了安装脚本，执行 `node examples/multi-platform/apps/desktop/node_modules/electron/install.js`。
 
 添加一条收藏，停用收藏功能，再重新启用：列表应恢复。刷新网页或重新启动应用，数据仍应存在。停用按钮销毁 Cordis 插件实例及其界面贡献，不只是把组件隐藏起来。
+
+## 目录与依赖
+
+```text
+multi-platform/
+├── apps/
+│   ├── desktop/  # Electron 主进程、预加载、渲染进程及构建配置
+│   ├── mobile/   # Expo 入口、应用标识、Metro 和启动图生成
+│   └── web/      # 网页入口、HTML 和 Vite
+├── plugins/      # 业务、界面和平台适配插件
+├── shared/       # 产品启动、共享 React 视图、DOM 挂载
+├── tests/        # 跨端契约与产品集成测试
+└── package.json  # 聚合命令和集成测试依赖
+```
+
+三个应用各自拥有 `package.json`、`tsconfig.json` 和 `cordis.yml`，直接声明自己的插件与宿主依赖。Web 和桌面分别构建，移动端独立使用 Metro；构建产物分别写入 `apps/web/dist`、`apps/desktop/dist/{main,renderer}`、`apps/mobile/dist`。根目录只聚合命令和集成测试，测试需要的各端适配包放在 `devDependencies` 中。
+
+`@examples/multi-platform-shared` 是内部共享包：根入口导出 `bootProduct()` 与产品类型，`/react` 导出 `ProductView`，`/dom` 导出 DOM 挂载。Web 和桌面使用同一个 `/dom` 入口；移动端使用前两个入口并自行创建 Native 根节点。共享包和插件不引用任何 app，app 之间也不互相引用。三端按现有 UI peer 约束统一 React 版本，应用拆分不代表可以任意混用版本。
 
 ## 启动配置
 
@@ -24,10 +44,10 @@ pnpm --filter @examples/multi-platform native     # Expo 开发服务器，可�
 
 | 配置 | 装配内容 |
 | --- | --- |
-| `web/cordis.yml` | React 插槽、浏览器存储、收藏功能、产品外壳 |
-| `native/cordis.yml` | React 插槽、Native 存储、收藏功能、产品外壳 |
-| `electron/cordis.yml` | React 插槽、桌面存储桥接、收藏功能、产品外壳 |
-| `electron/cordis.main.yml` | 文件存储与受限 IPC；配置允许访问的文档名称 |
+| `apps/web/cordis.yml` | React 插槽、浏览器存储、收藏功能、产品外壳 |
+| `apps/mobile/cordis.yml` | React 插槽、Native 存储、收藏功能、产品外壳 |
+| `apps/desktop/cordis.yml` | React 插槽、桌面存储桥接、收藏功能、产品外壳 |
+| `apps/desktop/cordis.main.yml` | 文件存储与受限 IPC；配置允许访问的文档名称 |
 
 例如，收藏功能的初始状态由对应宿主的配置决定：
 
@@ -40,7 +60,7 @@ pnpm --filter @examples/multi-platform native     # Expo 开发服务器，可�
 
 `config.enabled: false` 保留功能控制服务，启动时不挂载收藏子插件，用户仍可在界面启用。清单级 `disabled: true` 会直接移除整个条目；当前产品外壳依赖收藏控制服务，因此不能单独移除这个条目后继续使用原外壳。
 
-Web 与 Electron 构建使用现有 `cordisWebBoot()` 生成虚拟模块和各自的 JSON 启动图。Native 启动或构建前，`generate:native` 从 YAML 生成带有字面量 `import()` 的 `native/boot.generated.js`，交给 Metro 打包；生成文件不提交。修改 Native YAML 后重新运行对应启动命令，或运行 `generate:native` 后重载应用。Web 开发服务会监听 YAML 并整页刷新；Electron 修改配置后重新构建并启动。
+Web 与 Electron 的 Vite 配置分别使用现有 `cordisWebBoot()` 生成虚拟模块和 JSON 启动图。Native 启动或构建前，移动端的 `generate:boot` 从 YAML 生成带有字面量 `import()` 的 `apps/mobile/src/boot.generated.js`，交给 Metro 打包；生成文件不提交。修改 Native YAML 后重新运行对应启动命令，或运行根目录的 `generate:native` 后重载应用。Web 开发服务会监听 YAML 并整页刷新；Electron 修改配置后重新构建并启动。
 
 YAML 只保存插件选择和 JSON 配置。Electron 主进程通过 `ctx.provide()` 注入数据目录 `storageDirectory` 和窗口/关闭回调 `desktopHost`，平台插件通过 `inject` 获取它们。YAML 不存储窗口、函数或其他运行时对象。
 
@@ -54,14 +74,14 @@ YAML 只保存插件选择和 JSON 配置。Electron 主进程通过 `ctx.provid
 | `plugins/storage` | 通用文档契约、名称与大小约束、操作顺序和关闭语义 | 三端 |
 | `plugins/product-shell` | 产品外壳、主题配置、根插槽与功能开关 | 三端 |
 | `plugins/favorites-view` | 收藏界面、插槽贡献与 React 订阅 | 三端 |
-| `src/product.ts` | 激活启动图、等待产品就绪、应用实例清理 | 三端 |
-| `src/ui.tsx` | 将产品实例的插槽挂载到共享外壳 | 三端 |
+| `shared/src/product.ts` | 激活启动图、等待产品就绪、应用实例清理 | 三端 |
+| `shared/src/ui.tsx` | 将产品实例的插槽挂载到共享外壳 | 三端 |
 | `plugins/browser-storage` | localStorage 存储适配 | Web |
 | `plugins/file-storage` | 主进程文件存储；`./ipc` 子入口提供受限 IPC 插件 | Electron |
 | `plugins/desktop-storage` | 通过 preload 暴露的文档接口提供渲染进程存储 | Electron |
 | `plugins/native-storage` | Expo SQLite 存储适配及连接释放 | React Native |
-| `electron/main.ts` / `preload.ts` / `renderer.ts` | 窗口、宿主配置、进程桥接与关闭握手 | Electron |
-| `web/mount.tsx` / `native/index.tsx` | React 根节点的创建与释放 | 对应宿主 |
+| `apps/desktop/src/{main,preload,renderer}.ts` | 窗口、宿主配置、进程桥接与关闭握手 | Electron |
+| `shared/src/dom.tsx` / `apps/mobile/src/index.tsx` | React 根节点的创建与释放 | 对应宿主 |
 
 与 Basic、Router 和 i18n 示例一致，每个 `plugins/<名称>` 目录包含 `package.json`、`tsconfig.json` 和 `src/index.ts(x)`，通过包根入口导出插件。包名统一为 `@examples/multi-platform-<名称>`；入口和插件之间使用 workspace 包名引用，不跨包引用 `src` 文件。`plugins/storage` 是适配插件共用的契约与生命周期实现，不额外注册一个空插件。
 
@@ -122,20 +142,23 @@ Reanimated、Worklets 与 Metro 配置版本也按 Expo SDK 的兼容矩阵固�
 ```sh
 pnpm --filter @examples/multi-platform test
 pnpm --filter @examples/multi-platform typecheck
+pnpm --filter @examples/multi-platform build:web
 pnpm --filter @examples/multi-platform build:desktop
 pnpm --filter @examples/multi-platform build:native
 ```
 
+`pnpm --filter @examples/multi-platform build` 顺序执行三端构建；`typecheck` 覆盖测试、三个宿主、共享包和所有插件包。
+
 各存储适配运行同一组句柄与持久化契约测试：Web 使用 jsdom localStorage，文件适配使用临时目录，Native 仅替换 Expo SQLite 原生驱动，桌面渲染端替换 preload 文档接口。另覆盖 IPC 来源校验与卸载清理、拒绝越界访问、写入中停用与退出、旧命令拒绝、写入失败、应用隔离、连续启停与依赖服务恢复。驱动替身和 bundle 构建不能代替真机或模拟器交互验证。
 
-2026-09-09 YAML 启动配置接入后的验证结果：
+2026-09-09 拆分 `apps/desktop`、`apps/mobile`、`apps/web` 和共享包后的验证结果：
 
 | 目标 | 已验证 |
 | --- | --- |
 | 自动检查 | 全仓 217 项测试通过（本示例 18 项）；全仓类型检查、相关文件 ESLint、peer 依赖检查通过 |
-| Web | 新增、停用、重新启用与刷新恢复；修改 YAML 初始开关触发整页刷新，恢复默认配置；临时测试收藏已移除 |
-| Electron / macOS arm64 | 主进程与渲染进程按各自 YAML 启动；原有文件读取、停用与重新启用；正常关闭进程退出 |
-| iOS 18 / iPhone 16 Pro 模拟器 / Expo Go | 生成配置后完整启动；原有 SQLite 数据读取、停用、重新启用与重载恢复 |
+| Web | 从独立 Vite 配置启动；共享 DOM 挂载、页面刷新、插件停用和重新启用 |
+| Electron / macOS arm64 | 从独立构建启动，加载新的渲染资源和 preload 路径；原有文件读取、插件启停及正常关闭退出 |
+| iOS 18 / iPhone 16 Pro 模拟器 / Expo Go | 从 `apps/mobile` 启动 Metro 并完整重载；共享启动与视图、原有 SQLite 数据读取和插件启停 |
 | Android | Metro 与 Hermes 生产 bundle 构建通过；尚未在 Android 设备或模拟器交互验证 |
 
-Web/Electron、iOS/Android 生产构建通过。新增测试覆盖四份清单及生成导入、子入口解析、多个启动图的独立产物、配置初始停用、存储恢复不重置开关，以及异步启动失败后的资源回滚。
+Web/Electron、iOS/Android 生产构建通过，各端产物独立输出；依赖版本没有升级。现有测试已跟随目录迁移，覆盖四份清单及生成导入、子入口解析、多个启动图的独立产物、配置初始停用、存储恢复不重置开关，以及异步启动失败后的资源回滚。

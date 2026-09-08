@@ -62,7 +62,7 @@ async function start() {
   contents.on('will-navigate', event => event.preventDefault());
   contents.on('render-process-gone', finishClose);
   window.on('close', requestClose);
-  await window.loadFile(resolve(import.meta.dirname, '../electron/index.html'));
+  await window.loadFile(resolve(import.meta.dirname, '../renderer/index.html'));
 }
 
 // ponytail: one desktop window owns writes; multi-window editing needs a main-process command store.

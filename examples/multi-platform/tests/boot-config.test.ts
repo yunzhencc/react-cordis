@@ -4,10 +4,10 @@ import { renderWebBootVirtualModule } from '@react-cordis/vite';
 import { expect, it } from 'vitest';
 
 it.each([
-  ['web/cordis.yml', ['renderer/react', 'multi-platform-browser-storage', 'multi-platform-favorites-feature', 'multi-platform-product-shell']],
-  ['native/cordis.yml', ['renderer/react', 'multi-platform-native-storage', 'multi-platform-favorites-feature', 'multi-platform-product-shell']],
-  ['electron/cordis.yml', ['renderer/react', 'multi-platform-desktop-storage', 'multi-platform-favorites-feature', 'multi-platform-product-shell']],
-  ['electron/cordis.main.yml', ['multi-platform-file-storage', 'multi-platform-file-storage/ipc']],
+  ['apps/web/cordis.yml', ['renderer/react', 'multi-platform-browser-storage', 'multi-platform-favorites-feature', 'multi-platform-product-shell']],
+  ['apps/mobile/cordis.yml', ['renderer/react', 'multi-platform-native-storage', 'multi-platform-favorites-feature', 'multi-platform-product-shell']],
+  ['apps/desktop/cordis.yml', ['renderer/react', 'multi-platform-desktop-storage', 'multi-platform-favorites-feature', 'multi-platform-product-shell']],
+  ['apps/desktop/cordis.main.yml', ['multi-platform-file-storage', 'multi-platform-file-storage/ipc']],
 ])('%s includes only the host plugins and generates literal imports', (path, names) => {
   const graph = loadWebBootGraph(resolve(import.meta.dirname, '..', path));
   expect(graph.entries.map(entry => entry.name.replace(/^@[^/]+\//, ''))).toEqual(names);

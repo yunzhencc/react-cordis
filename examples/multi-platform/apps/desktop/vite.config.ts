@@ -1,4 +1,3 @@
-import { resolve } from 'node:path';
 import { cordisWebBoot } from '@react-cordis/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -15,17 +14,6 @@ export default defineConfig(({ mode }) => ({
     'process.env.TAMAGUI_IS_CLIENT': 'true',
     'process.env.TAMAGUI_ENVIRONMENT': '"client"',
   },
-  plugins: [
-    cordisWebBoot({ configPath: 'web/cordis.yml', virtualModuleId: 'virtual:cordis-web', manifestFileName: 'web.boot.json' }),
-    cordisWebBoot({ configPath: 'electron/cordis.yml', virtualModuleId: 'virtual:cordis-desktop', manifestFileName: 'electron/renderer.boot.json' }),
-    react(),
-  ],
-  build: {
-    rolldownOptions: {
-      input: {
-        web: resolve(import.meta.dirname, 'index.html'),
-        desktop: resolve(import.meta.dirname, 'electron/index.html'),
-      },
-    },
-  },
+  plugins: [cordisWebBoot({ configPath: 'cordis.yml', virtualModuleId: 'virtual:cordis-desktop' }), react()],
+  build: { outDir: 'dist/renderer' },
 }));

@@ -1,2 +1,2 @@
 .expo/
-native/boot.generated.js
+apps/mobile/src/boot.generated.js

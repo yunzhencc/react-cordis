@@ -2,21 +2,21 @@
   "name": "@examples/multi-platform",
   "type": "module",
   "private": true,
-  "main": "./native/index.tsx",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
-    "build:desktop": "pnpm build && node electron/build.mjs",
-    "desktop": "pnpm build:desktop && electron dist/host/main.mjs",
-    "native": "pnpm generate:native && expo start",
-    "ios": "pnpm generate:native && expo start --ios",
-    "android": "pnpm generate:native && expo start --android",
-    "build:native": "pnpm generate:native && expo export --platform ios --platform android --output-dir dist/native",
-    "test": "vitest run src plugins",
-    "typecheck": "tsc --noEmit",
-    "generate:native": "node --import jiti/register scripts/generate-native-boot.ts"
+    "dev": "pnpm --filter @examples/multi-platform-web dev",
+    "desktop": "pnpm --filter @examples/multi-platform-desktop dev",
+    "native": "pnpm --filter @examples/multi-platform-mobile dev",
+    "ios": "pnpm --filter @examples/multi-platform-mobile ios",
+    "android": "pnpm --filter @examples/multi-platform-mobile android",
+    "build": "pnpm build:web && pnpm build:desktop && pnpm build:native",
+    "build:web": "pnpm --filter @examples/multi-platform-web build",
+    "build:desktop": "pnpm --filter @examples/multi-platform-desktop build",
+    "build:native": "pnpm --filter @examples/multi-platform-mobile build",
+    "generate:native": "pnpm --filter @examples/multi-platform-mobile generate:boot",
+    "test": "vitest run tests plugins",
+    "typecheck": "pnpm --filter '@examples/multi-platform*' exec tsc --noEmit"
   },
-  "dependencies": {
+  "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@examples/multi-platform-browser-storage": "workspace:*",
     "@examples/multi-platform-desktop-storage": "workspace:*",
@@ -25,27 +25,16 @@
     "@examples/multi-platform-favorites-view": "workspace:*",
     "@examples/multi-platform-file-storage": "workspace:*",
     "@examples/multi-platform-native-storage": "workspace:*",
-    "@examples/multi-platform-product-shell": "workspace:*",
+    "@examples/multi-platform-shared": "workspace:*",
     "@examples/multi-platform-storage": "workspace:*",
     "@react-cordis/boot": "workspace:*",
+    "@react-cordis/boot-config": "workspace:*",
     "@react-cordis/renderer": "workspace:*",
     "@react-cordis/slots": "workspace:*",
-    "expo": "~57.0.21",
+    "@react-cordis/vite": "workspace:*",
+    "expo-sqlite": "~57.0.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-native": "0.86.3",
-    "react-native-reanimated": "4.5.1",
-    "react-native-safe-area-context": "~5.7.0",
-    "react-native-web": "^0.21.2",
-    "react-native-worklets": "0.10.1",
-    "tamagui": "2.7.7"
-  },
-  "devDependencies": {
-    "@react-cordis/boot-config": "workspace:*",
-    "@react-cordis/vite": "workspace:*",
-    "@react-native/metro-config": "0.86.3",
-    "electron": "44.2.0",
-    "expo-sqlite": "~57.0.2",
-    "jiti": "^2.6.1"
+    "react-native": "0.86.3"
   }
 }

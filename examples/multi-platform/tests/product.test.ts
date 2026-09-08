@@ -4,11 +4,11 @@ import { resolve } from 'node:path';
 import { Context } from '@deepseek-ai/cordis';
 import * as favorites from '@examples/multi-platform-favorites';
 import * as favoritesFeature from '@examples/multi-platform-favorites-feature';
+import { bootProduct } from '@examples/multi-platform-shared';
 import { provideStorage } from '@examples/multi-platform-storage';
 import { loadWebBootGraph } from '@react-cordis/boot-config';
 import * as renderer from '@react-cordis/renderer/react';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { bootProduct } from './product';
 
 const view = vi.hoisted(() => ({ apply: vi.fn<(ctx: Context) => void>() }));
 vi.mock('@examples/multi-platform-favorites-view', () => ({
@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 function configuration(storage: PluginModule, enabled = true) {
-  const graph = loadWebBootGraph(resolve(import.meta.dirname, '../web/cordis.yml'));
+  const graph = loadWebBootGraph(resolve(import.meta.dirname, '../apps/web/cordis.yml'));
   const shell = {
     inject: ['slots', 'product'],
     apply(ctx: Context) {

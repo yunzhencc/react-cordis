@@ -1,11 +1,11 @@
-import type { Product } from '../src/product';
+import type { Product } from '@examples/multi-platform-shared';
 import { Frame } from '@examples/multi-platform-product-shell';
+import { bootProduct } from '@examples/multi-platform-shared';
+import { ProductView } from '@examples/multi-platform-shared/react';
 import { registerRootComponent } from 'expo';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from 'tamagui';
-import { bootProduct } from '../src/product';
-import { ProductView } from '../src/ui';
 import * as config from './boot.generated.js';
 
 export default function App() {

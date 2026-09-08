@@ -1,0 +1,25 @@
+{
+  "name": "@examples/multi-platform-shared",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/product.ts",
+    "./react": "./src/ui.tsx",
+    "./dom": "./src/dom.tsx"
+  },
+  "peerDependencies": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-product-shell": "workspace:*",
+    "@react-cordis/boot": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
+    "@react-cordis/slots": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
+  }
+}

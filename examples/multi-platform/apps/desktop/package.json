@@ -1,0 +1,32 @@
+{
+  "name": "@examples/multi-platform-desktop",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm build && electron dist/main/main.mjs",
+    "build": "vite build && node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-desktop-storage": "workspace:*",
+    "@examples/multi-platform-favorites-feature": "workspace:*",
+    "@examples/multi-platform-file-storage": "workspace:*",
+    "@examples/multi-platform-product-shell": "workspace:*",
+    "@examples/multi-platform-shared": "workspace:*",
+    "@examples/multi-platform-storage": "workspace:*",
+    "@react-cordis/boot": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@react-cordis/vite": "workspace:*",
+    "@vitejs/plugin-react": "^6.1.1",
+    "electron": "44.2.0",
+    "jiti": "^2.6.1",
+    "vite": "^8.2.2"
+  }
+}
