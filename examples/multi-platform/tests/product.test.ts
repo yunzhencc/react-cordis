@@ -7,6 +7,7 @@ import * as favoritesFeature from '@examples/multi-platform-favorites-feature';
 import { bootProduct } from '@examples/multi-platform-shared';
 import { provideStorage } from '@examples/multi-platform-storage';
 import { loadWebBootGraph } from '@react-cordis/boot-config';
+import { flattenWebBootEntries } from '@react-cordis/boot/manifest';
 import * as renderer from '@react-cordis/renderer/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 
@@ -22,7 +23,10 @@ beforeEach(() => {
 });
 
 function configuration(storage: PluginModule, enabled = true) {
-  const graph = loadWebBootGraph(resolve(import.meta.dirname, '../apps/web/cordis.yml'));
+  const graph = loadWebBootGraph(resolve(import.meta.dirname, '../apps/web/cordis.yml'), undefined, {
+    bundles: ['@examples/multi-platform-product'],
+    patches: ['cordis.patch.yml'],
+  });
   const shell = {
     inject: ['slots', 'product'],
     apply(ctx: Context) {
@@ -35,7 +39,8 @@ function configuration(storage: PluginModule, enabled = true) {
     ['@examples/multi-platform-favorites-feature', async () => favoritesFeature],
     ['@examples/multi-platform-product-shell', async () => shell],
   ]);
-  return { graph: { ...graph, entries: graph.entries.map(entry => entry.id === 'favorites' ? { ...entry, config: { enabled } } : entry) }, registry };
+  flattenWebBootEntries(graph.entries).find(entry => entry.id === 'favorites')!.config = { enabled };
+  return { graph, registry };
 }
 
 it('drains accepted writes on unload, rejects stale commands, and reloads durable data in isolated contexts', async () => {

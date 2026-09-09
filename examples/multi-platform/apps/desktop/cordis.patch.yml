@@ -1,0 +1,4 @@
+- id: product
+  insert:
+    - id: storage
+      name: '@examples/multi-platform-desktop-storage'

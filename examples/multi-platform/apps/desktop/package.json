@@ -23,6 +23,7 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@examples/multi-platform-product": "workspace:*",
     "@react-cordis/vite": "workspace:*",
     "@vitejs/plugin-react": "^6.1.1",
     "electron": "44.2.0",

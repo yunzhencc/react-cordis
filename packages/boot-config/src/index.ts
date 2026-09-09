@@ -1,79 +1,118 @@
-import type { JsonValue, WebBootEntry, WebBootGraph } from '@react-cordis/boot/manifest';
+import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include';
+import type { WebBootEntry, WebBootGraph } from '@react-cordis/boot/manifest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { findPackageJSON } from 'node:module';
+import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { assertWebBootGraph, sortWebBootEntries } from '@react-cordis/boot/manifest';
+import { applyEntryPatches } from '@deepseek-ai/cordis-plugin-include';
+import { assertWebBootEntry, assertWebBootGraph, sortWebBootEntries } from '@react-cordis/boot/manifest';
 import { parseDocument } from 'yaml';
-
-interface BootConfigRow {
-  id: unknown;
-  name: unknown;
-  disabled?: unknown;
-  config?: unknown;
-}
 
 interface PackageManifest {
   exports?: unknown;
   cordis?: unknown;
+  dsh?: unknown;
 }
 
-/** Reports resolved manifests before reading them, including reads that fail. */
-export function loadWebBootGraph(configPath: string, onPackageManifest?: (path: string) => void): WebBootGraph {
-  const source = readFileSync(configPath, 'utf8');
-  if (/!!js(?:\/\S+)?\b/.test(source))
-    throw new TypeError('web boot config rejects !!js tags');
+export interface WebBootConfigOptions {
+  bundles?: readonly string[];
+  patches?: readonly string[];
+}
 
-  const document = parseDocument(source);
-  if (document.errors.length > 0)
-    throw new TypeError(`web boot config YAML error: ${document.errors[0]!.message}`);
-
-  const rows = document.toJS();
-  if (!Array.isArray(rows))
-    throw new TypeError('web boot config must be a top-level array');
-
-  const entries = rows.flatMap((value, index) => loadEntry(value, index, configPath, onPackageManifest));
+/** Bundle patches over [], then root entries, then application patches. App patch paths resolve beside configPath; bundle paths beside their manifest. */
+export function loadWebBootGraph(configPath: string, onFile?: (path: string) => void, options: WebBootConfigOptions = {}): WebBootGraph {
+  let rows: WebBootEntry[] = [];
+  const patch = (path: string) => {
+    const patches = readList(path, onFile);
+    for (const value of patches) {
+      if (!isRecord(value))
+        throw new TypeError('web boot patch must be an object');
+      assertFields(value, true);
+      if (value.insert !== undefined) {
+        if (!Array.isArray(value.insert))
+          throw new TypeError('web boot patch insert must be an entry array');
+        value.insert.forEach(validateRow);
+      }
+    }
+    rows = applyEntryPatches(rows as Parameters<typeof applyEntryPatches>[0], patches as PatchOptions[], (message, ...args) => console.warn(message, ...args)) as WebBootEntry[];
+  };
+  for (const name of options.bundles ?? []) {
+    const packagePath = findPackageJSON(name, pathToFileURL(configPath));
+    if (!packagePath)
+      throw new TypeError(`web boot bundle package not found: ${name}`);
+    onFile?.(packagePath);
+    const manifest = JSON.parse(readFileSync(packagePath, 'utf8')) as PackageManifest;
+    const bundle = isRecord(manifest.dsh) && manifest.dsh.bundle;
+    if (!isRecord(bundle) || typeof bundle.patch !== 'string' || !bundle.patch)
+      throw new TypeError(`web boot bundle requires dsh.bundle.patch: ${name}`);
+    patch(resolve(dirname(packagePath), bundle.patch));
+  }
+  const root = readList(configPath, onFile);
+  root.forEach(validateRow);
+  rows.push(...root as WebBootEntry[]);
+  for (const path of options.patches ?? []) patch(resolve(dirname(configPath), path));
+  const entries = sortWebBootEntries(rows.map(value => loadEntry(value, configPath, onFile)));
   const graph = {
     revision: createHash('sha256').update(JSON.stringify(entries)).digest('hex').slice(0, 12),
-    entries: sortWebBootEntries(entries),
+    entries,
   };
   assertWebBootGraph(graph);
   return graph;
 }
 
-function loadEntry(value: unknown, index: number, configPath: string, onPackageManifest?: (path: string) => void): WebBootEntry[] {
+function readList(path: string, onFile?: (path: string) => void): unknown[] {
+  onFile?.(path);
+  const source = readFileSync(path, 'utf8');
+  if (/!!js(?:\/\S+)?\b/.test(source))
+    throw new TypeError('web boot config rejects !!js tags');
+  const document = parseDocument(source);
+  if (document.errors.length || document.warnings.length)
+    throw new TypeError(`web boot config YAML error: ${(document.errors[0] ?? document.warnings[0])!.message}`);
+  const value: unknown = document.toJS();
+  assertWebBootEntry({ id: 'input', name: 'input', dependencies: [], config: value as never });
+  if (!Array.isArray(value))
+    throw new TypeError('web boot config must be a top-level array');
+  return value;
+}
+
+function assertFields(row: Record<string, unknown>, patch = false) {
+  const allowed = ['id', 'name', 'config', 'disabled', 'group', 'inject', 'isolate', ...(patch ? ['insert'] : [])];
+  for (const key of Object.keys(row)) {
+    if (!allowed.includes(key))
+      throw new TypeError(`web boot config unsupported entry field: ${key}`);
+  }
+}
+
+function validateRow(value: unknown): asserts value is WebBootEntry {
   if (!isRecord(value))
-    throw new TypeError(`web boot config entry ${index} must be an object`);
+    throw new TypeError('web boot config entry must be an object');
+  assertFields(value);
+  assertWebBootEntry({ ...value, dependencies: [] } as unknown as WebBootEntry);
+  if (value.group)
+    (value.config as unknown[]).forEach(validateRow);
+}
 
-  const row = value as unknown as BootConfigRow;
-  if (row.disabled === true)
-    return [];
-  if (row.disabled !== undefined && typeof row.disabled !== 'boolean')
-    throw new TypeError(`web boot config disabled must be boolean: ${index}`);
-  if (typeof row.id !== 'string' || typeof row.name !== 'string')
-    throw new TypeError(`web boot config entry ${index} requires id and name`);
-
-  const segments = row.name.split('/');
-  const rootLength = row.name.startsWith('@') ? 2 : 1;
+function loadEntry(value: unknown, configPath: string, onFile?: (path: string) => void, parentDisabled = false): WebBootEntry {
+  validateRow(value);
+  const disabled = parentDisabled || !!value.disabled;
+  if (value.group)
+    return { ...value, dependencies: [], config: (value.config as WebBootEntry[]).map(row => loadEntry(row, configPath, onFile, disabled)) };
+  if (disabled)
+    return { ...value, dependencies: [] };
+  const segments = value.name.split('/');
+  const rootLength = value.name.startsWith('@') ? 2 : 1;
   const packageName = segments.slice(0, rootLength).join('/');
   const subpath = segments.length === rootLength ? '.' : `./${segments.slice(rootLength).join('/')}`;
-  const manifest = loadPackageManifest(packageName, configPath, onPackageManifest);
+  const manifest = loadPackageManifest(packageName, configPath, onFile);
   if (!hasRuntimeExport(manifest.exports, subpath))
-    throw new TypeError(`web boot config ${subpath === '.' ? 'root' : subpath} export missing: ${row.name}`);
-
+    throw new TypeError(`web boot config ${subpath === '.' ? 'root' : subpath} export missing: ${value.name}`);
   if (manifest.cordis !== undefined && !isRecord(manifest.cordis))
-    throw new TypeError(`web boot config cordis metadata must be an object: ${row.name}`);
-  const inject = manifest.cordis?.inject;
-  if (inject !== undefined && (!Array.isArray(inject) || inject.some(name => typeof name !== 'string')))
-    throw new TypeError(`web boot config inject must be package names: ${row.name}`);
-
-  const config = parseJsonConfig(row.config, row.name);
-  return [{
-    id: row.id,
-    name: row.name,
-    inject: inject as readonly string[] | undefined ?? [],
-    ...(config === undefined ? {} : { config }),
-  }];
+    throw new TypeError(`web boot config cordis metadata must be an object: ${value.name}`);
+  const dependencies = manifest.cordis?.inject;
+  if (dependencies !== undefined && (!Array.isArray(dependencies) || dependencies.some(name => typeof name !== 'string')))
+    throw new TypeError(`web boot config inject must be package names: ${value.name}`);
+  return { ...value, dependencies: dependencies as string[] | undefined ?? [] };
 }
 
 function loadPackageManifest(name: string, configPath: string, onPackageManifest?: (path: string) => void): PackageManifest {
@@ -89,17 +128,6 @@ function hasRuntimeExport(exports: unknown, subpath: string) {
     ? exports
     : isRecord(exports) ? exports[subpath] : undefined;
   return typeof entry === 'string' || (isRecord(entry) && typeof entry.default === 'string');
-}
-
-function parseJsonConfig(config: unknown, name: string) {
-  if (config === undefined)
-    return undefined;
-  try {
-    return JSON.parse(JSON.stringify(config)) as JsonValue;
-  }
-  catch {
-    throw new TypeError(`web boot config value must be JSON-safe: ${name}`);
-  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

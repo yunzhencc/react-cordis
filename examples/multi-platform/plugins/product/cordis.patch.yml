@@ -1,0 +1,13 @@
+- insert:
+    - id: product
+      name: cordis:group
+      group: true
+      config:
+        - id: renderer
+          name: '@react-cordis/renderer/react'
+        - id: favorites
+          name: '@examples/multi-platform-favorites-feature'
+          config:
+            enabled: true
+        - id: shell
+          name: '@examples/multi-platform-product-shell'

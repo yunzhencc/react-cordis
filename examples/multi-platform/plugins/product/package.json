@@ -1,0 +1,13 @@
+{
+  "name": "@examples/multi-platform-product",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

@@ -2,7 +2,11 @@
   "name": "@react-cordis/vite",
   "type": "module",
   "private": true,
-  "exports": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./metro-transformer": "./src/metro-transformer.cjs",
+    "./node-module-stub": "./src/node-module-stub.ts"
+  },
   "peerDependencies": {
     "vite": "^8.2.2"
   },

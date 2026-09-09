@@ -14,6 +14,6 @@ export default defineConfig(({ mode }) => ({
     'process.env.TAMAGUI_IS_CLIENT': 'true',
     'process.env.TAMAGUI_ENVIRONMENT': '"client"',
   },
-  plugins: [cordisWebBoot({ configPath: 'cordis.yml', virtualModuleId: 'virtual:cordis-desktop' }), react()],
+  plugins: [cordisWebBoot({ bundles: ['@examples/multi-platform-product'], patches: ['cordis.patch.yml'], configPath: 'cordis.yml', virtualModuleId: 'virtual:cordis-desktop' }), react()],
   build: { outDir: 'dist/renderer' },
 }));

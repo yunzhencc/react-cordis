@@ -1,12 +1,19 @@
-import type { Fiber, Plugin } from '@deepseek-ai/cordis';
+import type { Fiber, FiberState, Plugin } from '@deepseek-ai/cordis';
+import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader';
 import type {} from '@react-cordis/renderer';
-import type { WebBootGraph } from './manifest';
+import type { WebBootEntry, WebBootGraph } from './manifest';
 import { Context } from '@deepseek-ai/cordis';
+import Group from '@deepseek-ai/cordis-plugin-group';
+import Loader from '@deepseek-ai/cordis-plugin-loader';
 import { assertWebBootGraph } from './manifest';
 
 export type PluginModule = Plugin.Object<unknown>;
 
 export type PluginRegistry = ReadonlyMap<string, () => Promise<PluginModule>>;
+
+// Cordis publishes FiberState as a const enum, with no runtime export.
+const ACTIVE = 2 satisfies FiberState;
+const FAILED = 3 satisfies FiberState;
 
 export interface BootWebAppOptions {
   container: HTMLElement;
@@ -26,68 +33,96 @@ export class BootFailure extends Error {
 
 export async function activateWebBootGraph(ctx: Context, graph: WebBootGraph, registry: PluginRegistry) {
   assertWebBootGraph(graph);
-  const created: { entryId: string; fiber: Fiber }[] = [];
+  if (ctx.get('loader'))
+    throw new BootFailure('loader', 'activate', new Error('this context already owns a Loader'));
+  const loaderFiber = ctx.plugin(Loader);
   let stopped = false;
-
+  let starting = true;
+  let fail!: (error: BootFailure) => void;
+  const failure = new Promise<never>((_, reject) => {
+    fail = reject;
+  });
+  // An import can fail before the initial create() calls have returned.
+  void failure.catch(() => {});
   try {
-    await Promise.all(graph.entries.map(async (entry) => {
-      const importer = registry.get(entry.name);
-      if (!importer)
-        throw new BootFailure(entry.id, 'registry', new Error(`registry entry missing for ${entry.name}`));
-
-      let module: PluginModule;
-      try {
-        module = await importer();
-      }
-      catch (error) {
-        throw new BootFailure(entry.id, 'import', error);
-      }
-
-      // Dynamic imports cannot be cancelled; ignore arrivals after boot has failed.
-      if (stopped)
+    await loaderFiber;
+    const loader = ctx.loader;
+    loader.builtins.group = Group;
+    // Official Loader owns entry lifecycle; the bundler registry owns code arrival.
+    loader.internal = {
+      import: async (name: string) => {
+        const candidates = starting ? moduleEntries(graph.entries, name) : [];
+        const entryId = candidates.length === 1 ? candidates[0]! : name;
+        const importer = registry.get(name);
+        try {
+          if (!importer)
+            throw new BootFailure(entryId, 'registry', new Error(`registry entry missing for ${name}`));
+          const module = await importer();
+          if (stopped)
+            throw new Error('boot has stopped');
+          return module;
+        }
+        catch (cause) {
+          const detail = candidates.length > 1
+            ? new Error(`module ${name}, configured candidate entries: ${candidates.join(', ')}: ${String(cause)}`, { cause })
+            : cause;
+          const error = cause instanceof BootFailure ? cause : new BootFailure(entryId, 'import', detail);
+          fail(error);
+          throw error;
+        }
+      },
+    } as unknown as Loader['internal'];
+    const stopWatching = loader.ctx.on('internal/status', (fiber) => {
+      if (fiber.state !== FAILED || !fiber.entry)
         return;
+      void fiber.await().catch(cause => fail(new BootFailure(fiber.entry!.id, 'activate', cause)));
+    });
+    const startup = Promise.all(graph.entries.map(async (entry) => {
       try {
-        const fiber = ctx.plugin(module, entry.config);
-        created.push({ entryId: entry.id, fiber });
+        await loader.create(loaderEntry(entry));
       }
-      catch (error) {
-        throw new BootFailure(entry.id, 'activate', error);
+      catch (cause) {
+        throw new BootFailure(entry.id, 'activate', cause);
       }
-    }));
-
-    // A provider settling can start another fiber, so wait for the whole graph.
-    while (true) {
-      const tasks = created.flatMap(({ fiber }) => fiber.inertia ? [fiber.inertia] : []);
-      if (tasks.length === 0)
-        break;
-      await Promise.all(tasks);
-    }
-
-    await Promise.all(created.map(async ({ entryId, fiber }) => {
-      try {
-        await fiber.await();
-      }
-      catch (error) {
-        throw new BootFailure(entryId, 'activate', error);
-      }
-    }));
-    for (const { entryId, fiber } of created) {
-      // After lifecycle work settles, only a loaded fiber retains its service snapshot.
-      if (fiber.uid !== null && fiber.store !== undefined)
+    })).then(() => loader.await());
+    await Promise.race([startup, failure]);
+    for (const entry of loader.entries()) {
+      if (entry.disabled)
         continue;
-      const missing = Object.keys(fiber.inject).filter(name => fiber.ctx.get(name) === undefined);
-      throw new BootFailure(entryId, 'activate', new Error(
+      const fiber = entry.fiber;
+      if (fiber?.state === ACTIVE)
+        continue;
+      const missing = fiber ? Object.keys(fiber.inject).filter(name => fiber.ctx.get(name) === undefined) : [];
+      throw new BootFailure(entry.id, 'activate', new Error(
         missing.length ? `missing services: ${missing.join(', ')}` : 'plugin did not become active',
       ));
     }
+    stopWatching();
+    starting = false;
   }
   catch (error) {
     stopped = true;
-    await disposeFibers(created.map(({ fiber }) => fiber));
+    await loaderFiber.dispose();
     throw error;
   }
+  // The Loader fiber owns the complete entry tree, including nested groups.
+  return [loaderFiber];
+}
 
-  return created.map(({ fiber }) => fiber);
+function moduleEntries(entries: readonly WebBootEntry[], name: string): string[] {
+  return entries.flatMap(entry => entry.disabled
+    ? []
+    : entry.group
+      ? moduleEntries(entry.config as readonly WebBootEntry[], name)
+      : entry.name === name ? [entry.id] : []);
+}
+
+function loaderEntry(entry: WebBootEntry): EntryOptions {
+  const { dependencies: _, ...options } = entry;
+  return {
+    ...options,
+    ...(entry.group ? { config: (entry.config as unknown as WebBootEntry[]).map(loaderEntry) } : {}),
+  };
 }
 
 export async function bootWebApp({ container, graph, registry }: BootWebAppOptions) {

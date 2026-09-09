@@ -12,7 +12,7 @@ it('boots the locale runtime before the UI and its language settings extension',
 
 it('declares direct UI runtime dependencies in plugin manifests', () => {
   const entries = loadWebBootGraph(new URL('./cordis.yml', import.meta.url).pathname).entries;
-  const injectFor = (id: string) => entries.find(entry => entry.id === id)?.inject ?? [];
+  const injectFor = (id: string) => entries.find(entry => entry.id === id)?.dependencies ?? [];
 
   expect(injectFor('dashboard')).toEqual(expect.arrayContaining([
     '@examples/router-app-layout',

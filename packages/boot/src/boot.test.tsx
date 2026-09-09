@@ -34,7 +34,7 @@ it('imports and activates independent plugins concurrently', async () => {
   ]);
   const boot = activateWebBootGraph(ctx, {
     revision: 'test',
-    entries: [...registry.keys()].map(name => ({ id: name, name, inject: [] })),
+    entries: [...registry.keys()].map(name => ({ id: name, name, dependencies: [] })),
   }, registry);
 
   try {
@@ -75,7 +75,7 @@ it('waits for service dependencies and their asynchronous activation before moun
   ]);
   const boot = bootWebApp({
     container: document.createElement('div'),
-    graph: { revision: 'test', entries: [...registry.keys()].map(name => ({ id: name, name, inject: [] })) },
+    graph: { revision: 'test', entries: [...registry.keys()].map(name => ({ id: name, name, dependencies: [] })) },
     registry,
   });
 
@@ -116,7 +116,7 @@ it('disposes every plugin even when the renderer unmount throws', async () => {
   ]);
   const dispose = await bootWebApp({
     container: document.createElement('div'),
-    graph: { revision: 'test', entries: [...registry.keys()].map(name => ({ id: name, name, inject: [] })) },
+    graph: { revision: 'test', entries: [...registry.keys()].map(name => ({ id: name, name, dependencies: [] })) },
     registry,
   });
 
@@ -128,7 +128,7 @@ it('rejects unresolved services instead of mounting an incomplete application', 
   const container = document.createElement('div');
   await expect(bootWebApp({
     container,
-    graph: { revision: 'test', entries: [{ id: 'consumer', name: '@app/consumer', inject: [] }] },
+    graph: { revision: 'test', entries: [{ id: 'consumer', name: '@app/consumer', dependencies: [] }] },
     registry: new Map([['@app/consumer', async () => ({ inject: ['missingService'], apply: () => {} })]]),
   })).rejects.toMatchObject({ entryId: 'consumer', stage: 'activate' });
   expect(container.textContent).toContain('missingService');
@@ -154,9 +154,9 @@ it('does not import packages omitted from the boot graph', async () => {
   await activateWebBootGraph(new Context(), {
     revision: 'test',
     entries: [
-      { id: 'renderer', name: '@app/renderer', inject: [] },
-      { id: 'router', name: '@app/router', inject: [] },
-      { id: 'settings', name: '@app/settings', inject: [] },
+      { id: 'renderer', name: '@app/renderer', dependencies: [] },
+      { id: 'router', name: '@app/router', dependencies: [] },
+      { id: 'settings', name: '@app/settings', dependencies: [] },
     ],
   }, registry);
 
@@ -167,7 +167,7 @@ it('does not import packages omitted from the boot graph', async () => {
 it('names the importing entry on bundle failure', async () => {
   await expect(activateWebBootGraph(new Context(), {
     revision: 'test',
-    entries: [{ id: 'dashboard', name: '@app/dashboard', inject: [] }],
+    entries: [{ id: 'dashboard', name: '@app/dashboard', dependencies: [] }],
   }, new Map([['@app/dashboard', async () => { throw new Error('offline'); }]])))
     .rejects
     .toMatchObject({ entryId: 'dashboard', stage: 'import' });
@@ -182,14 +182,17 @@ it('disposes activated plugins when a later import fails', async () => {
         calls.push('dispose renderer');
       };
     } })],
-    ['@app/dashboard', async () => { throw new Error('offline'); }],
+    ['@app/dashboard', async () => {
+      await vi.waitFor(() => expect(calls).toContain('renderer'));
+      throw new Error('offline');
+    }],
   ]);
 
   await expect(activateWebBootGraph(new Context(), {
     revision: 'test',
     entries: [
-      { id: 'renderer', name: '@app/renderer', inject: [] },
-      { id: 'dashboard', name: '@app/dashboard', inject: [] },
+      { id: 'renderer', name: '@app/renderer', dependencies: [] },
+      { id: 'dashboard', name: '@app/dashboard', dependencies: [] },
     ],
   }, registry)).rejects.toMatchObject({ entryId: 'dashboard', stage: 'import' });
 
@@ -226,7 +229,7 @@ it('does not activate late imports after a concurrent import fails', async () =>
   ]);
   const boot = activateWebBootGraph(ctx, {
     revision: 'test',
-    entries: [...registry.keys()].map(name => ({ id: name, name, inject: [] })),
+    entries: [...registry.keys()].map(name => ({ id: name, name, dependencies: [] })),
   }, registry);
   const outcome = boot.catch(error => error);
   try {
@@ -245,14 +248,108 @@ it('does not activate late imports after a concurrent import fails', async () =>
   expect([...ctx.registry.values()]).toEqual([]);
 });
 
+it('uses official groups to isolate services and toggle an entire subtree', async () => {
+  const ctx = new Context();
+  const seen: string[] = [];
+  const released: string[] = [];
+  const group = (id: string) => ({
+    id,
+    name: 'cordis:group',
+    group: true,
+    dependencies: [],
+    isolate: { scopedValue: true as const },
+    config: [
+      { id: `${id}-provider`, name: 'provider', dependencies: [], config: { value: id } },
+      { id: `${id}-consumer`, name: 'consumer', dependencies: [] },
+    ],
+  });
+  await activateWebBootGraph(ctx, { revision: 'groups', entries: [group('left'), group('right')] }, new Map([
+    ['provider', async () => ({ apply(scope: Context, config: unknown) {
+      scope.provide('scopedValue', (config as { value: string }).value);
+    } })],
+    ['consumer', async () => ({ inject: ['scopedValue'], apply(scope: Context) {
+      const value = scope.get('scopedValue') as string;
+      seen.push(value);
+      return () => {
+        released.push(value);
+      };
+    } })],
+  ]));
+  try {
+    expect(seen.toSorted()).toEqual(['left', 'right']);
+    expect(ctx.get('scopedValue')).toBeUndefined();
+    await ctx.loader.update('left', { disabled: true });
+    await ctx.loader.await();
+    expect(released).toEqual(['left']);
+    await ctx.loader.update('left', { disabled: false });
+    await ctx.loader.await();
+    expect(seen.filter(value => value === 'left')).toHaveLength(2);
+    expect(seen.filter(value => value === 'right')).toHaveLength(1);
+  }
+  finally {
+    await ctx.fiber.dispose();
+  }
+  expect(released.toSorted()).toEqual(['left', 'left', 'right']);
+});
+
+it('keeps disabled entries available for an explicit Loader enable', async () => {
+  const ctx = new Context();
+  const apply = vi.fn();
+  const importer = vi.fn(async () => ({ apply }));
+  await activateWebBootGraph(ctx, {
+    revision: 'disabled',
+    entries: [{ id: 'optional', name: 'optional', dependencies: [], disabled: true }],
+  }, new Map([['optional', importer]]));
+  try {
+    expect(importer).not.toHaveBeenCalled();
+    await ctx.loader.update('optional', { disabled: false });
+    await ctx.loader.await();
+    expect(apply).toHaveBeenCalledOnce();
+  }
+  finally {
+    await ctx.fiber.dispose();
+  }
+});
+
+it('attributes import failures to active entries rather than disabled duplicates', async () => {
+  const ctx = new Context();
+  await expect(activateWebBootGraph(ctx, {
+    revision: 'diagnostics',
+    entries: [
+      { id: 'optional', name: 'shared', dependencies: [], disabled: true },
+      { id: 'actual', name: 'shared', dependencies: [] },
+    ],
+  }, new Map([['shared', async () => { throw new Error('offline'); }]])))
+    .rejects
+    .toMatchObject({ entryId: 'actual', stage: 'import' });
+  expect([...ctx.registry.values()]).toEqual([]);
+});
+
+it('identifies a shared module and its candidate entries when an import is ambiguous', async () => {
+  const ctx = new Context();
+  await expect(activateWebBootGraph(ctx, {
+    revision: 'diagnostics',
+    entries: ['left', 'right'].map(id => ({
+      id,
+      name: 'cordis:group',
+      group: true,
+      dependencies: [],
+      config: [{ id: `${id}-child`, name: 'shared', dependencies: [] }],
+    })),
+  }, new Map([['shared', async () => { throw new Error('offline'); }]])))
+    .rejects
+    .toMatchObject({ entryId: 'shared', message: expect.stringContaining('left-child, right-child') });
+  expect([...ctx.registry.values()]).toEqual([]);
+});
+
 it('reports an activation failure and rolls back every created plugin', async () => {
   const dispose = vi.fn();
   const ctx = new Context();
   await expect(activateWebBootGraph(ctx, {
     revision: 'test',
     entries: [
-      { id: 'active', name: '@app/active', inject: [] },
-      { id: 'broken', name: '@app/broken', inject: [] },
+      { id: 'active', name: '@app/active', dependencies: [] },
+      { id: 'broken', name: '@app/broken', dependencies: [] },
     ],
   }, new Map([
     ['@app/active', async () => ({ apply: () => dispose })],

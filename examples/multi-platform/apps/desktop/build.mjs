@@ -8,11 +8,13 @@ async function buildDesktop() {
   for (const entry of ['main', 'preload']) {
     await build({
       configFile: false,
+      root: import.meta.dirname,
       plugins: entry === 'main'
         ? [cordisWebBoot({
             configPath: resolve(import.meta.dirname, 'cordis.main.yml'),
             virtualModuleId: 'virtual:cordis-main',
             manifestFileName: 'main.boot.json',
+            target: 'node',
           })]
         : [],
       build: {

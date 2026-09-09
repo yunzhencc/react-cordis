@@ -28,9 +28,9 @@ pnpm start
 
 | 包 | 职责 |
 | --- | --- |
-| `@react-cordis/boot-config` | 读取 `cordis.yml` 和插件包元数据，校验并排序启动图。 |
+| `@react-cordis/boot-config` | 读取根配置、bundle 和补丁，复用官方补丁算法，保留分组并校验启动图。 |
 | `@react-cordis/vite` | 生成虚拟模块与构建清单，接入依赖扫描和开发期配置刷新。 |
-| `@react-cordis/boot` | 导入、激活插件，挂载 UI，并在启动失败时清理已创建的插件。 |
+| `@react-cordis/boot` | 通过官方 Loader / Group 管理插件树，对接模块注册表、UI 挂载与启动失败清理。 |
 | `@react-cordis/slots` | 插槽类型契约、声明归属、注册顺序与清理规则。 |
 | `@react-cordis/renderer` | React 插槽渲染、挂载与逐项渲染异常隔离。 |
 | `@react-cordis/router` | 路由注册、React Router 适配与页面渲染异常隔离。 |
@@ -90,9 +90,11 @@ export function apply(ctx: Context) {
   name: '@examples/basic-page'
 ```
 
-这里的两类依赖各有用途：`cordis.inject` 使用**包名**，用于启动图校验；代码中的 `inject` 使用**服务名**，决定 Cordis 何时执行 `apply()`。插件注册和需要清理的副作用应放在 `apply()` 或 `ctx.effect()` 中。
+这里的两类依赖各有用途：`cordis.inject` 使用**包名**，用于启动图校验；代码中的 `inject` 使用**服务名**，决定 Cordis 何时执行 `apply()`。启动图中的 `dependencies` 保存包依赖；YAML 条目的 `inject` 与官方 Loader 一致，表示服务依赖或服务拦截配置。插件注册和需要清理的副作用应放在 `apply()` 或 `ctx.effect()` 中。
 
 应用还需在 [Vite 配置](examples/basic/vite.config.ts) 中启用 `cordisWebBoot()`，并在 [浏览器入口](examples/basic/src/main.tsx) 将虚拟模块导出的 `graph`、`registry` 交给 `bootWebApp()`。React 应用根包需声明 `react` 与 `react-dom`，供 React 插件解析和预构建。
+
+需要共享一组插件配置时，可以在包的 `package.json` 中声明 `dsh.bundle.patch`，然后通过 `cordisWebBoot({ bundles: ['产品包名'], patches: ['cordis.patch.yml'] })` 装配。组合顺序为 bundle 补丁、根配置条目、应用补丁；补丁按官方语义通过 `id` 修改条目，`config` 整体替换。`cordis:group` 保留运行时父子关系，支持 `disabled` 和 `isolate`。完整例子见 [多端产品 bundle](examples/multi-platform/plugins/product)。
 
 `root` 是单项插槽，只允许一个贡献；多个区域应由根插件声明子插槽。业务插槽通过声明合并扩展 `SlotContracts`，名称、类型与注册参数可在编译期检查，详见[插槽类型契约](docs/architecture.md#插槽类型契约)。
 

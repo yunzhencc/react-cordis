@@ -1,21 +1,106 @@
 import { EventEmitter } from 'node:events';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'vite';
 import { expect, it, vi } from 'vitest';
 import { cordisWebBoot, emitWebBootGraph, renderWebBootVirtualModule } from './index';
 
+const require = createRequire(import.meta.url);
+const { isOfficialLoaderPath, removeEagerLoaderEvaluator } = require('./loader-browser-source.cjs') as {
+  isOfficialLoaderPath: (id: string) => boolean;
+  removeEagerLoaderEvaluator: (source: string) => string;
+};
+
+const loaderPath = require.resolve('@deepseek-ai/cordis-plugin-loader');
+const loaderSource = readFileSync(loaderPath, 'utf8');
+
 const graph = {
   revision: 'r1',
-  entries: [{ id: 'renderer', name: '@app/renderer', inject: [] }],
+  entries: [{ id: 'renderer', name: '@app/renderer', dependencies: [] }],
 };
 
 it('maps each configured package to its root import', () => {
   const source = renderWebBootVirtualModule(graph);
 
-  expect(source).toContain('import(\'@app/renderer\')');
-  expect(source).toContain('[\'@app/renderer\', load0]');
+  expect(source).toContain('import("@app/renderer")');
+  expect(source).toContain('["@app/renderer", load0]');
+});
+
+it('maps enabled nested leaves once and excludes Loader builtins', () => {
+  const source = renderWebBootVirtualModule({
+    revision: 'nested',
+    entries: [{
+      id: 'group',
+      name: 'cordis:group',
+      dependencies: [],
+      group: true,
+      config: [
+        { id: 'first', name: 'plugin', dependencies: [] },
+        { id: 'duplicate', name: 'plugin', dependencies: [] },
+        { id: 'builtin', name: 'cordis:loader', dependencies: [] },
+        { id: 'disabled', name: 'disabled-plugin', dependencies: [], disabled: true },
+      ],
+    }],
+  });
+
+  expect(source.match(/import\("plugin"\)/g)).toHaveLength(1);
+  expect(source).not.toContain('import("cordis:');
+  expect(source).not.toContain('import("disabled-plugin")');
+  expect(renderWebBootVirtualModule({
+    revision: 'disabled',
+    entries: [{ id: 'disabled', name: 'installed-plugin', dependencies: [], disabled: true }],
+  }, name => name === 'installed-plugin')).toContain('import("installed-plugin")');
+});
+
+it('browserizes the official Loader unless the target is Node', () => {
+  const browser = Reflect.apply(cordisWebBoot().config, undefined, []);
+  const node = Reflect.apply(cordisWebBoot({ target: 'node' }).config, undefined, []);
+
+  expect(browser.define).toEqual({
+    'process.versions.node': '"0.0.0"',
+    'process.execArgv': '[]',
+    'process.env.CORDIS_SHARED': 'undefined',
+  });
+  expect(browser.resolve.alias[0].find.test('node:module')).toBe(true);
+  expect(node.define).toBeUndefined();
+  expect(node.resolve).toBeUndefined();
+});
+
+it('removes the eager Loader evaluator only for browser transforms', () => {
+  const browser = cordisWebBoot();
+  const node = cordisWebBoot({ target: 'node' });
+  const transformed = Reflect.apply(browser.transform, undefined, [loaderSource, loaderPath]) as string;
+
+  expect(loaderSource).toContain('const evaluate = new Function');
+  expect(transformed).not.toContain('new Function(');
+  expect(transformed).not.toContain('with (ctx)');
+  expect(Reflect.apply(node.transform, undefined, [loaderSource, loaderPath])).toBeUndefined();
+  expect(Reflect.apply(browser.transform, undefined, [loaderSource, '/application/source.ts'])).toBeUndefined();
+});
+
+it('recognizes official Loader paths with POSIX and Windows separators', () => {
+  expect(isOfficialLoaderPath('/workspace/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js')).toBe(true);
+  expect(isOfficialLoaderPath('C:\\workspace\\node_modules\\@deepseek-ai\\cordis-plugin-loader\\lib\\index.js')).toBe(true);
+});
+
+it('removes the eager Loader evaluator idempotently', () => {
+  const once = removeEagerLoaderEvaluator(loaderSource);
+
+  expect(removeEagerLoaderEvaluator(once)).toBe(once);
+});
+
+it('removes the eager Loader evaluator during browser dependency optimization', () => {
+  const browserConfig = Reflect.apply(cordisWebBoot().config, undefined, []);
+  const nodeConfig = Reflect.apply(cordisWebBoot({ target: 'node' }).config, undefined, []);
+  const browserScan = browserConfig.optimizeDeps.rolldownOptions.plugins[0];
+  const nodeScan = nodeConfig.optimizeDeps.rolldownOptions.plugins[0];
+  const transformed = Reflect.apply(browserScan.transform, undefined, [loaderSource, loaderPath]) as string;
+
+  expect(transformed).not.toContain('new Function(');
+  expect(transformed).not.toContain('with (ctx)');
+  expect(Reflect.apply(nodeScan.transform, undefined, [loaderSource, loaderPath])).toBeUndefined();
 });
 
 it('emits the same graph as cordis.boot.json', () => {
@@ -100,6 +185,35 @@ it('reloads the virtual boot graph when its boot config changes', () => {
   }
 });
 
+it('reloads when an application patch changes', () => {
+  const root = mkdtempSync(join(import.meta.dirname, '.cordis-vite-patch-'));
+  const configPath = join(root, 'cordis.yml');
+  const patchPath = join(root, 'app.patch.yml');
+  const plugin = cordisWebBoot({ configPath, patches: ['./app.patch.yml'] });
+  const module = { id: '\0virtual:cordis-boot' };
+  const invalidateModule = vi.fn();
+  const send = vi.fn();
+  const server = {
+    watcher: { add: vi.fn() },
+    moduleGraph: { getModuleById: () => module, invalidateModule },
+    ws: { send },
+  };
+  writeFileSync(configPath, '[]');
+  writeFileSync(patchPath, '[]');
+
+  try {
+    Reflect.apply(plugin.configureServer, undefined, [server]);
+    Reflect.apply(plugin.load, undefined, [module.id]);
+    Reflect.apply(plugin.handleHotUpdate, undefined, [{ file: patchPath, server }]);
+    expect(invalidateModule).toHaveBeenCalledWith(module);
+    expect(send).toHaveBeenCalledWith({ type: 'full-reload' });
+  }
+  finally {
+    Reflect.apply(plugin.closeBundle, undefined, []);
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
 function metadataFixture() {
   const root = mkdtempSync(join(tmpdir(), 'cordis-metadata-'));
   const configPath = join(root, 'cordis.yml');
@@ -175,7 +289,7 @@ it('tracks newly enabled symlinked packages even when their first metadata read 
     const before = app.send.mock.calls.length;
     writeFileSync(manifestPath, JSON.stringify({ ...app.manifest, name: 'workspace-plugin' }));
     await vi.waitFor(() => expect(app.send.mock.calls.length).toBeGreaterThan(before), { timeout: 3000 });
-    expect(app.load()).toContain('import(\'workspace-plugin\')');
+    expect(app.load()).toContain('import("workspace-plugin")');
 
     // Removed packages and a closed development server must stop triggering reloads.
     app.send.mockClear();
@@ -217,14 +331,14 @@ it('updates dependency metadata with Vite default dependency optimization enable
     await vi.waitFor(async () => {
       const after = await server.transformRequest('virtual:cordis-boot');
       expect(after?.code).toContain('"entries":[{"id":"provider"');
-      expect(after?.code).toContain('"inject":["provider"]');
+      expect(after?.code).toContain('"dependencies":["provider"]');
     }, { timeout: 3000 });
 
     writeFileSync(app.manifestPath, JSON.stringify(app.manifest));
     await vi.waitFor(async () => {
       const after = await server.transformRequest('virtual:cordis-boot');
       expect(after?.code).toContain('"entries":[{"id":"plugin"');
-      expect(after?.code).not.toContain('"inject":["provider"]');
+      expect(after?.code).not.toContain('"dependencies":["provider"]');
     }, { timeout: 3000 });
   }
   finally {

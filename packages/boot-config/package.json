@@ -4,6 +4,7 @@
   "private": true,
   "exports": "./src/index.ts",
   "dependencies": {
+    "@deepseek-ai/cordis-plugin-include": "1.0.7",
     "@react-cordis/boot": "workspace:*",
     "yaml": "^2.9.0"
   }

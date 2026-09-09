@@ -1,14 +1,25 @@
-import type { WebBootGraph } from '@react-cordis/boot/manifest';
+import type { WebBootEntry, WebBootGraph } from '@react-cordis/boot/manifest';
 import type { Plugin, Rolldown, ViteDevServer } from 'vite';
 import { realpathSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { clearInterval, setInterval } from 'node:timers';
+import { fileURLToPath } from 'node:url';
 import { loadWebBootGraph } from '@react-cordis/boot-config';
+import { flattenWebBootEntries } from '@react-cordis/boot/manifest';
 
-interface CordisWebBootOptions {
+const { isOfficialLoaderPath, removeEagerLoaderEvaluator } = createRequire(import.meta.url)('./loader-browser-source.cjs') as {
+  isOfficialLoaderPath: (id: string) => boolean;
+  removeEagerLoaderEvaluator: (source: string) => string;
+};
+
+export interface CordisWebBootOptions {
   configPath?: string;
   virtualModuleId?: string;
   manifestFileName?: string;
+  bundles?: readonly string[];
+  patches?: readonly string[];
+  target?: 'browser' | 'node';
 }
 
 function manifestStamp(file: string) {
@@ -16,9 +27,25 @@ function manifestStamp(file: string) {
   return stat && `${stat.mtimeMs}:${stat.ctimeMs}:${stat.size}:${stat.ino}`;
 }
 
-export function renderWebBootVirtualModule(graph: WebBootGraph) {
-  const loaders = graph.entries.map((entry, index) => `const load${index} = () => import('${entry.name}');`).join('\n');
-  const registry = graph.entries.map((entry, index) => `  ['${entry.name}', load${index}],`).join('\n');
+export function renderWebBootVirtualModule(graph: WebBootGraph, isAvailable: (name: string) => boolean = () => false) {
+  const disabledIds = new Set<string>();
+  const markDisabled = (entries: readonly WebBootEntry[], disabled = false) => {
+    for (const entry of entries) {
+      const entryDisabled = disabled || !!entry.disabled;
+      if (entryDisabled)
+        disabledIds.add(entry.id);
+      if (entry.group && Array.isArray(entry.config))
+        markDisabled(entry.config as readonly WebBootEntry[], entryDisabled);
+    }
+  };
+  markDisabled(graph.entries);
+  const modules = [...new Set(flattenWebBootEntries(graph.entries)
+    .filter(entry => !entry.group
+      && !entry.name.startsWith('cordis:')
+      && (!disabledIds.has(entry.id) || isAvailable(entry.name)))
+    .map(entry => entry.name))];
+  const loaders = modules.map((name, index) => `const load${index} = () => import(${JSON.stringify(name)});`).join('\n');
+  const registry = modules.map((name, index) => `  [${JSON.stringify(name)}, load${index}],`).join('\n');
   return `${loaders}\nexport const graph = ${JSON.stringify(graph)};\nexport const registry = new Map([\n${registry}\n]);\n`;
 }
 
@@ -30,6 +57,9 @@ export function cordisWebBoot({
   configPath = 'cordis.yml',
   virtualModuleId = 'virtual:cordis-boot',
   manifestFileName = 'cordis.boot.json',
+  bundles,
+  patches,
+  target = 'browser',
 }: CordisWebBootOptions = {}) {
   let resolvedConfigPath = resolve(configPath);
   const resolvedVirtualModuleId = `\0${virtualModuleId}`;
@@ -55,7 +85,7 @@ export function cordisWebBoot({
       // Capture before reading: an asynchronous watcher baseline could miss
       // an edit made immediately after the first graph load.
       manifests.set(file, manifestStamp(file));
-    });
+    }, { bundles, patches });
     // Keep prior watches on failure, including newly discovered invalid files.
     for (const file of manifests.keys()) {
       if (!next.has(file))
@@ -63,11 +93,35 @@ export function cordisWebBoot({
     }
     return graph;
   };
+  const renderGraph = () => renderWebBootVirtualModule(loadGraph(), (name) => {
+    try {
+      createRequire(resolvedConfigPath).resolve(name);
+      return true;
+    }
+    catch {
+      return false;
+    }
+  });
 
   return {
     name: 'cordis-web-boot',
     config() {
       return {
+        ...(target === 'browser'
+          ? {
+              resolve: {
+                alias: [{
+                  find: /^node:module$/,
+                  replacement: fileURLToPath(new URL('./node-module-stub.ts', import.meta.url)),
+                }],
+              },
+              define: {
+                'process.versions.node': JSON.stringify('0.0.0'),
+                'process.execArgv': '[]',
+                'process.env.CORDIS_SHARED': 'undefined',
+              },
+            }
+          : {}),
         optimizeDeps: {
           rolldownOptions: {
             // Vite's scanner externalizes virtual IDs. Expose the boot imports
@@ -80,7 +134,11 @@ export function cordisWebBoot({
               },
               load(id) {
                 if (id === resolvedVirtualModuleId)
-                  return { code: renderWebBootVirtualModule(loadGraph()), moduleType: 'js' };
+                  return { code: renderGraph(), moduleType: 'js' };
+              },
+              transform(code, id) {
+                if (target === 'browser' && isOfficialLoaderPath(id))
+                  return removeEagerLoaderEvaluator(code);
               },
             }],
           },
@@ -120,9 +178,13 @@ export function cordisWebBoot({
     generateBundle() {
       emitWebBootGraph(this, loadGraph(), manifestFileName);
     },
+    transform(code, id) {
+      if (target === 'browser' && isOfficialLoaderPath(id))
+        return removeEagerLoaderEvaluator(code);
+    },
     load(id) {
       if (id === resolvedVirtualModuleId)
-        return renderWebBootVirtualModule(loadGraph());
+        return renderGraph();
     },
     resolveId(id) {
       if (id === virtualModuleId)

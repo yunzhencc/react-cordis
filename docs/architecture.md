@@ -29,7 +29,7 @@ examples/router/cordis.yml
 }
 ```
 
-原 `yunzhen.client` 元数据已替换，不再使用 `platform` 和 `immediately`，所有启用插件并发导入，模块到达后立即创建 Cordis 插件；代码中的服务 `inject` 决定何时执行 `apply()`。包级依赖仍用于启动图校验与排序，但不串行等待激活。启动器等待所有已创建插件的生命周期工作稳定，确认没有激活失败或缺失服务后才挂载 UI。失败时清理已创建插件，迟到的模块不会再创建插件。
+启动使用官方 `@deepseek-ai/cordis-plugin-loader` 和 `@deepseek-ai/cordis-plugin-group`；Vite / Metro 的静态模块注册表通过 `loader.internal.import()` 提供代码。所有启用插件并发导入，模块到达后由 Loader 创建条目对应的 Cordis 插件；代码中的服务 `inject` 决定何时执行 `apply()`。包级依赖仍用于启动图校验与排序，但不串行等待激活。启动器等待所有已创建插件的生命周期工作稳定，确认没有激活失败或缺失服务后才挂载 UI。失败时清理已创建插件，迟到的模块不会再创建插件。
 
 插件注册和可清理副作用应放在 `apply()` 或 `ctx.effect()` 中；ESM 导入不能取消，模块顶层副作用不属于插件回滚范围。
 
@@ -51,8 +51,8 @@ packages/
 
 | 包 | 职责 |
 | --- | --- |
-| `@react-cordis/boot` | WebBootGraph 验证、浏览器 ESM 导入/激活、失败呈现与 UI 挂载。 |
-| `@react-cordis/boot-config` | 构建期读取配置和包元数据，验证并排序启动图。 |
+| `@react-cordis/boot` | WebBootGraph 验证、官方 Loader / Group 的启动与就绪检查、失败呈现和 UI 挂载。 |
+| `@react-cordis/boot-config` | 构建期读取配置和 bundle，调用官方 applyEntryPatches 组合补丁，验证并排序插件树。 |
 | `@react-cordis/vite` | 生成虚拟 registry 和构建清单，开发期配置变化时重载启动图。 |
 | `@react-cordis/slots` | `SlotContracts` 类型契约与纯 `SlotCore`，支持 `root`、`single`、`list` 与唯一 `root` scope。 |
 | `@react-cordis/renderer` | `ctx.slots` 的 SlotRegistry Service，以及 `ctx.uiRenderer` 的 React 根挂载与卸载清理，不依赖 i18n。 |
@@ -103,11 +103,21 @@ export default defineConfig({ plugins: [cordisWebBoot()] });
 
 默认读取 Vite `root` 下的 `cordis.yml`，生成 `virtual:cordis-boot`。调用方可以通过 `configPath` 和 `virtualModuleId` 覆盖；配置路径相对 Vite `root` 解析，也接受绝对路径。应用入口将虚拟模块导出的 `graph`、`registry` 传给 `bootWebApp`。目录解析以配置文件为基准，所以应用需直接声明清单中的插件依赖。
 
-开发服务同时监听启用插件实际读取的 `package.json`，支持 `cordis.inject` 依赖元数据自动生效。`boot-config` 通过可选的 `onPackageManifest` 回调在读取前报告文件路径，不改变 `WebBootGraph` 的结构。Vite 默认忽略 `node_modules`，因此插件在首次读取前记录文件状态，用一个共享定时器每 500ms 检查变化，清除启动图缓存并触发整页刷新；下次加载会重新校验依赖并排序。
+开发服务监听根配置、补丁、bundle 清单和实际读取的插件 `package.json`，支持配置与 `cordis.inject` 依赖元数据自动生效。`boot-config` 的第二个参数 `onFile` 在读取前报告这些文件路径。启动图 `dependencies` 表示包依赖；条目 `inject` 表示官方服务依赖或拦截配置。Vite 默认忽略 `node_modules`，因此插件在首次读取前记录文件状态，用一个共享定时器每 500ms 检查变化，清除启动图缓存并触发整页刷新；下次加载会重新校验依赖并排序。
 
 文件监听不代表所有包元数据都能热更新。修改 `exports`（包括 `exports["."]`）后需要重启开发服务；如果入口已被 Vite 预构建，重启时加 `--force` 强制重新预构建，例如 Router 示例运行 `pnpm --filter @examples/router exec vite --force`。本插件保留默认依赖优化策略，不自动重启或管理预构建缓存。
 
 工作区软链接解析到真实文件路径。同一文件只监听一次；配置成功加载后停止监听已移除或禁用的包，开发服务关闭时释放所有监听。JSON 损坏或文件删除时保留监听，修复后自动刷新；错误期间不回退到旧启动图。未能解析到路径的包不在监听范围，安装缺失的包或更换包链接目标后仍需重启开发服务。这是开发期整页刷新，页面临时状态会重置，不提供插件原位热替换。
+
+### 官方配置与分组
+
+`loadWebBootGraph(configPath, onFile?, { bundles, patches })` 在 Node 构建侧解析配置。每个 bundle 用 `dsh.bundle.patch` 指向自己的补丁文件；按声明顺序应用 bundle，再追加根配置条目，最后应用各端补丁。补丁操作直接调用官方 `applyEntryPatches()`，按 `id` 定位条目；`config` 是整体替换，不是深合并。未命中的补丁沿用官方行为：输出警告并跳过。
+
+`cordis:group` 条目使用 `group: true` 和 `config: [子条目]`；树结构传到官方 Loader，保留子树启停和服务隔离。`disabled: true` 保留条目而不执行模块；构建时可解析的禁用模块会留在静态注册表中，供显式启用，未安装的禁用插件需安装并重新构建后才能启用。组与子条目使用全局唯一 `id`。
+
+运行时可通过 `ctx.loader.update(id, { disabled: true/false })` 调整声明式分组，随后 `await ctx.loader.await()` 等待状态稳定。分组仅负责插件生命周期；业务在停用前排空命令的规则仍归业务插件。配置仅接受 JSON 数据，拒绝 `!!js` 和 `__jsExpr` 表达式节点，支持 `group`、`disabled`、`inject`、`isolate`，未支持字段明确报错。
+
+Web 构建参考官方环境适配：将 Loader 的 Node 探测替换为浏览器值，`node:module` 使用失败即报错的占位模块。Vite 客户端和 Metro 共用转换，移除官方 Loader 顶层使用 `new Function` / `with` 的表达式求值器，保留 JSON 配置遍历；这使现有桌面 CSP 和 Hermes 都能正常初始化，无需开放动态求值。转换检查已安装 Loader 的声明形状，升级导致不匹配时明确报错。Electron 主进程使用 `cordisWebBoot({ target: 'node' })` 保留 Node 行为。原生服务和 React 根挂载继续由宿主负责。
 
 ## Slot、Route 与布局
 
