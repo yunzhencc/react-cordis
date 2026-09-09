@@ -10,12 +10,14 @@
   "dependencies": {
     "@examples/multi-platform-browser-storage": "workspace:*",
     "@examples/multi-platform-favorites-feature": "workspace:*",
+    "@examples/multi-platform-i18n": "workspace:*",
     "@examples/multi-platform-product-shell": "workspace:*",
     "@examples/multi-platform-shared": "workspace:*",
     "@react-cordis/boot": "workspace:*",
     "@react-cordis/renderer": "workspace:*",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-i18next": "^16.5.9",
     "react-native": "0.86.3",
     "react-native-web": "^0.21.2"
   },

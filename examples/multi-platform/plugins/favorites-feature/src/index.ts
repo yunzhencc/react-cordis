@@ -14,7 +14,7 @@ async function ready(fiber: Fiber) {
 
 const bundle = {
   name: 'favorites-bundle',
-  inject: ['storage', 'slots'],
+  inject: ['storage', 'slots', 'i18n'],
   async apply(ctx: Context) {
     const children: Fiber[] = [];
     // Keep the view, business queue and repository under one sequential disposer.

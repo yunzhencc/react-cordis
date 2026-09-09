@@ -8,3 +8,11 @@ it('does not use a host navigator outside the browser', () => {
 
   expect(new I18nRuntime().locale).toBe('en');
 });
+
+it('tolerates React Native globals without browser language hints', () => {
+  vi.stubGlobal('window', globalThis);
+  vi.stubGlobal('navigator', { product: 'ReactNative' });
+  const runtime = new I18nRuntime({ storageKey: false });
+  expect(runtime.locale).toBe('en');
+  runtime.dispose();
+});

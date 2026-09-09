@@ -18,6 +18,12 @@ export interface Favorites {
   remove: (url: string) => Promise<void>;
 }
 
+export class FavoritesError extends Error {
+  constructor(readonly code: 'invalidData' | 'invalidItem' | 'invalidUrl' | 'inactive') {
+    super(code);
+  }
+}
+
 declare module '@deepseek-ai/cordis' {
   interface Context {
     favoritesRepository: FavoritesRepository;
@@ -27,17 +33,23 @@ declare module '@deepseek-ai/cordis' {
 
 export function validateFavorites(value: unknown): readonly Favorite[] {
   if (!Array.isArray(value) || value.length > 1000)
-    throw new Error('收藏数据无效，最多保存 1000 条');
+    throw new FavoritesError('invalidData');
   const urls = new Set<string>();
   return Object.freeze(value.map((item: unknown) => {
     if (!item || typeof item !== 'object' || !('title' in item) || !('url' in item)
       || typeof item.title !== 'string' || !item.title.trim() || item.title.length > 200
       || typeof item.url !== 'string' || item.url.length > 2048) {
-      throw new Error('请填写标题（最多 200 字）和有效网址');
+      throw new FavoritesError('invalidItem');
     }
-    const url = new URL(item.url);
+    let url: URL;
+    try {
+      url = new URL(item.url);
+    }
+    catch {
+      throw new FavoritesError('invalidUrl');
+    }
     if (!['https:', 'http:'].includes(url.protocol) || urls.has(url.href))
-      throw new Error('网址需要以 http 或 https 开头，且不能重复');
+      throw new FavoritesError('invalidUrl');
     urls.add(url.href);
     return Object.freeze({ title: item.title.trim(), url: url.href });
   }));
@@ -67,7 +79,7 @@ export async function apply(ctx: Context) {
 
   const change = (update: (current: readonly Favorite[]) => readonly Favorite[]) => {
     if (!live || fiber.uid === null)
-      return Promise.reject(new Error('收藏插件已停用'));
+      return Promise.reject(new FavoritesError('inactive'));
     const task = pending.then(async () => {
       const next = validateFavorites(update(items));
       await repository.save(next);

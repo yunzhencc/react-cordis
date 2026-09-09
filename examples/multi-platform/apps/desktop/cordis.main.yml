@@ -3,4 +3,4 @@
 - id: storage-ipc
   name: '@examples/multi-platform-file-storage/ipc'
   config:
-    allowedNames: [favorites]
+    allowedNames: [favorites, locale]

@@ -8,6 +8,25 @@ import { apply } from './index';
 
 describe('i18n runtime', () => {
   beforeEach(() => localStorage.clear());
+  it('awaits host persistence and leaves the active language unchanged when it fails', async () => {
+    localStorage.setItem('react-cordis:locale', 'en');
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const persist = vi.fn(async () => gate);
+    const runtime = new I18nRuntime({ locale: 'zh', storageKey: false }, persist);
+    const change = runtime.setLocale('en');
+    expect(runtime.locale).toBe('zh');
+    release();
+    await change;
+    expect(runtime.locale).toBe('en');
+    persist.mockRejectedValueOnce(new Error('disk full'));
+    await expect(runtime.setLocale('zh')).rejects.toThrow('disk full');
+    expect(runtime.locale).toBe('en');
+    expect(localStorage.getItem('react-cordis:locale')).toBe('en');
+    runtime.dispose();
+  });
   it('disconnects an unloaded runtime without affecting its replacement', async () => {
     const ctx = new Context();
     const fiber = ctx.plugin({ apply });

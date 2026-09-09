@@ -21,8 +21,10 @@
     "@deepseek-ai/cordis": "^4.0.2",
     "@examples/multi-platform-favorites": "workspace:*",
     "@examples/multi-platform-product-shell": "workspace:*",
+    "@react-cordis/i18n": "workspace:*",
     "@react-cordis/renderer": "workspace:*",
     "@react-cordis/slots": "workspace:*",
+    "react-i18next": "^16.5.9",
     "tamagui": "2.7.7"
   }
 }

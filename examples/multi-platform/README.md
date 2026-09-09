@@ -2,6 +2,8 @@
 
 同一个收藏产品运行在 Web、Electron 和 React Native。三个宿主位于 `apps/web`、`apps/desktop`、`apps/mobile`，共享业务插件、收藏仓库和界面组件；平台适配插件提供统一的 `ctx.storage`。
 
+三端支持中文、英文切换，并在重启后保留所选语言。产品外壳与收藏界面分别持有自己的词典，收藏标题和网址保持用户输入的原文。
+
 ## 运行
 
 在仓库根目录执行 `pnpm install`，然后选择一个入口：
@@ -40,11 +42,11 @@ multi-platform/
 
 ## 启动配置
 
-三端共享 `plugins/product` 声明的 `dsh.bundle.patch`。这个 bundle 用官方 `cordis:group` 组织 React 插槽、收藏功能和产品外壳；三个 `apps/*/cordis.yml` 都是空根入口，各端通过 `cordis.patch.yml` 向 `product` 组加入存储提供者。
+三端共享 `plugins/product` 声明的 `dsh.bundle.patch`。这个 bundle 用官方 `cordis:group` 组织 i18n、React 插槽、收藏功能和产品外壳；三个 `apps/*/cordis.yml` 都是空根入口，各端通过 `cordis.patch.yml` 向 `product` 组加入存储提供者。
 
 | 配置 | 职责 |
 | --- | --- |
-| `plugins/product/cordis.patch.yml` | 共享产品分组、React 插槽、收藏功能、产品外壳 |
+| `plugins/product/cordis.patch.yml` | 共享产品分组、i18n、React 插槽、收藏功能、产品外壳 |
 | `apps/web/cordis.patch.yml` | 向产品组加入浏览器存储 |
 | `apps/mobile/cordis.patch.yml` | 向产品组加入 Native 存储 |
 | `apps/desktop/cordis.patch.yml` | 向产品组加入桌面存储桥接 |
@@ -74,6 +76,7 @@ YAML 只保存插件选择和 JSON 配置。Electron 主进程通过 `ctx.provid
 | `plugins/favorites-repository` | 收藏文档的序列化、读取校验与句柄释放 | 三端 |
 | `plugins/favorites-feature` | 提供功能开关，组合收藏仓库、业务与界面子插件，按顺序释放 | 三端 |
 | `plugins/storage` | 通用文档契约、名称与大小约束、操作顺序和关闭语义 | 三端 |
+| `plugins/i18n` | 复用 `I18nRuntime`，从 `ctx.storage` 恢复和保存语言偏好 | 三端 |
 | `plugins/product-shell` | 产品外壳、主题配置、根插槽与功能开关 | 三端 |
 | `plugins/favorites-view` | 收藏界面、插槽贡献与 React 订阅 | 三端 |
 | `shared/src/product.ts` | 激活启动图、等待产品就绪、应用实例清理 | 三端 |
@@ -103,6 +106,14 @@ YAML 只保存插件选择和 JSON 配置。Electron 主进程通过 `ctx.provid
 
 Cordis 负责服务注入、依赖失效、插件实例和资源清理。业务插件通过 `ctx.effect()` 注册清理，界面通过 `ctx.slots.register()` 绑定到当前插件实例。移除存储提供者会让共享仓库、业务及其界面失效；恢复提供者后由 Cordis 重建依赖插件。
 
+## 多语言
+
+`plugins/i18n` 等待平台存储后读取独立的 `locale` 文档，创建 `I18nRuntime` 并提供 `ctx.i18n`。关闭内置 localStorage 偏好保存，通过运行时保存回调复用三端文档存储。切换成功后才更新界面；保存失败时显示当前语言的错误提示，保持原语言。首次启动使用浏览器可用的语言提示，Native 缺少该提示时使用英文；无效的已存偏好回退到默认语言。
+
+`product-shell/src/locales.ts` 与 `favorites-view/src/locales.ts` 分别维护 `multiPlatformShell`、`multiPlatformFavorites` 命名空间。插件通过 `ctx.effect()` 注册和释放字典；外壳提供共享 `I18nProvider` 和语言按钮，停用收藏不会卸载语言设置。基础 i18n 包不持有产品词典。英文数量采用 i18next 复数规则，错误提示保留错误码并在渲染时翻译。
+
+Web 和桌面 Vite 对 React、React DOM、react-i18next 去重；Metro 也统一解析宿主的 React 与 react-i18next，确保提供者与各插件的 Hook 使用同一个 React Context。Web 与 Electron 的文档语言和标题随切换更新。
+
 `bootProduct()` 使用官方 Loader 激活 YAML 组合后的插件树；`favorites-feature` 提供 `ctx.product` 控制服务，其内部依赖存储的子插件组合仓库、业务与界面。控制服务独立于存储生命周期，存储失效和恢复不会重置用户的启停意图。一个同步生成器 effect 收集子插件 disposer，按界面、业务、仓库的顺序串行释放；应用关闭先等待功能释放，再清理根 Context。普通兄弟 effect 的清理是并行的，不能依赖注册顺序排空业务写入。启停串行执行，启动失败会回滚；普通函数、数据校验和 React 组件保持普通代码。
 
 本示例没有另写依赖解析器、远程加载器或插件市场。各宿主通过 YAML 选择平台提供者，业务代码中没有 `if (platform)` 分支。新增自有功能时可按这个模式增加业务插件、界面贡献和清单条目；等多个功能确实需要统一设置页时，再把当前的收藏开关扩展为产品级目录。
@@ -115,7 +126,7 @@ Cordis 负责服务注入、依赖失效、插件实例和资源清理。业务�
 - 同一存储实例中，一个名称只能有一个活动句柄。读写按调用顺序执行；失败返回给调用者，不阻塞后续操作。关闭立即拒绝新操作，等待已接受的操作完成后释放名称；重复关闭不影响后来打开的句柄。
 - 功能只关闭自己的句柄；存储插件卸载时关闭遗留句柄并释放平台连接。正常停用功能与退出应用会先排空业务队列；直接卸载平台提供者可能使尚未提交给存储的业务命令失败。
 - 示例重命名为 `multi-platform` 后，保留已有应用标识和数据位置：Expo slug 为 `cordis-cross-platform`，Android 包名为 `dev.cordis.crossplatform`；Web 和 Native 使用 `cordis-cross-platform:favorites`，Native 继续使用 `ExpoSQLiteStorage` 数据库；Electron 使用应用数据目录 `cordis-cross-platform` 下的 `favorites.json`。无需迁移或清空旧收藏。
-- Electron 主进程只允许该渲染进程访问宿主声明的文档，目前为 `favorites`。新增业务文档时，宿主显式扩充允许列表；IPC 不接受文件路径或 SQL。
+- Electron 主进程只允许该渲染进程访问宿主声明的文档，目前为 `favorites` 和 `locale`。新增业务文档时，宿主显式扩充允许列表；IPC 不接受文件路径或 SQL。
 
 这是按文档整体替换的存储，不维护另一份 React 状态。当前收藏最多 1000 条；需要大量记录的局部更新、跨文档事务或多端同步时，再引入相应数据访问能力。文件适配使用临时文件替换，保证正常操作不会读到半份文档；没有承诺断电后的 fsync 持久性。
 
@@ -153,16 +164,18 @@ pnpm --filter @examples/multi-platform build:native
 
 各存储适配运行同一组句柄与持久化契约测试：Web 使用 jsdom localStorage，文件适配使用临时目录，Native 仅替换 Expo SQLite 原生驱动，桌面渲染端替换 preload 文档接口。另覆盖 IPC 来源校验与卸载清理、拒绝越界访问、写入中停用与退出、旧命令拒绝、写入失败、应用隔离、连续启停与依赖服务恢复。驱动替身和 bundle 构建不能代替真机或模拟器交互验证。
 
-2026-09-09 接入官方 Loader / Group、共享 bundle 和各端补丁后的验证结果：
+2026-09-09 接入官方 Loader / Group、共享 bundle、各端补丁和多语言后的验证结果：
 
 | 目标 | 已验证 |
 | --- | --- |
-| 自动检查 | 全仓 252 项测试通过；全仓类型检查、相关文件 ESLint 和 diff 检查通过 |
-| Web | 从 Vite 启动并显示共享产品界面；生产构建通过 |
-| Electron / macOS arm64 | 官方 Loader 启动主进程和渲染进程；现有 CSP 下读取原有两条收藏，插件停用、重新启用、页面重载后数据一致，正常退出成功 |
-| iOS 18 / iPhone 16 Pro 模拟器 / Expo Go | 从 `apps/mobile` 清缓存启动 Metro 并完整重载；Hermes 正常初始化，共享界面读取原有两条 SQLite 收藏 |
+| 自动检查 | 全仓 255 项测试通过；全仓类型检查、相关文件 ESLint 和 diff 检查通过 |
+| Web | 从 Vite 启动；实际切换中英文、停用后切换语言并重新启用；刷新恢复英文，并校验 localStorage 中的 `locale` 文档 |
+| Electron / macOS arm64 | 中英切换、复数数量、错误提示随语言变化；停用后重新启用，词典正常恢复；完整退出重启保留英文，原有两条收藏不变 |
+| iOS 18 / iPhone 16 Pro 模拟器 / Expo Go | Hermes 正常显示英文并切换为中文；重启后从 SQLite 恢复中文，保留原有两条收藏 |
 | Android | Metro 与 Hermes 生产 bundle 构建通过；尚未在 Android 设备或模拟器交互验证 |
 
 Web/Electron、iOS/Android 生产构建通过，各端产物独立输出。新增官方 Loader、Group 和 Include 依赖，复用其生命周期和补丁操作。测试覆盖配置组合、组隔离与子树启停、静态导入、禁用条目、JSON 表达式拒绝、启动失败回滚，以及存储恢复和写入排空。
+
+多语言测试额外覆盖宿主异步保存、失败时保留原语言、关闭时等待已接受的语言写入，以及 Native 缺少浏览器语言提示的初始化。更新依赖或调整 Metro 模块解析配置后，需要重启开发服务并清缓存。
 
 客户端适配移除官方 Loader 顶层的表达式求值器，避免 Hermes 的 `with` 限制和 Electron CSP 的动态求值限制；配置继续只接受 JSON。Vite 的开发依赖优化与生产构建使用同一转换，Metro 保留 Expo 默认初始化和缓存接口。升级 Loader 或调整该适配后，Vite 使用 `--force`、Expo 使用 `--clear` 重新启动。

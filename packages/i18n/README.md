@@ -19,7 +19,7 @@
   name: '@react-cordis/renderer'
 ```
 
-`storageKey` 是唯一的插件配置项，可省略，默认值为 `react-cordis:locale`。同源的多个应用需要独立保存语言偏好时，应使用不同的 key。
+`storageKey` 默认值为 `react-cordis:locale`，传 `false` 可关闭内置 localStorage 读写。同源的多个应用需要独立保存语言偏好时，应使用不同的 key。可选的 `locale` 指定初始语言偏好，优先于已保存的偏好。
 
 `@react-cordis/renderer` 不依赖 i18n。需要国际化的应用应在业务根组件中使用本包导出的 `<I18nProvider i18n={runtime}>` 包裹组件，其中 `runtime` 是 `ctx.i18n` 或独立创建的 `new I18nRuntime()`。Router 示例在 `app-layout` 路由组件中接入，独立国际化示例在 `page` 的 root Slot 组件中接入；后代 Slot 和 Route 共享该实例。
 
@@ -118,6 +118,18 @@ await ctx.i18n.setLocale('en');
 
 `setLocale()` 只接受已注册语言。选择会写入 localStorage，并更新翻译及 `<html lang>`；内置 `zh` 对应文档标签 `zh-CN`，其他语言使用其注册 ID。存储不可用时仍可切换当前运行时的语言，但选择无法持久保存。
 
+需要使用宿主异步存储时，由宿主先读取偏好，再传入初始 `locale` 和保存回调。`setLocale()` 等待回调成功才更新语言；失败向调用者抛错，保留原语言。回调属于运行时接入，不写进 YAML；存储句柄和关闭时排空写入由宿主插件管理。
+
+```ts
+const saved = await document.read();
+const runtime = new I18nRuntime(
+  { locale: saved ?? undefined, storageKey: false },
+  locale => document.write(locale),
+);
+```
+
+多端示例的 `plugins/i18n` 通过相同的 `ctx.storage` 接入 localStorage、Electron 文件和 Expo SQLite；基础包不依赖这些平台。缺少浏览器语言提示的环境默认使用英文。
+
 启动及语言目录变动时，按以下顺序确定生效语言：
 
 1. 已保存或本次运行中显式选择、且当前已注册的语言。
@@ -168,7 +180,7 @@ Cordis 插件卸载时会自动调用 `dispose()`，解除运行时自己的 i18
 
 | API | 用途 |
 | --- | --- |
-| `new I18nRuntime({ storageKey? })` | 创建独立运行时；Cordis 插件激活时会自动创建 |
+| `new I18nRuntime({ storageKey?, locale? }, persistLocale?)` | 创建独立运行时，可接入宿主异步保存回调；Cordis 插件默认自动创建 |
 | `locale` | 当前生效语言的 ID |
 | `languages` | 按注册顺序排列的只读语言目录快照，目录不变时引用稳定 |
 | `setLocale(id): Promise<void>` | 选择已注册语言并保存偏好 |
@@ -200,7 +212,7 @@ Cordis 插件卸载时会自动调用 `dispose()`，解除运行时自己的 i18
 ## 当前限制
 
 - 资源类型声明作用于同一个 TypeScript 编译项目，不能按运行时实例隔离。类型检查不验证外部 JSON；动态输入应在应用边界校验，再转换为已知的资源类型。本包不强制各语言键齐全。
-- 偏好只保存在当前浏览器的 localStorage，没有 Host 持久化或跨标签页同步，也不监听系统语言的实时变化。
+- 默认偏好保存在当前浏览器的 localStorage；宿主可接入异步保存回调。没有跨标签页同步，也不监听系统语言的实时变化。
 - 没有恢复“跟随浏览器”的专用 API；语言回退最终固定到 `en`。
 - 语言标签只做格式校验，不验证完整 BCP 47 注册信息；本包同步 `lang`，不自动设置 RTL 的 `dir`。
 - React 资源事件订阅没有按命名空间过滤；动态字典变化可能通知其他使用 `useTranslation()` 的组件。

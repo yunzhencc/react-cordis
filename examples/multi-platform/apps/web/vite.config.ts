@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 export default defineConfig(({ mode }) => ({
   base: './',
   resolve: {
-    dedupe: ['react', 'react-dom'],
+    dedupe: ['react', 'react-dom', 'react-i18next'],
     alias: { 'react-native': 'react-native-web' },
     extensions: ['.web.js', '.web.ts', '.web.tsx', '.mjs', '.js', '.ts', '.tsx', '.json'],
   },

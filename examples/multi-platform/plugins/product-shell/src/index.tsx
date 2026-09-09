@@ -1,7 +1,11 @@
 import type { Context } from '@deepseek-ai/cordis';
+import type { I18nRuntime } from '@react-cordis/i18n';
+import { I18nProvider } from '@react-cordis/i18n';
 import { Slot } from '@react-cordis/renderer/react';
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, H1, Paragraph, Text, XStack, YStack } from 'tamagui';
+import { shellMessages } from './locales';
 
 export { Frame } from './frame';
 
@@ -26,25 +30,51 @@ declare module '@react-cordis/slots' {
 }
 
 export const name = 'product-shell';
-export const inject = ['slots', 'product'];
+export const inject = ['slots', 'product', 'i18n'];
 
 export function apply(ctx: Context) {
   const controls = ctx.product;
-  ctx.slots.register({ name: 'root', children: { 'favorites.content': { kind: 'single', scope: 'root' } } }, () => <Shell controls={controls} />);
+  const i18n = ctx.i18n;
+  ctx.effect(() => i18n.register('multiPlatformShell', shellMessages));
+  ctx.slots.register({ name: 'root', children: { 'favorites.content': { kind: 'single', scope: 'root' } } }, () => (
+    <I18nProvider i18n={i18n}><Shell controls={controls} i18n={i18n} /></I18nProvider>
+  ));
 }
 
-function Shell({ controls }: { controls: ProductControls }) {
+function Shell({ controls, i18n }: { controls: ProductControls; i18n: I18nRuntime }) {
+  const { t } = useTranslation('multiPlatformShell');
+  const languages = useSyncExternalStore(listener => i18n.subscribe(listener), () => i18n.languages);
   const enabled = useSyncExternalStore(controls.subscribe, controls.getSnapshot, controls.getSnapshot);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [changingLanguage, setChangingLanguage] = useState(false);
+  const [error, setError] = useState<'toggleError' | 'languageError'>();
+  useEffect(() => {
+    if (typeof document !== 'undefined')
+      document.title = t('windowTitle');
+  }, [t]);
+  const changeLanguage = async (locale: string) => {
+    setChangingLanguage(true);
+    setError(undefined);
+    try {
+      await i18n.setLocale(locale);
+    }
+    catch (reason) {
+      console.error(reason);
+      setError('languageError');
+    }
+    finally {
+      setChangingLanguage(false);
+    }
+  };
   const toggle = async () => {
     setBusy(true);
-    setError('');
+    setError(undefined);
     try {
       await controls.setEnabled(!enabled);
     }
     catch (reason) {
-      setError(String(reason));
+      console.error(reason);
+      setError('toggleError');
     }
     finally {
       setBusy(false);
@@ -54,28 +84,46 @@ function Shell({ controls }: { controls: ProductControls }) {
   return (
     <YStack gap="$6">
       <YStack gap="$2">
-        <Text color="$blue10" fontWeight="700">CORDIS / 多端收藏</Text>
-        <H1 size="$9">值得留下的好东西。</H1>
-        <Paragraph color="$gray10">收藏文章、工具和灵感，在熟悉的界面里继续工作。</Paragraph>
+        <Text color="$blue10" fontWeight="700">{t('brand')}</Text>
+        <H1 size="$9">{t('title')}</H1>
+        <Paragraph color="$gray10">{t('description')}</Paragraph>
       </YStack>
+      <XStack alignItems="center" gap="$3" flexWrap="wrap">
+        <Text>{t('language')}</Text>
+        {languages.map(language => (
+          <Button
+            key={language.id}
+            size="$3"
+            theme={i18n.locale === language.id ? 'blue' : undefined}
+            aria-pressed={i18n.locale === language.id}
+            accessibilityState={{ selected: i18n.locale === language.id }}
+            disabled={changingLanguage}
+            onPress={() => { void changeLanguage(language.id); }}
+          >
+            {language.label}
+          </Button>
+        ))}
+      </XStack>
       <YStack borderWidth={1} borderColor="$gray5" borderRadius="$5" padding="$4" gap="$3" backgroundColor="$background">
         <XStack alignItems="center" justifyContent="space-between" gap="$3" flexWrap="wrap">
           <YStack gap="$1">
-            <Text fontWeight="700">收藏功能</Text>
+            <Text fontWeight="700">{t('feature')}</Text>
             <Text color="$gray10">
-              {enabled ? '已启用' : '已停用'}
+              {t(enabled ? 'enabled' : 'disabled')}
               {' '}
-              · 停用后保留收藏数据
+              ·
+              {' '}
+              {t('retained')}
             </Text>
           </YStack>
           <Button disabled={busy} onPress={() => { void toggle(); }}>
-            {busy ? '正在切换…' : enabled ? '停用收藏' : '启用收藏'}
+            {t(busy ? 'switching' : enabled ? 'disable' : 'enable')}
           </Button>
         </XStack>
-        {error ? <Text color="$red10" role="alert">{error}</Text> : null}
+        {error ? <Text color="$red10" role="alert">{t(error)}</Text> : null}
       </YStack>
       <Slot name="favorites.content" />
-      {!enabled && <Paragraph color="$gray10">收藏功能已暂停。重新启用后，可以继续查看和管理已有收藏。</Paragraph>}
+      {!enabled && <Paragraph color="$gray10">{t('paused')}</Paragraph>}
     </YStack>
   );
 }

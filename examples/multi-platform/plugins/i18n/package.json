@@ -1,0 +1,11 @@
+{
+  "name": "@examples/multi-platform-i18n",
+  "type": "module",
+  "private": true,
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-storage": "workspace:*",
+    "@react-cordis/i18n": "workspace:*"
+  }
+}

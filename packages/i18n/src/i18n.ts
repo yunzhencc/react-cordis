@@ -9,7 +9,8 @@ const DEFAULT_STORAGE_KEY = 'react-cordis:locale';
 const LOCALE_ID_PATTERN = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u;
 
 export interface I18nConfig {
-  storageKey?: string;
+  storageKey?: string | false;
+  locale?: Locale;
 }
 
 export interface LanguageRegistration {
@@ -66,18 +67,20 @@ export class I18nRuntime {
   private readonly resources = new Map<string, Map<string, LocaleResources>>();
   private disposed = false;
   private preference: Locale | undefined;
-  private readonly storageKey: string;
+  private readonly storageKey: string | false;
   private readonly listeners = new Set<() => void>();
   private languageSnapshot: readonly LocaleDefinition[] = Object.freeze([]);
 
-  constructor(config: I18nConfig = {}) {
+  constructor(config: I18nConfig = {}, private readonly persistLocale?: (locale: Locale) => Promise<void>) {
     if (!config || typeof config !== 'object' || Array.isArray(config))
       throw new TypeError('i18n config must be an object');
-    const { storageKey = DEFAULT_STORAGE_KEY } = config;
-    if (typeof storageKey !== 'string' || !storageKey.trim())
-      throw new TypeError('i18n storageKey must be a non-empty string');
+    const { storageKey = DEFAULT_STORAGE_KEY, locale } = config;
+    if (storageKey !== false && (typeof storageKey !== 'string' || !storageKey.trim()))
+      throw new TypeError('i18n storageKey must be a non-empty string or false');
+    if (locale !== undefined && (typeof locale !== 'string' || !LOCALE_ID_PATTERN.test(locale)))
+      throw new TypeError('i18n locale must be a BCP 47-style tag');
     this.storageKey = storageKey;
-    this.preference = readLocale(storageKey);
+    this.preference = locale ?? (storageKey ? readLocale(storageKey) : undefined);
 
     for (const locale of BUILT_IN_LOCALES)
       this.catalog.set(localeKey(locale.id), locale);
@@ -116,9 +119,15 @@ export class I18nRuntime {
     if (!language)
       throw new Error(`locale "${locale}" is not registered`);
 
+    // Host persistence can be asynchronous; publish only after it succeeds.
+    if (this.persistLocale)
+      await this.persistLocale(language.id);
+    if (this.disposed)
+      return;
     this.preference = language.id;
     try {
-      localStorage.setItem(this.storageKey, language.id);
+      if (this.storageKey)
+        localStorage.setItem(this.storageKey, language.id);
     }
     catch {}
     await this.instance.changeLanguage(localeKey(language.id));
@@ -303,9 +312,11 @@ function normalizeLanguage(input: LanguageRegistration): LocaleDefinition {
 }
 
 function detectLocale(locales: readonly LocaleDefinition[]): Locale | undefined {
-  if (typeof window === 'undefined')
+  if (typeof window === 'undefined' || typeof navigator === 'undefined')
     return undefined;
   for (const requested of [...(navigator.languages ?? []), navigator.language]) {
+    if (typeof requested !== 'string' || !requested)
+      continue;
     const exact = locales.find(locale => localeKey(locale.id) === localeKey(requested));
     if (exact)
       return exact.id;

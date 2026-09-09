@@ -8,6 +8,7 @@ import { bootProduct } from '@examples/multi-platform-shared';
 import { provideStorage } from '@examples/multi-platform-storage';
 import { loadWebBootGraph } from '@react-cordis/boot-config';
 import { flattenWebBootEntries } from '@react-cordis/boot/manifest';
+import * as i18n from '@react-cordis/i18n';
 import * as renderer from '@react-cordis/renderer/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 
@@ -35,6 +36,7 @@ function configuration(storage: PluginModule, enabled = true) {
   };
   const registry: PluginRegistry = new Map<string, () => Promise<PluginModule>>([
     ['@react-cordis/renderer/react', async () => renderer],
+    ['@examples/multi-platform-i18n', async () => i18n],
     ['@examples/multi-platform-browser-storage', async () => storage],
     ['@examples/multi-platform-favorites-feature', async () => favoritesFeature],
     ['@examples/multi-platform-product-shell', async () => shell],
@@ -70,7 +72,7 @@ it('drains accepted writes on unload, rejects stale commands, and reloads durabl
   expect(disposed).toBe(false);
   release();
   await Promise.all([write, stop]);
-  await expect(service.add({ title: 'stale', url: 'https://example.com' })).rejects.toThrow('停用');
+  await expect(service.add({ title: 'stale', url: 'https://example.com' })).rejects.toThrow('inactive');
   const restarted = ctx.plugin(favorites);
   await restarted.await();
   expect(ctx.favorites.getSnapshot()).toEqual(saved);

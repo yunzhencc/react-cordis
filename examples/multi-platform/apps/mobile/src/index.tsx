@@ -32,7 +32,7 @@ export default function App() {
       <SafeAreaView style={{ flex: 1 }}>
         {product
           ? <ProductView product={product} host="React Native" />
-          : <Frame host="React Native"><Text>{error || '正在加载收藏…'}</Text></Frame>}
+          : <Frame host="React Native"><Text>{error || '…'}</Text></Frame>}
       </SafeAreaView>
     </SafeAreaProvider>
   );
