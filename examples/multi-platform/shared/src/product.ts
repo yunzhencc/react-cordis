@@ -1,4 +1,4 @@
-import type {} from '@examples/multi-platform-product-shell';
+import type {} from '@examples/multi-platform-favorites-controls';
 import type { PluginRegistry, WebBootGraph } from '@react-cordis/boot';
 import { Context } from '@deepseek-ai/cordis';
 import { activateWebBootGraph } from '@react-cordis/boot';
@@ -10,7 +10,7 @@ export async function bootProduct({ graph, registry }: { graph: WebBootGraph; re
     closing ??= (async () => {
       // Drain feature commands before unloading the platform storage provider.
       try {
-        await ctx.product?.dispose();
+        await ctx.favoritesControls?.dispose();
       }
       finally {
         await ctx.fiber.dispose();
@@ -20,10 +20,10 @@ export async function bootProduct({ graph, registry }: { graph: WebBootGraph; re
   };
   try {
     await activateWebBootGraph(ctx, graph, registry);
-    if (!ctx.product || !ctx.slots)
-      throw new Error('启动配置缺少产品或插槽服务');
-    await ctx.product.ready();
-    return { ctx, controls: ctx.product, owner: ctx.slots.createRootOwner(), dispose };
+    if (!ctx.favoritesControls || !ctx.slots)
+      throw new Error('启动配置缺少收藏控制或插槽服务');
+    await ctx.favoritesControls.ready();
+    return { ctx, favoritesControls: ctx.favoritesControls, owner: ctx.slots.createRootOwner(), dispose };
   }
   catch (error) {
     await dispose();

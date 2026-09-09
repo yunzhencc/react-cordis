@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
+import type { FavoritesControls } from '@examples/multi-platform-favorites-controls';
 import type { I18nRuntime } from '@react-cordis/i18n';
 import { I18nProvider } from '@react-cordis/i18n';
 import { Slot } from '@react-cordis/renderer/react';
@@ -9,20 +10,6 @@ import { shellMessages } from './locales';
 
 export { Frame } from './frame';
 
-export interface ProductControls {
-  ready: () => Promise<void>;
-  dispose: () => Promise<void>;
-  getSnapshot: () => boolean;
-  subscribe: (listener: () => void) => () => void;
-  setEnabled: (enabled: boolean) => Promise<void>;
-}
-
-declare module '@deepseek-ai/cordis' {
-  interface Context {
-    product: ProductControls;
-  }
-}
-
 declare module '@react-cordis/slots' {
   interface SlotContracts {
     'favorites.content': { kind: 'single'; scope: 'root' };
@@ -30,10 +17,10 @@ declare module '@react-cordis/slots' {
 }
 
 export const name = 'product-shell';
-export const inject = ['slots', 'product', 'i18n'];
+export const inject = ['slots', 'favoritesControls', 'i18n'];
 
 export function apply(ctx: Context) {
-  const controls = ctx.product;
+  const controls = ctx.favoritesControls;
   const i18n = ctx.i18n;
   ctx.effect(() => i18n.register('multiPlatformShell', shellMessages));
   ctx.slots.register({ name: 'root', children: { 'favorites.content': { kind: 'single', scope: 'root' } } }, () => (
@@ -41,7 +28,7 @@ export function apply(ctx: Context) {
   ));
 }
 
-function Shell({ controls, i18n }: { controls: ProductControls; i18n: I18nRuntime }) {
+function Shell({ controls, i18n }: { controls: FavoritesControls; i18n: I18nRuntime }) {
   const { t } = useTranslation('multiPlatformShell');
   const languages = useSyncExternalStore(listener => i18n.subscribe(listener), () => i18n.languages);
   const enabled = useSyncExternalStore(controls.subscribe, controls.getSnapshot, controls.getSnapshot);

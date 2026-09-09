@@ -4,10 +4,12 @@ import { flattenWebBootEntries } from '@react-cordis/boot/manifest';
 import { renderWebBootVirtualModule } from '@react-cordis/vite';
 import { expect, it } from 'vitest';
 
+const favorites = ['multi-platform-favorites-repository', 'multi-platform-favorites', 'multi-platform-favorites-view'];
+
 it.each([
-  ['apps/web/cordis.yml', ['multi-platform-i18n', 'renderer/react', 'multi-platform-browser-storage', 'multi-platform-favorites-feature', 'multi-platform-product-shell']],
-  ['apps/mobile/cordis.yml', ['multi-platform-i18n', 'renderer/react', 'multi-platform-native-storage', 'multi-platform-favorites-feature', 'multi-platform-product-shell']],
-  ['apps/desktop/cordis.yml', ['multi-platform-i18n', 'renderer/react', 'multi-platform-desktop-storage', 'multi-platform-favorites-feature', 'multi-platform-product-shell']],
+  ['apps/web/cordis.yml', ['multi-platform-i18n', 'renderer/react', 'multi-platform-browser-storage', 'multi-platform-favorites-controls', 'multi-platform-product-shell', ...favorites]],
+  ['apps/mobile/cordis.yml', ['multi-platform-i18n', 'renderer/react', 'multi-platform-native-storage', 'multi-platform-favorites-controls', 'multi-platform-product-shell', ...favorites]],
+  ['apps/desktop/cordis.yml', ['multi-platform-i18n', 'renderer/react', 'multi-platform-desktop-storage', 'multi-platform-favorites-controls', 'multi-platform-product-shell', ...favorites]],
   ['apps/desktop/cordis.main.yml', ['multi-platform-file-storage', 'multi-platform-file-storage/ipc']],
 ])('%s includes only the host plugins and generates literal imports', (path, names) => {
   const graph = loadWebBootGraph(resolve(import.meta.dirname, '..', path), undefined, path.endsWith('cordis.main.yml')
@@ -22,4 +24,10 @@ it.each([
   const code = renderWebBootVirtualModule(graph);
   for (const entry of entries)
     expect(code).toContain(`import(${JSON.stringify(entry.name)})`);
+  if (!path.endsWith('cordis.main.yml')) {
+    const group = flattenWebBootEntries(graph.entries).find(entry => entry.id === 'favorites')!;
+    expect(group.group).toBe(true);
+    expect(group.name).toBe('cordis:group');
+    expect(flattenWebBootEntries([group]).filter(entry => !entry.group).map(entry => entry.name.replace('@examples/', '')).toSorted()).toEqual(favorites.toSorted());
+  }
 });

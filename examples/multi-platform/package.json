@@ -13,7 +13,7 @@
     "build:desktop": "pnpm --filter @examples/multi-platform-desktop build",
     "build:native": "pnpm --filter @examples/multi-platform-mobile build",
     "generate:native": "pnpm --filter @examples/multi-platform-mobile generate:boot",
-    "test": "vitest run tests plugins",
+    "test": "pnpm -w exec vitest run examples/multi-platform",
     "typecheck": "pnpm --filter '@examples/multi-platform*' exec tsc --noEmit"
   },
   "devDependencies": {
@@ -21,7 +21,8 @@
     "@examples/multi-platform-browser-storage": "workspace:*",
     "@examples/multi-platform-desktop-storage": "workspace:*",
     "@examples/multi-platform-favorites": "workspace:*",
-    "@examples/multi-platform-favorites-feature": "workspace:*",
+    "@examples/multi-platform-favorites-controls": "workspace:*",
+    "@examples/multi-platform-favorites-repository": "workspace:*",
     "@examples/multi-platform-favorites-view": "workspace:*",
     "@examples/multi-platform-file-storage": "workspace:*",
     "@examples/multi-platform-i18n": "workspace:*",

@@ -94,7 +94,7 @@ export function apply(ctx: Context) {
 
 应用还需在 [Vite 配置](examples/basic/vite.config.ts) 中启用 `cordisWebBoot()`，并在 [浏览器入口](examples/basic/src/main.tsx) 将虚拟模块导出的 `graph`、`registry` 交给 `bootWebApp()`。React 应用根包需声明 `react` 与 `react-dom`，供 React 插件解析和预构建。
 
-需要共享一组插件配置时，可以在包的 `package.json` 中声明 `dsh.bundle.patch`，然后通过 `cordisWebBoot({ bundles: ['产品包名'], patches: ['cordis.patch.yml'] })` 装配。组合顺序为 bundle 补丁、根配置条目、应用补丁；补丁按官方语义通过 `id` 修改条目，`config` 整体替换。`cordis:group` 保留运行时父子关系，支持 `disabled` 和 `isolate`。完整例子见 [多端产品 bundle](examples/multi-platform/plugins/product)。
+需要共享一组插件配置时，可以在包的 `package.json` 中声明 `dsh.bundle.patch`，然后通过 `cordisWebBoot({ bundles: ['产品包名'], patches: ['cordis.patch.yml'] })` 装配。组合顺序为 bundle 补丁、根配置条目、应用补丁；补丁按官方语义通过 `id` 修改条目，`config` 整体替换。`cordis:group` 保留运行时父子关系，支持 `disabled` 和 `isolate`。完整例子见 [多端产品 bundle](examples/multi-platform/bundle/product)。
 
 `root` 是单项插槽，只允许一个贡献；多个区域应由根插件声明子插槽。业务插槽通过声明合并扩展 `SlotContracts`，名称、类型与注册参数可在编译期检查，详见[插槽类型契约](docs/architecture.md#插槽类型契约)。
 

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-favorites-controls": "workspace:*",
     "@react-cordis/i18n": "workspace:*",
     "@react-cordis/renderer": "workspace:*",
     "@react-cordis/slots": "workspace:*",

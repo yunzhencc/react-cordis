@@ -1,6 +1,7 @@
 packages:
   - examples/*
   - examples/*/apps/*
+  - examples/*/bundle/*
   - examples/*/plugins/*
   - examples/*/shared
   - packages/*

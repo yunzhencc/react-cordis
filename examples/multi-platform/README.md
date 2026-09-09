@@ -30,6 +30,8 @@ multi-platform/
 │   ├── desktop/  # Electron 主进程、预加载、渲染进程及构建配置
 │   ├── mobile/   # Expo 入口、应用标识、Metro 和启动图生成
 │   └── web/      # 网页入口、HTML 和 Vite
+├── bundle/
+│   └── product/  # 三端共享的产品装配配置
 ├── plugins/      # 业务、界面和平台适配插件
 ├── shared/       # 产品启动、共享 React 视图、DOM 挂载
 ├── tests/        # 跨端契约与产品集成测试
@@ -42,11 +44,11 @@ multi-platform/
 
 ## 启动配置
 
-三端共享 `plugins/product` 声明的 `dsh.bundle.patch`。这个 bundle 用官方 `cordis:group` 组织 i18n、React 插槽、收藏功能和产品外壳；三个 `apps/*/cordis.yml` 都是空根入口，各端通过 `cordis.patch.yml` 向 `product` 组加入存储提供者。
+三端共享 `bundle/product` 声明的 `dsh.bundle.patch`。这个 bundle 用官方 `cordis:group` 组织 i18n、React 插槽、收藏控制服务、收藏分组和产品外壳；收藏仓库、业务与界面也全部声明在 YAML 分组内，插件代码不再调用 `ctx.plugin()` 装配这些功能。三个 `apps/*/cordis.yml` 都是空根入口，各端通过 `cordis.patch.yml` 向 `product` 组加入存储提供者。
 
 | 配置 | 职责 |
 | --- | --- |
-| `plugins/product/cordis.patch.yml` | 共享产品分组、i18n、React 插槽、收藏功能、产品外壳 |
+| `bundle/product/cordis.patch.yml` | 共享产品分组、i18n、React 插槽、收藏功能、产品外壳 |
 | `apps/web/cordis.patch.yml` | 向产品组加入浏览器存储 |
 | `apps/mobile/cordis.patch.yml` | 向产品组加入 Native 存储 |
 | `apps/desktop/cordis.patch.yml` | 向产品组加入桌面存储桥接 |
@@ -58,11 +60,25 @@ multi-platform/
 
 ```yaml
 - id: favorites
-  config:
-    enabled: false
+  disabled: true
 ```
 
-`config.enabled: false` 保留功能控制服务，用户仍可在界面启用。条目 `disabled: true` 则由 Loader 停用整个插件；当前外壳依赖收藏控制服务，不能单独停用该条目后继续使用原外壳。组的 `disabled` 控制整棵子树，业务排空写入仍由产品关闭流程保证。
+`favorites` 是官方分组，`disabled: true` 停用其中的仓库、业务和界面；组外的 `favorites-controls`、外壳、存储和多语言仍运行，用户可从界面重新启用。控制插件的 `config.group: favorites` 指向这个分组，界面调用 Loader 更新其 `disabled`，并从同一条目读取状态。各端补丁也可以按 `favorites-repository`、`favorites-business`、`favorites-view` 的 ID 单独配置、替换或停用子插件；只停用界面时，收藏业务可继续运行。停用必要的仓库但仍启用依赖它的业务，会被启动就绪检查拒绝。
+
+```text
+product (cordis:group)
+├── storage              ← 各端补丁选择提供者
+├── i18n
+├── renderer
+├── favorites-controls   ← 控制配置中的 favorites 分组
+├── favorites (cordis:group)
+│   ├── favorites-repository
+│   ├── favorites-business
+│   └── favorites-view
+└── shell
+```
+
+分组负责组织和配置，服务依赖保留在各插件源码的 `inject` 中。初始停用的插件只要已安装，仍会进入静态导入注册表，以支持本次运行中重新启用。
 
 Web 与 Electron Renderer 使用 `cordisWebBoot()` 生成虚拟模块和 JSON 启动树；Electron 主进程设置 `target: 'node'`。Native 在启动或构建前从同一配置组合生成含字面量导入的 `src/boot.generated.js`，再由 Metro 打包。修改 Native 配置后重新执行 `generate:native` 并重载；Web 开发服务会监听根配置、补丁与包元数据并整页刷新。
 
@@ -73,8 +89,8 @@ YAML 只保存插件选择和 JSON 配置。Electron 主进程通过 `ctx.provid
 | 代码 | 责任 | 复用范围 |
 | --- | --- | --- |
 | `plugins/favorites` | 收藏规则、状态、串行写入，以及业务需要的仓库契约 | 三端 |
-| `plugins/favorites-repository` | 收藏文档的序列化、读取校验与句柄释放 | 三端 |
-| `plugins/favorites-feature` | 提供功能开关，组合收藏仓库、业务与界面子插件，按顺序释放 | 三端 |
+| `plugins/favorites-repository` | 打开收藏仓储会话，封装序列化、读取校验与文档句柄 | 三端 |
+| `plugins/favorites-controls` | 定义 `FavoritesControls` 契约并提供 `ctx.favoritesControls`，通过官方 Loader 控制收藏分组 | 三端 |
 | `plugins/storage` | 通用文档契约、名称与大小约束、操作顺序和关闭语义 | 三端 |
 | `plugins/i18n` | 复用 `I18nRuntime`，从 `ctx.storage` 恢复和保存语言偏好 | 三端 |
 | `plugins/product-shell` | 产品外壳、主题配置、根插槽与功能开关 | 三端 |
@@ -88,15 +104,19 @@ YAML 只保存插件选择和 JSON 配置。Electron 主进程通过 `ctx.provid
 | `apps/desktop/src/{main,preload,renderer}.ts` | 窗口、宿主配置、进程桥接与关闭握手 | Electron |
 | `shared/src/dom.tsx` / `apps/mobile/src/index.tsx` | React 根节点的创建与释放 | 对应宿主 |
 
-与 Basic、Router 和 i18n 示例一致，运行时插件的每个 `plugins/<名称>` 目录包含 `package.json`、`tsconfig.json` 和 `src/index.ts(x)`，通过包根入口导出插件。包名统一为 `@examples/multi-platform-<名称>`；入口和插件之间使用 workspace 包名引用，不跨包引用 `src` 文件。`plugins/storage` 是适配插件共用的契约与生命周期实现，不额外注册一个空插件。`plugins/product` 是仅包含清单的配置 bundle，不提供空的 `apply()`。
+与 Basic、Router 和 i18n 示例一致，运行时插件的每个 `plugins/<名称>` 目录包含 `package.json`、`tsconfig.json` 和 `src/index.ts(x)`，通过包根入口导出插件。包名统一为 `@examples/multi-platform-<名称>`；入口和插件之间使用 workspace 包名引用，不跨包引用 `src` 文件。`plugins/storage` 是适配插件共用的契约与生命周期实现，不额外注册一个空插件。产品装配包放在 `bundle/product`，包名为 `@examples/multi-platform-product`；它只包含清单与 YAML 配置，不提供空的 `apply()`。
 
 `package.json` 的 `dependencies` 声明代码依赖，`cordis.inject` 记录清单中固定的插件入口依赖；源码 `inject` 声明运行时服务依赖。`storage` 等可替换服务由宿主 YAML 选择提供者，因此不会在消费插件中写死某个平台包。构建工具只导入对应清单的入口，保留 Native 的模块解析与 Electron 的进程边界。
+
+通过 YAML 替换实现时，需要同时满足服务契约和清单的包依赖约束。例如当前收藏界面的 `cordis.inject` 指定了收藏业务包和产品外壳，提供相同服务名并不自动满足这些约束。
+
+仓储单独作为插件用于验证持久化与业务的解耦，当前只有一套收藏仓储实现。新增简单功能可以先把仓储保留为业务插件内部模块，有独立替换或生命周期需求再拆分，不要求每个功能都复制三层插件。
 
 ```text
 平台存储插件提供 storage
                 ↓ inject
-收藏功能父插件 ── favorites-repository → favoritesRepository
-           ├── favorites 业务插件    → favorites
+收藏 YAML 分组 ── favorites-repository → favoritesRepository.open()
+           ├── favorites 业务插件    → favorites；持有并关闭仓储会话
            └── favorites-view 界面插件
                          ↓ inject / register
                      slots 服务 ← product-shell 声明内容插槽
@@ -114,13 +134,15 @@ Cordis 负责服务注入、依赖失效、插件实例和资源清理。业务�
 
 Web 和桌面 Vite 对 React、React DOM、react-i18next 去重；Metro 也统一解析宿主的 React 与 react-i18next，确保提供者与各插件的 Hook 使用同一个 React Context。Web 与 Electron 的文档语言和标题随切换更新。
 
-`bootProduct()` 使用官方 Loader 激活 YAML 组合后的插件树；`favorites-feature` 提供 `ctx.product` 控制服务，其内部依赖存储的子插件组合仓库、业务与界面。控制服务独立于存储生命周期，存储失效和恢复不会重置用户的启停意图。一个同步生成器 effect 收集子插件 disposer，按界面、业务、仓库的顺序串行释放；应用关闭先等待功能释放，再清理根 Context。普通兄弟 effect 的清理是并行的，不能依赖注册顺序排空业务写入。启停串行执行，启动失败会回滚；普通函数、数据校验和 React 组件保持普通代码。
+`bootProduct()` 使用官方 Loader 激活完整的 YAML 插件树；`favorites-controls` 提供 `ctx.favoritesControls`，返回的产品实例通过 `favoritesControls` 暴露同一收藏控制服务。控制插件持有接口与服务声明，不依赖产品外壳；外壳通过 `inject: ['slots', 'favoritesControls', 'i18n']` 消费服务。它串行调用 `loader.update(group, { disabled })`，检查分组是否就绪，失败后恢复之前的启停状态；外部通过 Loader 修改分组时，界面也会收到状态变更。控制服务独立于存储生命周期，服务失效和恢复不会重置用户的启停意图。
+
+官方 Group 更新可并发停用子条目，因此清理不依赖 YAML 顺序。业务插件通过 `ctx.favoritesRepository.open()` 持有仓储会话，卸载时先停止接受新命令、等待业务队列，再关闭会话。仓库插件停止提供新会话，不提前关闭业务仍在使用的句柄。应用关闭先等待收藏分组停用，再清理包含平台存储的根 Context。普通函数、数据校验和 React 组件保持普通代码。
 
 本示例没有另写依赖解析器、远程加载器或插件市场。各宿主通过 YAML 选择平台提供者，业务代码中没有 `if (platform)` 分支。新增自有功能时可按这个模式增加业务插件、界面贡献和清单条目；等多个功能确实需要统一设置页时，再把当前的收藏开关扩展为产品级目录。
 
 ## 存储契约
 
-业务仓库声明 `inject: ['storage']`，通过 `ctx.storage.open('favorites')` 获得一个具名文档。句柄只提供 `read(): Promise<string | null>`、`write(value): Promise<void>` 和 `close(): Promise<void>`。文档内容是字符串；平台适配不导入收藏类型，不解析业务 JSON。一个功能可以持有多个不同名称的文档。
+业务仓库声明 `inject: ['storage']`，在业务请求仓储会话时通过 `ctx.storage.open('favorites')` 获得一个具名文档。句柄只提供 `read(): Promise<string | null>`、`write(value): Promise<void>` 和 `close(): Promise<void>`。文档内容是字符串；平台适配不导入收藏类型，不解析业务 JSON。一个功能可以持有多个不同名称的文档。
 
 - 缺失文档返回 `null`；空字符串是有效值。名称最长 64 字符，只允许小写字母开头的字母、数字、下划线、连字符，排除 Windows 设备名。文档最多 4 × 1024 × 1024 个 UTF-16 码元。
 - 同一存储实例中，一个名称只能有一个活动句柄。读写按调用顺序执行；失败返回给调用者，不阻塞后续操作。关闭立即拒绝新操作，等待已接受的操作完成后释放名称；重复关闭不影响后来打开的句柄。
@@ -138,7 +160,7 @@ Web 和桌面 Vite 对 React、React DOM、react-i18next 去重；Metro 也统�
 - Web 示例按单标签页使用，未实现跨标签页并发编辑。Electron 明确只允许一个应用实例和窗口，主进程用串行写入与临时文件替换保存数据。
 - Electron 渲染进程没有 Node 权限。预加载只公开受限文档读写接口，主进程校验来源、允许的名称、文本类型和大小；收藏格式由共享仓库与业务插件校验。
 - 桌面关闭窗口时，主进程先请求渲染进程清理产品实例；渲染进程排空已接受的写入并确认后，主进程再清理文件仓库并退出。强制结束进程不属于正常关闭保证。
-- 插件开关只影响本次运行，重新启动采用 YAML 中的 `config.enabled`。开关偏好持久化、账号切换、SSR、独立插件更新与应用安装包不在本验证范围内。
+- 插件开关只影响本次运行，重新启动采用 YAML 中分组的 `disabled`。开关偏好持久化、账号切换、SSR、独立插件更新与应用安装包不在本验证范围内。
 
 ## 对现有包的改动
 
@@ -164,7 +186,7 @@ pnpm --filter @examples/multi-platform build:native
 
 各存储适配运行同一组句柄与持久化契约测试：Web 使用 jsdom localStorage，文件适配使用临时目录，Native 仅替换 Expo SQLite 原生驱动，桌面渲染端替换 preload 文档接口。另覆盖 IPC 来源校验与卸载清理、拒绝越界访问、写入中停用与退出、旧命令拒绝、写入失败、应用隔离、连续启停与依赖服务恢复。驱动替身和 bundle 构建不能代替真机或模拟器交互验证。
 
-2026-09-09 接入官方 Loader / Group、共享 bundle、各端补丁和多语言后的验证结果：
+以下是接入多语言时的交互验证记录；本次统一 YAML 装配的验证另见下方：
 
 | 目标 | 已验证 |
 | --- | --- |
@@ -175,6 +197,10 @@ pnpm --filter @examples/multi-platform build:native
 | Android | Metro 与 Hermes 生产 bundle 构建通过；尚未在 Android 设备或模拟器交互验证 |
 
 Web/Electron、iOS/Android 生产构建通过，各端产物独立输出。新增官方 Loader、Group 和 Include 依赖，复用其生命周期和补丁操作。测试覆盖配置组合、组隔离与子树启停、静态导入、禁用条目、JSON 表达式拒绝、启动失败回滚，以及存储恢复和写入排空。
+
+统一 YAML 装配时：全仓 259 项测试通过，多端类型检查、ESLint 与 diff 检查通过；Web、Electron、iOS 和 Android 构建通过。Web 与 Electron 实际验证分组停用、停用时切换语言、重新启用和刷新后的数据保留，Electron 正常关闭握手通过；iOS 模拟器验证相同的启停与语言切换流程，重启后恢复中文并保留原有两条收藏。Android 当时仅验证构建。
+
+收藏控制职责整理后：示例 23 项测试、多端类型检查、ESLint 与 diff 检查通过；Web、Electron、iOS 和 Android 构建通过，本次未重复设备交互验证。示例的 `test` 命令从 workspace 根目录运行，复用根 Vitest 配置与测试初始化文件。
 
 多语言测试额外覆盖宿主异步保存、失败时保留原语言、关闭时等待已接受的语言写入，以及 Native 缺少浏览器语言提示的初始化。更新依赖或调整 Metro 模块解析配置后，需要重启开发服务并清缓存。
 

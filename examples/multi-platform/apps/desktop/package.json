@@ -10,7 +10,10 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@examples/multi-platform-desktop-storage": "workspace:*",
-    "@examples/multi-platform-favorites-feature": "workspace:*",
+    "@examples/multi-platform-favorites": "workspace:*",
+    "@examples/multi-platform-favorites-controls": "workspace:*",
+    "@examples/multi-platform-favorites-repository": "workspace:*",
+    "@examples/multi-platform-favorites-view": "workspace:*",
     "@examples/multi-platform-file-storage": "workspace:*",
     "@examples/multi-platform-i18n": "workspace:*",
     "@examples/multi-platform-product-shell": "workspace:*",

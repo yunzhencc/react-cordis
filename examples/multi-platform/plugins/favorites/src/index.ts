@@ -5,10 +5,11 @@ export interface Favorite {
   readonly url: string;
 }
 
-/** Owned by the feature; hosts implement the same durable-write semantics. */
+/** One repository session, closed by the business owner after its accepted writes. */
 export interface FavoritesRepository {
   load: () => Promise<readonly Favorite[]>;
   save: (items: readonly Favorite[]) => Promise<void>;
+  close: () => Promise<void>;
 }
 
 export interface Favorites {
@@ -26,7 +27,7 @@ export class FavoritesError extends Error {
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
-    favoritesRepository: FavoritesRepository;
+    favoritesRepository: { open: () => FavoritesRepository };
     favorites: Favorites;
   }
 }
@@ -63,7 +64,7 @@ export const name = 'favorites';
 export const inject = ['favoritesRepository'];
 
 export async function apply(ctx: Context) {
-  const repository = ctx.favoritesRepository;
+  const repository = ctx.favoritesRepository.open();
   const fiber = ctx.fiber;
   const listeners = new Set<() => void>();
   let live = true;
@@ -71,6 +72,7 @@ export async function apply(ctx: Context) {
   ctx.effect(() => async () => {
     live = false;
     await pending;
+    await repository.close();
     listeners.clear();
   });
   let items = validateFavorites(await repository.load());

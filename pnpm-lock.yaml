@@ -208,9 +208,12 @@ importers:
       '@examples/multi-platform-favorites':
         specifier: workspace:*
         version: link:plugins/favorites
-      '@examples/multi-platform-favorites-feature':
+      '@examples/multi-platform-favorites-controls':
         specifier: workspace:*
-        version: link:plugins/favorites-feature
+        version: link:plugins/favorites-controls
+      '@examples/multi-platform-favorites-repository':
+        specifier: workspace:*
+        version: link:plugins/favorites-repository
       '@examples/multi-platform-favorites-view':
         specifier: workspace:*
         version: link:plugins/favorites-view
@@ -271,9 +274,18 @@ importers:
       '@examples/multi-platform-desktop-storage':
         specifier: workspace:*
         version: link:../../plugins/desktop-storage
-      '@examples/multi-platform-favorites-feature':
+      '@examples/multi-platform-favorites':
         specifier: workspace:*
-        version: link:../../plugins/favorites-feature
+        version: link:../../plugins/favorites
+      '@examples/multi-platform-favorites-controls':
+        specifier: workspace:*
+        version: link:../../plugins/favorites-controls
+      '@examples/multi-platform-favorites-repository':
+        specifier: workspace:*
+        version: link:../../plugins/favorites-repository
+      '@examples/multi-platform-favorites-view':
+        specifier: workspace:*
+        version: link:../../plugins/favorites-view
       '@examples/multi-platform-file-storage':
         specifier: workspace:*
         version: link:../../plugins/file-storage
@@ -313,7 +325,7 @@ importers:
     devDependencies:
       '@examples/multi-platform-product':
         specifier: workspace:*
-        version: link:../../plugins/product
+        version: link:../../bundle/product
       '@react-cordis/vite':
         specifier: workspace:*
         version: link:../../../../packages/vite
@@ -332,9 +344,18 @@ importers:
 
   examples/multi-platform/apps/mobile:
     dependencies:
-      '@examples/multi-platform-favorites-feature':
+      '@examples/multi-platform-favorites':
         specifier: workspace:*
-        version: link:../../plugins/favorites-feature
+        version: link:../../plugins/favorites
+      '@examples/multi-platform-favorites-controls':
+        specifier: workspace:*
+        version: link:../../plugins/favorites-controls
+      '@examples/multi-platform-favorites-repository':
+        specifier: workspace:*
+        version: link:../../plugins/favorites-repository
+      '@examples/multi-platform-favorites-view':
+        specifier: workspace:*
+        version: link:../../plugins/favorites-view
       '@examples/multi-platform-i18n':
         specifier: workspace:*
         version: link:../../plugins/i18n
@@ -386,7 +407,7 @@ importers:
     devDependencies:
       '@examples/multi-platform-product':
         specifier: workspace:*
-        version: link:../../plugins/product
+        version: link:../../bundle/product
       '@react-cordis/boot-config':
         specifier: workspace:*
         version: link:../../../../packages/boot-config
@@ -405,9 +426,18 @@ importers:
       '@examples/multi-platform-browser-storage':
         specifier: workspace:*
         version: link:../../plugins/browser-storage
-      '@examples/multi-platform-favorites-feature':
+      '@examples/multi-platform-favorites':
         specifier: workspace:*
-        version: link:../../plugins/favorites-feature
+        version: link:../../plugins/favorites
+      '@examples/multi-platform-favorites-controls':
+        specifier: workspace:*
+        version: link:../../plugins/favorites-controls
+      '@examples/multi-platform-favorites-repository':
+        specifier: workspace:*
+        version: link:../../plugins/favorites-repository
+      '@examples/multi-platform-favorites-view':
+        specifier: workspace:*
+        version: link:../../plugins/favorites-view
       '@examples/multi-platform-i18n':
         specifier: workspace:*
         version: link:../../plugins/i18n
@@ -441,7 +471,7 @@ importers:
     devDependencies:
       '@examples/multi-platform-product':
         specifier: workspace:*
-        version: link:../../plugins/product
+        version: link:../../bundle/product
       '@react-cordis/vite':
         specifier: workspace:*
         version: link:../../../../packages/vite
@@ -451,6 +481,8 @@ importers:
       vite:
         specifier: ^8.2.2
         version: 8.2.2(@types/node@26.5.0)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.0)
+
+  examples/multi-platform/bundle/product: {}
 
   examples/multi-platform/plugins/browser-storage:
     dependencies:
@@ -476,23 +508,14 @@ importers:
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
 
-  examples/multi-platform/plugins/favorites-feature:
+  examples/multi-platform/plugins/favorites-controls:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@examples/multi-platform-favorites':
-        specifier: workspace:*
-        version: link:../favorites
-      '@examples/multi-platform-favorites-repository':
-        specifier: workspace:*
-        version: link:../favorites-repository
-      '@examples/multi-platform-favorites-view':
-        specifier: workspace:*
-        version: link:../favorites-view
-      '@examples/multi-platform-product-shell':
-        specifier: workspace:*
-        version: link:../product-shell
+      '@deepseek-ai/cordis-plugin-loader':
+        specifier: 1.0.3
+        version: 1.0.3(@deepseek-ai/cordis@4.0.2)
 
   examples/multi-platform/plugins/favorites-repository:
     dependencies:
@@ -591,13 +614,14 @@ importers:
         specifier: 0.86.3
         version: 0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1)
 
-  examples/multi-platform/plugins/product: {}
-
   examples/multi-platform/plugins/product-shell:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@examples/multi-platform-favorites-controls':
+        specifier: workspace:*
+        version: link:../favorites-controls
       '@react-cordis/i18n':
         specifier: workspace:*
         version: link:../../../../packages/i18n
@@ -637,6 +661,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@examples/multi-platform-favorites-controls':
+        specifier: workspace:*
+        version: link:../plugins/favorites-controls
       '@examples/multi-platform-product-shell':
         specifier: workspace:*
         version: link:../plugins/product-shell

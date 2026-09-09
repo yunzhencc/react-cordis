@@ -9,7 +9,10 @@
   },
   "dependencies": {
     "@examples/multi-platform-browser-storage": "workspace:*",
-    "@examples/multi-platform-favorites-feature": "workspace:*",
+    "@examples/multi-platform-favorites": "workspace:*",
+    "@examples/multi-platform-favorites-controls": "workspace:*",
+    "@examples/multi-platform-favorites-repository": "workspace:*",
+    "@examples/multi-platform-favorites-view": "workspace:*",
     "@examples/multi-platform-i18n": "workspace:*",
     "@examples/multi-platform-product-shell": "workspace:*",
     "@examples/multi-platform-shared": "workspace:*",

@@ -1,0 +1,25 @@
+- insert:
+    - id: product
+      name: cordis:group
+      group: true
+      config:
+        - id: i18n
+          name: '@examples/multi-platform-i18n'
+        - id: renderer
+          name: '@react-cordis/renderer/react'
+        - id: favorites-controls
+          name: '@examples/multi-platform-favorites-controls'
+          config:
+            group: favorites
+        - id: favorites
+          name: cordis:group
+          group: true
+          config:
+            - id: favorites-repository
+              name: '@examples/multi-platform-favorites-repository'
+            - id: favorites-business
+              name: '@examples/multi-platform-favorites'
+            - id: favorites-view
+              name: '@examples/multi-platform-favorites-view'
+        - id: shell
+          name: '@examples/multi-platform-product-shell'
