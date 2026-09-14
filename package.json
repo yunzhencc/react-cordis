@@ -12,6 +12,7 @@
     "start:basic": "pnpm --filter @examples/basic dev",
     "start:router": "pnpm --filter @examples/router dev",
     "start:tanstack": "pnpm --filter @examples/tanstack-start dev",
+    "start:next": "pnpm --filter @examples/next dev",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "vitest run",

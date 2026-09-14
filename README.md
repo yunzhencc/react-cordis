@@ -24,6 +24,7 @@ pnpm start
 | [i18n](examples/i18n) | `pnpm start:i18n` | 命名空间、语言包注册、翻译回退与语言偏好持久化。 |
 | [多端产品](examples/multi-platform) | `pnpm --filter @examples/multi-platform dev` | Tamagui 共享界面、Cordis 功能启停与平台存储；另提供 Electron 和 Expo 原生入口。 |
 | [TanStack Start](examples/tanstack-start) | `pnpm start:tanstack` | 收藏插件参与 SSR、请求隔离、首屏状态恢复和客户端启停。 |
+| [Next.js](examples/next) | `pnpm start:next` | App Router、服务端业务插件、首屏快照与客户端 Slot 启停。 |
 
 ## 核心能力
 

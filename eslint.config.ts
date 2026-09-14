@@ -2,7 +2,7 @@ import antfu from '@antfu/eslint-config';
 
 export default antfu(
   {
-    ignores: ['.superpowers/**', 'docs/**', '**/out/**', '**/.output/**', '**/routeTree.gen.ts', 'examples/multi-platform/apps/mobile/src/boot.generated.js'],
+    ignores: ['.superpowers/**', 'docs/**', '**/out/**', '**/.output/**', '**/.next/**', '**/routeTree.gen.ts', 'examples/next/next-env.d.ts', 'examples/next/src/boot.*.generated.js', 'examples/multi-platform/apps/mobile/src/boot.generated.js'],
     stylistic: {
       semi: true,
       indent: 2,
@@ -11,7 +11,7 @@ export default antfu(
     react: true,
   },
   {
-    files: ['packages/**/*.tsx', 'examples/*/plugins/**/*.tsx', 'examples/tanstack-start/src/plugins/**/*.tsx', 'examples/tanstack-start/src/routes/**/*.tsx'],
+    files: ['packages/**/*.tsx', 'examples/*/plugins/**/*.tsx', 'examples/tanstack-start/src/plugins/**/*.tsx', 'examples/tanstack-start/src/routes/**/*.tsx', 'examples/next/src/**/*.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

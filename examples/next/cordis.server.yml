@@ -1,0 +1,9 @@
+- id: controls
+  name: '@examples/multi-platform-favorites-controls'
+  config: {group: favorites}
+- id: favorites
+  name: cordis:group
+  group: true
+  config:
+    - id: business
+      name: '@examples/multi-platform-favorites'

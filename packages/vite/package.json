@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./metro-transformer": "./src/metro-transformer.cjs",
+    "./loader-browser-source": "./src/loader-browser-source.cjs",
     "./node-module-stub": "./src/node-module-stub.ts"
   },
   "peerDependencies": {

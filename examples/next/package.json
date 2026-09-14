@@ -1,0 +1,27 @@
+{
+  "name": "@examples/next",
+  "type": "module",
+  "private": true,
+  "exports": { "./view": "./src/plugins/favorites-view.tsx" },
+  "scripts": {
+    "generate": "node scripts/generate-boot.ts",
+    "dev": "pnpm generate && next dev --port 3002",
+    "build": "pnpm generate && next build",
+    "start": "next start --port 3002"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@examples/multi-platform-favorites": "workspace:*",
+    "@examples/multi-platform-favorites-controls": "workspace:*",
+    "@react-cordis/boot": "workspace:*",
+    "@react-cordis/renderer": "workspace:*",
+    "next": "16.3.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@react-cordis/boot-config": "workspace:*",
+    "@react-cordis/vite": "workspace:*"
+  }
+}

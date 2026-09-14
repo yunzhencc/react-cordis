@@ -1,0 +1,11 @@
+{
+  "extends": "@yunzhen/tsconfig/web.json",
+  "compilerOptions": {
+    "incremental": true,
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": false,
+    "plugins": [{ "name": "next" }]
+  },
+  "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx", "scripts/**/*.ts", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
