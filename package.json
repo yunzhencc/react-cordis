@@ -11,6 +11,7 @@
     "start:i18n": "pnpm --filter @examples/i18n dev",
     "start:basic": "pnpm --filter @examples/basic dev",
     "start:router": "pnpm --filter @examples/router dev",
+    "start:tanstack": "pnpm --filter @examples/tanstack-start dev",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "vitest run",

@@ -1,0 +1,8 @@
+{
+  "extends": "@yunzhen/tsconfig/web.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"],
+    "verbatimModuleSyntax": false
+  },
+  "include": ["src", "tests", "vite.config.ts"]
+}

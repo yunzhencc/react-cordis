@@ -13,7 +13,7 @@ const { isOfficialLoaderPath, removeEagerLoaderEvaluator } = require('./loader-b
   removeEagerLoaderEvaluator: (source: string) => string;
 };
 
-const loaderPath = require.resolve('@deepseek-ai/cordis-plugin-loader');
+const loaderPath = createRequire(new URL('../../boot/package.json', import.meta.url)).resolve('@deepseek-ai/cordis-plugin-loader');
 const loaderSource = readFileSync(loaderPath, 'utf8');
 
 const graph = {
@@ -63,9 +63,26 @@ it('browserizes the official Loader unless the target is Node', () => {
     'process.execArgv': '[]',
     'process.env.CORDIS_SHARED': 'undefined',
   });
-  expect(browser.resolve.alias[0].find.test('node:module')).toBe(true);
+  expect(browser.resolve!.alias[0]!.find.test('node:module')).toBe(true);
   expect(node.define).toBeUndefined();
   expect(node.resolve).toBeUndefined();
+});
+
+it('keeps SSR globals native while browserizing the client in a multi-environment app', () => {
+  const plugin = cordisWebBoot({ target: 'auto' });
+  const shared = Reflect.apply(plugin.config, undefined, []);
+  const server = Reflect.apply(plugin.configEnvironment, undefined, ['ssr', { consumer: 'server' }]);
+  const client = Reflect.apply(plugin.configEnvironment, undefined, ['client', { consumer: 'client' }]);
+  expect(shared.define).toBeUndefined();
+  expect(server?.define).toBeUndefined();
+  expect(client.define['process.versions.node']).toBe('"0.0.0"');
+  expect(Reflect.apply(plugin.resolveId, { environment: { config: { consumer: 'client' } } }, ['node:module'])).toMatch(/node-module-stub\.ts$/);
+  expect(Reflect.apply(plugin.resolveId, { environment: { config: { consumer: 'server' } } }, ['node:module'])).toBeUndefined();
+  expect(Reflect.apply(plugin.transform, { environment: { config: { consumer: 'server' } } }, [loaderSource, loaderPath])).toBeUndefined();
+  const transformed = Reflect.apply(plugin.transform, { environment: { config: { consumer: 'client' } } }, [loaderSource, loaderPath]);
+  expect(transformed).not.toContain('new Function(');
+  const scan = client.optimizeDeps.rolldownOptions.plugins[0];
+  expect(Reflect.apply(scan.transform, undefined, [loaderSource, loaderPath])).not.toContain('new Function(');
 });
 
 it('removes the eager Loader evaluator only for browser transforms', () => {
@@ -94,8 +111,8 @@ it('removes the eager Loader evaluator idempotently', () => {
 it('removes the eager Loader evaluator during browser dependency optimization', () => {
   const browserConfig = Reflect.apply(cordisWebBoot().config, undefined, []);
   const nodeConfig = Reflect.apply(cordisWebBoot({ target: 'node' }).config, undefined, []);
-  const browserScan = browserConfig.optimizeDeps.rolldownOptions.plugins[0];
-  const nodeScan = nodeConfig.optimizeDeps.rolldownOptions.plugins[0];
+  const browserScan = browserConfig.optimizeDeps!.rolldownOptions.plugins[0]!;
+  const nodeScan = nodeConfig.optimizeDeps!.rolldownOptions.plugins[0]!;
   const transformed = Reflect.apply(browserScan.transform, undefined, [loaderSource, loaderPath]) as string;
 
   expect(transformed).not.toContain('new Function(');
@@ -243,6 +260,31 @@ function metadataFixture() {
     close: () => Reflect.apply(plugin.closeBundle, undefined, []),
   };
 }
+
+it('resolves Node builtins separately in real Vite client and SSR environments', async () => {
+  const app = metadataFixture();
+  app.close();
+  const server = await createServer({
+    root: app.root,
+    configFile: false,
+    plugins: [cordisWebBoot({ configPath: app.configPath, target: 'auto' })],
+    server: { middlewareMode: true, ws: false, watch: null },
+    optimizeDeps: { noDiscovery: true },
+    environments: { ssr: { consumer: 'server' } },
+    logLevel: 'silent',
+  });
+  try {
+    const client = await server.environments.client.pluginContainer.resolveId('node:module', loaderPath);
+    const ssr = await server.environments.ssr!.pluginContainer.resolveId('node:module', loaderPath);
+    expect(client?.id).toMatch(/node-module-stub\.ts$/);
+    expect(ssr?.id).toBe('node:module');
+    expect(ssr?.external).toBe(true);
+  }
+  finally {
+    await server.close();
+    rmSync(app.root, { force: true, recursive: true });
+  }
+});
 
 it('refreshes metadata under node_modules and recovers from invalid or deleted manifests', async () => {
   const app = metadataFixture();

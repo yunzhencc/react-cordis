@@ -1,5 +1,5 @@
 import type { WebBootEntry, WebBootGraph } from '@react-cordis/boot/manifest';
-import type { Plugin, Rolldown, ViteDevServer } from 'vite';
+import type { EnvironmentOptions, Plugin, Rolldown, ViteDevServer } from 'vite';
 import { realpathSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
@@ -19,7 +19,7 @@ export interface CordisWebBootOptions {
   manifestFileName?: string;
   bundles?: readonly string[];
   patches?: readonly string[];
-  target?: 'browser' | 'node';
+  target?: 'browser' | 'node' | 'auto';
 }
 
 function manifestStamp(file: string) {
@@ -103,47 +103,59 @@ export function cordisWebBoot({
     }
   });
 
+  const environmentConfig = (browser: boolean) => {
+    return {
+      ...(browser
+        ? {
+            define: {
+              'process.versions.node': JSON.stringify('0.0.0'),
+              'process.execArgv': '[]',
+              'process.env.CORDIS_SHARED': 'undefined',
+            },
+          }
+        : {}),
+      optimizeDeps: {
+        rolldownOptions: {
+          // Vite's scanner externalizes virtual IDs. Expose the boot imports
+          // to it so plugin dependencies are found before the browser loads.
+          plugins: [{
+            name: 'cordis-web-boot-scan',
+            resolveId(id) {
+              if (browser && id === 'node:module')
+                return fileURLToPath(new URL('./node-module-stub.ts', import.meta.url));
+              if (id === virtualModuleId)
+                return resolvedVirtualModuleId;
+            },
+            load(id) {
+              if (id === resolvedVirtualModuleId)
+                return { code: renderGraph(), moduleType: 'js' };
+            },
+            transform(code, id) {
+              if (browser && isOfficialLoaderPath(id))
+                return removeEagerLoaderEvaluator(code);
+            },
+          }],
+        },
+      },
+    } satisfies EnvironmentOptions;
+  };
+
   return {
     name: 'cordis-web-boot',
+    enforce: target === 'auto' ? 'pre' : undefined,
     config() {
       return {
+        ...(target === 'auto' ? {} : environmentConfig(target === 'browser')),
         ...(target === 'browser'
           ? {
-              resolve: {
-                alias: [{
-                  find: /^node:module$/,
-                  replacement: fileURLToPath(new URL('./node-module-stub.ts', import.meta.url)),
-                }],
-              },
-              define: {
-                'process.versions.node': JSON.stringify('0.0.0'),
-                'process.execArgv': '[]',
-                'process.env.CORDIS_SHARED': 'undefined',
-              },
+              resolve: { alias: [{ find: /^node:module$/, replacement: fileURLToPath(new URL('./node-module-stub.ts', import.meta.url)) }] },
             }
           : {}),
-        optimizeDeps: {
-          rolldownOptions: {
-            // Vite's scanner externalizes virtual IDs. Expose the boot imports
-            // to it so plugin dependencies are found before the browser loads.
-            plugins: [{
-              name: 'cordis-web-boot-scan',
-              resolveId(id) {
-                if (id === virtualModuleId)
-                  return resolvedVirtualModuleId;
-              },
-              load(id) {
-                if (id === resolvedVirtualModuleId)
-                  return { code: renderGraph(), moduleType: 'js' };
-              },
-              transform(code, id) {
-                if (target === 'browser' && isOfficialLoaderPath(id))
-                  return removeEagerLoaderEvaluator(code);
-              },
-            }],
-          },
-        },
       };
+    },
+    configEnvironment(name, config) {
+      if (target === 'auto')
+        return environmentConfig(config.consumer === 'client' || (config.consumer === undefined && name === 'client'));
     },
     configResolved(config) {
       resolvedConfigPath = resolve(config.root, configPath);
@@ -179,7 +191,7 @@ export function cordisWebBoot({
       emitWebBootGraph(this, loadGraph(), manifestFileName);
     },
     transform(code, id) {
-      if (target === 'browser' && isOfficialLoaderPath(id))
+      if ((target === 'browser' || (target === 'auto' && this.environment.config.consumer === 'client')) && isOfficialLoaderPath(id))
         return removeEagerLoaderEvaluator(code);
     },
     load(id) {
@@ -187,6 +199,8 @@ export function cordisWebBoot({
         return renderGraph();
     },
     resolveId(id) {
+      if (target === 'auto' && this.environment.config.consumer === 'client' && id === 'node:module')
+        return fileURLToPath(new URL('./node-module-stub.ts', import.meta.url));
       if (id === virtualModuleId)
         return resolvedVirtualModuleId;
     },
