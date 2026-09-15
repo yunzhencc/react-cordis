@@ -166,6 +166,14 @@ ctx.slots.register(
 
 类型契约不赋予 owner 权限，也不替代运行时声明、重复注册、有限 order 和卸载检查。组件仍是无参数贡献；当前没有 props 注入、keyed/chain、store-seat 或 session scope。
 
+### 按需优化业务渲染
+
+Slot 注册或移除条目时会重新遍历该插槽的列表。稳定的 `sequence` key 保留已有条目的组件状态；业务组件可按实际渲染成本使用 React `memo`，在 props 不变时跳过父级带来的重复渲染。组件自身 state、Context 和外部 store 订阅仍按各自的更新机制生效。
+
+参考 Next 示例的 `FavoritesView`：父级控制栏更新时，稳定的 `items` 和 `service` 让默认浅比较跳过收藏列表重算；收藏快照变化或表单状态变化仍会更新。传入的数据应使用不可变快照，避免原地修改后引用不变；`memo` 组件定义放在模块级，避免渲染时重新创建组件类型。
+
+该策略与 DeepSeek Harness 一致：业务组件按需 memo，框架保留默认更新行为。当前不在 Slot 层添加自定义比较器，也不承诺消除列表遍历；简单贡献无需统一包装。
+
 ### 渲染异常隔离
 
 renderer 使用原生 React 错误边界，按每个 Slot 注册项隔离渲染异常，包含 `root`。故障项渲染空的 `<div data-slot-error="插槽名" />`，日志记录插槽名、可选的注册 id 和原始错误；兄弟项继续显示。Router 复用同一边界隔离每个页面，使用 `<div data-route-error="路由 id" />` 占位，页面异常不会卸载正常的祖先布局。

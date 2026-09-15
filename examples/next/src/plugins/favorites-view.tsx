@@ -2,9 +2,11 @@ import type { Context } from '@deepseek-ai/cordis';
 import type { Favorite, Favorites } from '@examples/multi-platform-favorites';
 import type {} from '@react-cordis/renderer/react';
 import { FavoritesError } from '@examples/multi-platform-favorites';
-import { useState, useSyncExternalStore } from 'react';
+import { memo, useState, useSyncExternalStore } from 'react';
 
 export const inject = ['slots', 'favorites'];
+
+export const FavoritesView = memo(FavoritesViewContent);
 
 export function apply(ctx: Context) {
   const service = ctx.favorites;
@@ -17,7 +19,7 @@ function LiveFavorites({ service }: { service: Favorites }) {
 }
 
 // The same view renders the serializable SSR snapshot and the live plugin state.
-export function FavoritesView({ items, service }: { items: readonly Favorite[]; service?: Favorites }) {
+function FavoritesViewContent({ items, service }: { items: readonly Favorite[]; service?: Favorites }) {
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
