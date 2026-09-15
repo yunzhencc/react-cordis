@@ -123,6 +123,10 @@ export class SlotRegistry extends Service {
         if (!this.core.spec(name))
           return;
         const disposeEffect = ctx.effect(() => callback() ?? (() => {}), `slots.inject(${JSON.stringify(name)}): declaration`);
+        if (stopped || this.core.declarationEpoch(name) !== epoch) {
+          void disposeEffect();
+          return;
+        }
         active = () => {
           void disposeEffect();
         };
@@ -177,12 +181,7 @@ export class SlotRegistry extends Service {
       if (!live)
         return;
       live = false;
-      try {
-        disposeDeclaration();
-      }
-      finally {
-        this.publish(...Object.keys(ownedChildren));
-      }
+      disposeDeclaration();
     }, () => live);
   }
 
@@ -216,10 +215,12 @@ export class SlotRegistry extends Service {
 
   /** @internal */
   subscribe(name: SlotName, listener: () => void) {
+    const unsubscribeDeclaration = this.core.subscribeDeclaration(name, listener);
     const listeners = this.listeners.get(name) ?? new Set();
     listeners.add(listener);
     this.listeners.set(name, listeners);
     return () => {
+      unsubscribeDeclaration();
       listeners.delete(listener);
       if (!listeners.size)
         this.listeners.delete(name);
@@ -245,7 +246,7 @@ export class SlotRegistry extends Service {
 
   /** @internal */
   version(name: SlotName) {
-    return this.versions.get(name) ?? 0;
+    return (this.versions.get(name) ?? 0) + this.core.declarationEpoch(name);
   }
 }
 

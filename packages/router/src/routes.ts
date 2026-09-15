@@ -113,6 +113,10 @@ export class RouteRegistry extends Service {
         if (!this.routes.has(parentId))
           return;
         const disposeEffect = ctx.effect(() => callback() ?? (() => {}), `routes.inject(${JSON.stringify(parentId)}): parent`);
+        if (stopped || this.record(parentId).epoch !== epoch) {
+          void disposeEffect();
+          return;
+        }
         active = () => {
           void disposeEffect();
         };

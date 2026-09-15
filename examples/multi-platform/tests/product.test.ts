@@ -104,6 +104,36 @@ it('keeps the last durable state after a write error and validates persisted inp
   await ctx.fiber.dispose();
 });
 
+it('keeps a saved command successful and notifies remaining subscribers when one throws', async () => {
+  const ctx = new Context();
+  let saved: readonly Favorite[] = [];
+  ctx.provide('favoritesRepository', { open: () => ({
+    load: async () => saved,
+    save: async (items) => { saved = items; },
+    close: async () => {},
+  }) });
+  await ctx.plugin(favorites).await();
+  const failure = new Error('broken subscriber');
+  const report = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const observed: (readonly Favorite[])[] = [];
+  const item = { title: 'Saved', url: 'https://example.com/saved' };
+  try {
+    ctx.favorites.subscribe(() => {
+      throw failure;
+    });
+    ctx.favorites.subscribe(() => observed.push(ctx.favorites.getSnapshot()));
+    await expect(ctx.favorites.add(item)).resolves.toBeUndefined();
+    expect(saved).toEqual([item]);
+    expect(ctx.favorites.getSnapshot()).toEqual([item]);
+    expect(observed).toEqual([[item]]);
+    expect(report).toHaveBeenCalledWith('favorites subscriber failed:', failure);
+  }
+  finally {
+    await ctx.fiber.dispose();
+    report.mockRestore();
+  }
+});
+
 it('owns the feature view, serializes toggles, and lets Cordis recover service dependencies', async () => {
   let storageScope!: Context;
   let saved: string | null = '[{"title":"Existing","url":"https://example.com/old"}]';

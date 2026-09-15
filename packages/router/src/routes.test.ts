@@ -137,6 +137,49 @@ describe('route registry', () => {
     await dispose();
   });
 
+  it.each([false, true])('cleans up an injection whose callback removes its parent (replace: %s)', async (replace) => {
+    const { ctx, dispose } = await bootRoutes();
+    const registerParent = () => ctx.routes.register({ id: 'parent', Component: Null });
+    let removeParent = registerParent();
+    let runs = 0;
+    const active = new Set<number>();
+    const stop = ctx.routes.inject('parent', () => {
+      const run = ++runs;
+      active.add(run);
+      if (run === 1) {
+        removeParent();
+        if (replace)
+          removeParent = registerParent();
+      }
+      return () => active.delete(run);
+    });
+
+    expect(active.size).toBe(replace ? 1 : 0);
+    expect(active.has(1)).toBe(false);
+    removeParent();
+    expect(active.size).toBe(0);
+    stop();
+    await dispose();
+  });
+
+  it('cleans up an injection stopped while its callback is running', async () => {
+    const { ctx, dispose } = await bootRoutes();
+    let active = 0;
+    const stop = ctx.routes.inject('parent', () => {
+      active += 1;
+      stop();
+      return () => {
+        active -= 1;
+      };
+    });
+
+    const remove = ctx.routes.register({ id: 'parent', Component: Null });
+
+    expect(active).toBe(0);
+    remove();
+    await dispose();
+  });
+
   it('stops an injection after its callback throws', async () => {
     const { ctx, dispose } = await bootRoutes();
     let runs = 0;

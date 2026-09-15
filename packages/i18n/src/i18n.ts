@@ -70,6 +70,7 @@ export class I18nRuntime {
   private readonly storageKey: string | false;
   private readonly listeners = new Set<() => void>();
   private languageSnapshot: readonly LocaleDefinition[] = Object.freeze([]);
+  private localeChange: Promise<void> | undefined;
 
   constructor(config: I18nConfig = {}, private readonly persistLocale?: (locale: Locale) => Promise<void>) {
     if (!config || typeof config !== 'object' || Array.isArray(config))
@@ -119,18 +120,37 @@ export class I18nRuntime {
     if (!language)
       throw new Error(`locale "${locale}" is not registered`);
 
-    // Host persistence can be asynchronous; publish only after it succeeds.
-    if (this.persistLocale)
-      await this.persistLocale(language.id);
-    if (this.disposed)
-      return;
-    this.preference = language.id;
+    const change = async () => {
+      if (this.disposed)
+        return;
+      if (this.catalog.get(localeKey(language.id)) !== language)
+        throw new Error(`locale "${language.id}" is no longer registered`);
+      // Host persistence can be asynchronous; publish only after it succeeds.
+      if (this.persistLocale)
+        await this.persistLocale(language.id);
+      if (this.disposed)
+        return;
+      if (this.catalog.get(localeKey(language.id)) !== language)
+        throw new Error(`locale "${language.id}" is no longer registered`);
+      this.preference = language.id;
+      try {
+        if (this.storageKey)
+          localStorage.setItem(this.storageKey, language.id);
+      }
+      catch {}
+      await this.instance.changeLanguage(localeKey(language.id));
+    };
+    if (!this.persistLocale)
+      return change();
+    const pending = this.localeChange ? this.localeChange.then(change, change) : change();
+    this.localeChange = pending;
     try {
-      if (this.storageKey)
-        localStorage.setItem(this.storageKey, language.id);
+      await pending;
     }
-    catch {}
-    await this.instance.changeLanguage(localeKey(language.id));
+    finally {
+      if (this.localeChange === pending)
+        this.localeChange = undefined;
+    }
   }
 
   addLanguage(input: LanguageRegistration): () => void {
@@ -189,9 +209,42 @@ export class I18nRuntime {
         throw new Error(`locale namespace "${namespace}" already has locale "${locale}"`);
       registered.add(localeKey(locale));
     }
-    for (const [locale, resources] of entries) {
-      namespaceResources.set(localeKey(locale), resources);
-      this.instance.addResourceBundle(localeKey(locale), namespace, resources);
+    const added = new Map<string, LocaleResources>();
+    const cleanup = () => {
+      let failed = false;
+      let failure: unknown;
+      for (const [key, resources] of added) {
+        if (namespaceResources!.get(key) !== resources)
+          continue;
+        namespaceResources!.delete(key);
+        try {
+          this.instance.removeResourceBundle(key, namespace);
+        }
+        catch (error) {
+          if (!failed)
+            failure = error;
+          failed = true;
+        }
+      }
+      if (failed)
+        throw failure;
+    };
+    try {
+      for (const [locale, resources] of entries) {
+        const key = localeKey(locale);
+        if (namespaceResources.has(key))
+          throw new Error(`locale namespace "${namespace}" already has locale "${locale}"`);
+        added.set(key, resources);
+        namespaceResources.set(key, resources);
+        this.instance.addResourceBundle(key, namespace, resources);
+      }
+    }
+    catch (error) {
+      try {
+        cleanup();
+      }
+      catch {}
+      throw error;
     }
 
     let disposed = false;
@@ -199,13 +252,7 @@ export class I18nRuntime {
       if (this.disposed || disposed)
         return;
       disposed = true;
-      for (const [locale, resources] of entries) {
-        const key = localeKey(locale);
-        if (namespaceResources!.get(key) !== resources)
-          continue;
-        namespaceResources!.delete(key);
-        this.instance.removeResourceBundle(key, namespace);
-      }
+      cleanup();
     };
   }
 

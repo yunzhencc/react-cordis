@@ -86,8 +86,16 @@ export async function apply(ctx: Context) {
       const next = validateFavorites(update(items));
       await repository.save(next);
       items = next;
-      if (live && fiber.uid !== null)
-        listeners.forEach(listener => listener());
+      if (live && fiber.uid !== null) {
+        listeners.forEach((listener) => {
+          try {
+            listener();
+          }
+          catch (error) {
+            console.error('favorites subscriber failed:', error);
+          }
+        });
+      }
     });
     pending = task.catch(() => {});
     return task;

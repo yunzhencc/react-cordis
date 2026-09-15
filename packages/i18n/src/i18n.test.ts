@@ -8,6 +8,142 @@ import { apply } from './index';
 
 describe('i18n runtime', () => {
   beforeEach(() => localStorage.clear());
+  it('serializes host persistence in selection order and continues after a failed save', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const saved: string[] = [];
+    const persist = vi.fn(async (locale: string) => {
+      if (locale === 'en')
+        await gate;
+      saved.push(locale);
+    });
+    const runtime = new I18nRuntime({ locale: 'zh' }, persist);
+    const first = runtime.setLocale('en');
+    const second = runtime.setLocale('zh');
+    expect(persist.mock.calls).toEqual([['en']]);
+    release();
+    await Promise.all([first, second]);
+    expect(saved).toEqual(['en', 'zh']);
+    expect(runtime.locale).toBe('zh');
+    expect(localStorage.getItem('react-cordis:locale')).toBe('zh');
+
+    persist.mockRejectedValueOnce(new Error('disk full'));
+    const failed = expect(runtime.setLocale('en')).rejects.toThrow('disk full');
+    const next = runtime.setLocale('zh');
+    await Promise.all([failed, next]);
+    expect(saved).toEqual(['en', 'zh', 'zh']);
+    runtime.dispose();
+  });
+
+  it.each([false, true])('rejects a language removed during saving, even if replaced: %s', async (replace) => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const runtime = new I18nRuntime({ locale: 'en' }, async () => gate);
+    const remove = runtime.addLanguage({ id: 'ja', label: '日本語', fallback: 'en' });
+    const change = runtime.setLocale('ja');
+    const failed = expect(change).rejects.toThrow(/no longer registered/);
+    remove();
+    if (replace)
+      runtime.addLanguage({ id: 'ja', label: 'Replacement', fallback: 'en' });
+    release();
+    await failed;
+    expect(runtime.locale).toBe('en');
+    expect(localStorage.getItem('react-cordis:locale')).toBeNull();
+    runtime.dispose();
+  });
+
+  it('preserves the disposed snapshot and skips queued saves', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const persist = vi.fn(async () => gate);
+    const runtime = new I18nRuntime({ locale: 'zh' }, persist);
+    const first = runtime.setLocale('en');
+    const second = runtime.setLocale('zh');
+    runtime.dispose();
+    release();
+    await Promise.all([first, second]);
+    expect(persist.mock.calls).toEqual([['en']]);
+    expect(runtime.locale).toBe('zh');
+    expect(localStorage.getItem('react-cordis:locale')).toBeNull();
+  });
+
+  it('applies language changes synchronously without host persistence', async () => {
+    const runtime = new I18nRuntime({ locale: 'zh' });
+    const change = runtime.setLocale('en');
+    expect(runtime.locale).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+    await change;
+    runtime.dispose();
+  });
+
+  it('rolls back every dictionary when an added listener throws and allows retry', () => {
+    const runtime = new I18nRuntime();
+    const failure = new Error('added listener failed');
+    const onAdded = (locale: string) => {
+      if (locale === 'zh')
+        throw failure;
+    };
+    const onRemoved = () => {
+      throw new Error('removed listener failed');
+    };
+    runtime.instance.store.on('added', onAdded);
+    runtime.instance.store.on('removed', onRemoved);
+    const dictionaries = { en: { title: 'Hello' }, zh: { title: '你好' } };
+    expect(() => runtime.register('transaction', dictionaries)).toThrow(failure);
+    for (const locale of ['en', 'zh'])
+      expect(runtime.instance.hasResourceBundle(locale, 'transaction')).toBe(false);
+    runtime.instance.store.off('added', onAdded);
+    runtime.instance.store.off('removed', onRemoved);
+    const remove = runtime.register('transaction', dictionaries);
+    expect(runtime.instance.t('transaction:title', { lng: 'zh' })).toBe('你好');
+    remove();
+    runtime.dispose();
+  });
+
+  it('releases all registered dictionaries even when removal listeners throw', () => {
+    const runtime = new I18nRuntime();
+    const dictionaries = { en: { title: 'Hello' }, zh: { title: '你好' } };
+    const remove = runtime.register('cleanup', dictionaries);
+    const first = new Error('en removal failed');
+    const onRemoved = (locale: string) => {
+      throw locale === 'en' ? first : new Error('zh removal failed');
+    };
+    runtime.instance.store.on('removed', onRemoved);
+    expect(remove).toThrow(first);
+    for (const locale of ['en', 'zh'])
+      expect(runtime.instance.hasResourceBundle(locale, 'cleanup')).toBe(false);
+    runtime.instance.store.off('removed', onRemoved);
+    expect(remove).not.toThrow();
+    const removeReplacement = runtime.register('cleanup', dictionaries);
+    remove();
+    expect(runtime.instance.t('cleanup:title', { lng: 'zh' })).toBe('你好');
+    removeReplacement();
+    runtime.dispose();
+  });
+
+  it('preserves dictionaries registered reentrantly while rolling back a conflict', () => {
+    const runtime = new I18nRuntime();
+    const dictionaries = { en: { title: 'Hello' }, zh: { title: '你好' } };
+    let removeNested!: () => void;
+    const onAdded = (locale: string) => {
+      if (locale === 'en')
+        removeNested = runtime.register('reentrant', { zh: dictionaries.zh });
+    };
+    runtime.instance.store.on('added', onAdded);
+    expect(() => runtime.register('reentrant', dictionaries)).toThrow(/already has locale/);
+    runtime.instance.store.off('added', onAdded);
+    expect(runtime.instance.hasResourceBundle('en', 'reentrant')).toBe(false);
+    expect(runtime.instance.t('reentrant:title', { lng: 'zh' })).toBe('你好');
+    removeNested();
+    runtime.dispose();
+  });
+
   it('awaits host persistence and leaves the active language unchanged when it fails', async () => {
     localStorage.setItem('react-cordis:locale', 'en');
     let release!: () => void;

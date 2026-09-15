@@ -238,6 +238,52 @@ describe('ui renderer', () => {
     await dispose();
   });
 
+  it.each([false, true])('cleans up an injection whose callback removes its declaration (replace: %s)', async (replace) => {
+    const { ctx, dispose } = await bootRenderer();
+    const registerDeclaration = () => ctx.slots.register({
+      name: 'root',
+      children: { host: { kind: 'single', scope: 'root' } },
+    }, Null);
+    let removeDeclaration = registerDeclaration();
+    let runs = 0;
+    const active = new Set<number>();
+    const stop = ctx.slots.inject('host', () => {
+      const run = ++runs;
+      active.add(run);
+      if (run === 1) {
+        removeDeclaration();
+        if (replace)
+          removeDeclaration = registerDeclaration();
+      }
+      return () => active.delete(run);
+    });
+
+    expect(active.size).toBe(replace ? 1 : 0);
+    expect(active.has(1)).toBe(false);
+    removeDeclaration();
+    expect(active.size).toBe(0);
+    stop();
+    await dispose();
+  });
+
+  it('cleans up an injection stopped while its callback is running', async () => {
+    const { ctx, dispose } = await bootRenderer();
+    let active = 0;
+    const stop = ctx.slots.inject('host', () => {
+      active += 1;
+      stop();
+      return () => {
+        active -= 1;
+      };
+    });
+
+    const remove = ctx.slots.register({ name: 'root', children: { host: { kind: 'single', scope: 'root' } } }, Null);
+
+    expect(active).toBe(0);
+    remove();
+    await dispose();
+  });
+
   it('stops an injection after its callback throws', async () => {
     const { ctx, dispose } = await bootRenderer();
     let runs = 0;
@@ -325,6 +371,38 @@ describe('ui renderer', () => {
     expect(() => owner.dispose()).not.toThrow();
     stop();
     stopSecond();
+    await dispose();
+  });
+
+  it.each(['registration', 'owner'] as const)('notifies every cascading slot removal from a %s', async (source) => {
+    const { ctx, dispose } = await bootRenderer();
+    const children = { host: { kind: 'single', scope: 'root' } } as const;
+    const remove = source === 'registration'
+      ? ctx.slots.register({ name: 'root', children }, Null)
+      : ctx.slots.createOwner('frame', children).dispose;
+    ctx.slots.register({ name: 'host', children: { child: { kind: 'single', scope: 'root' } } }, Null);
+    ctx.slots.register({ name: 'child' }, Null);
+    const observed = ['host', 'child'] as const;
+    const versions = observed.map(name => ctx.slots.version(name));
+    const notifications: string[] = [];
+    const unsubscribe = observed.map(name => ctx.slots.subscribe(name, () => {
+      expect(ctx.slots.entries(name)).toEqual([]);
+      notifications.push(name);
+    }));
+
+    remove();
+
+    expect(notifications.toSorted()).toEqual([...observed].toSorted());
+    for (const [index, name] of observed.entries())
+      expect(ctx.slots.version(name)).toBeGreaterThan(versions[index]!);
+    unsubscribe.forEach(stop => stop());
+    const previousVersion = ctx.slots.version('child');
+    const replacement = ctx.slots.createOwner('replacement', { child: { kind: 'single', scope: 'root' } });
+    const replacementVersion = ctx.slots.version('child');
+    expect(replacementVersion).toBeGreaterThan(previousVersion);
+    replacement.dispose();
+    expect(ctx.slots.version('child')).toBeGreaterThan(replacementVersion);
+    expect(notifications).toHaveLength(2);
     await dispose();
   });
 
