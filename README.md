@@ -1,32 +1,12 @@
 # react-cordis
 
-基于 `@deepseek-ai/cordis` 的 React 插件化应用实践。通过插件提供服务、贡献 UI，并由应用配置决定启用哪些能力。
+React Cordis 是 `@deepseek-ai/cordis` 在 React 生态的应用基础设施：它定义插件的构建、启动、依赖、生命周期和 UI 贡献契约，并为 Web、多端和 SSR 宿主提供装配方式。
 
-项目将启动、插槽、路由、国际化和主题拆成独立包，业务页面与布局放在示例插件中。当前以源码工作区的方式开发和验证，各包均为 private；接入可从仓库中的示例开始。
+核心包只解决通用的插件化应用问题。应用宿主或业务插件拥有业务模型、页面布局、导航、设计系统和平台实现；基础包不提供固定的后台壳或产品功能。
 
-## 快速开始
+仓库以源码工作区开发和验证，当前包均为 private。`packages/` 是基础设施本体，`examples/` 是覆盖关键宿主与能力边界的参考实现和验证资产，不是项目的主产品。
 
-环境要求：Node.js 22.18+（22.x）或 24.12+（24.x），pnpm 11.26.0（仓库指定版本）。
-
-```bash
-git clone https://github.com/yunzhencc/react-cordis.git
-cd react-cordis
-pnpm install
-pnpm start
-```
-
-`pnpm start` 默认启动 Router 示例，访问终端输出的本地地址。
-
-| 示例 | 启动命令 | 内容 |
-| --- | --- | --- |
-| [Basic](examples/basic) | `pnpm start:basic` | 最小启动链与根插槽，不依赖路由。 |
-| [Router](examples/router) | `pnpm start:router` | 路由、三栏布局、工作台、设置扩展、主题与语言切换。 |
-| [i18n](examples/i18n) | `pnpm start:i18n` | 命名空间、语言包注册、翻译回退与语言偏好持久化。 |
-| [多端产品](examples/multi-platform) | `pnpm --filter @examples/multi-platform dev` | Tamagui 共享界面、Cordis 功能启停与平台存储；另提供 Electron 和 Expo 原生入口。 |
-| [TanStack Start](examples/tanstack-start) | `pnpm start:tanstack` | 收藏插件参与 SSR、请求隔离、首屏状态恢复和客户端启停。 |
-| [Next.js](examples/next) | `pnpm start:next` | App Router、服务端业务插件、首屏快照与客户端 Slot 启停。 |
-
-## 核心能力
+## 基础设施能力
 
 | 包 | 职责 |
 | --- | --- |
@@ -42,6 +22,32 @@ pnpm start
 应用决定页面布局与业务服务。基础 router 不提供侧栏或设置页；这些能力由 Router 示例中的业务插件实现。
 
 `@react-cordis/renderer/react` 提供不依赖 DOM 的插槽服务与 React 组件，宿主负责挂载根节点；默认 `@react-cordis/renderer` 入口继续提供 DOM 挂载能力。多端装配及运行方式见 [多端产品示例](examples/multi-platform/README.md)。
+
+## 参考实现与验证
+
+每个示例只证明一条或一组基础设施契约，可作为接入时的最小参考，而非推荐的产品形态。
+
+| 参考实现 | 验证的基础设施能力 | 启动命令 |
+| --- | --- | --- |
+| [Basic](examples/basic) | 最小启动链与根插槽，不依赖路由。 | `pnpm start:basic` |
+| [Router](examples/router) | 路由、业务布局、工作台、设置扩展、主题与语言插件。 | `pnpm start:router` |
+| [i18n](examples/i18n) | 命名空间、语言包注册、翻译回退与语言偏好持久化。 | `pnpm start:i18n` |
+| [多端](examples/multi-platform) | Tamagui 共享界面、功能启停与平台存储；Web、Electron、Expo 宿主。 | `pnpm --filter @examples/multi-platform dev` |
+| [TanStack Start](examples/tanstack-start) | SSR 请求隔离、首屏状态恢复与客户端启停。 | `pnpm start:tanstack` |
+| [Next.js](examples/next) | App Router、服务端业务插件、首屏快照与客户端 Slot 启停。 | `pnpm start:next` |
+
+## 快速启动参考实现
+
+环境要求：Node.js 22.18+（22.x）或 24.12+（24.x），pnpm 11.26.0（仓库指定版本）。
+
+```bash
+git clone https://github.com/yunzhencc/react-cordis.git
+cd react-cordis
+pnpm install
+pnpm start
+```
+
+`pnpm start` 默认启动 Router 参考实现；它用于验证通用包如何由业务插件组装，不代表基础设施要求固定三栏布局或设置页。
 
 ## 最小插件接入
 
