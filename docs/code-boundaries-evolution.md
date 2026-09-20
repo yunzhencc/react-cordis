@@ -52,6 +52,26 @@ src/
 
 [InvokeAI 的 `features/`](https://github.com/invoke-ai/InvokeAI/tree/main/invokeai/frontend/web/src/features) 展示了这一方向：`auth`、`gallery`、`prompt`、`queue` 等能力以业务名称出现。本文不判断它是否严格符合 FSD；它说明了生产代码可以先采用领域切片，而不必先引入运行时插件系统。
 
+### DDD：用领域模型判断边界为何存在
+
+FSD 帮助组织切片，DDD 的 Bounded Context 则追问切片边界为什么应该存在：当术语、规则、数据模型或负责团队发生变化时，是否仍应假设它们属于同一个模型？
+
+例如“收藏”在个人内容管理和团队协作两个上下文里，可能有不同的权限、状态和语言。共享一个名称不意味着必须共享同一个 model。DDD 要求明确这些上下文的关系；当它们交互时，再定义必要的转换，而不是强迫所有概念塞进统一的全局类型。[Bounded Context](https://www.martinfowler.com/bliki/BoundedContext.html)
+
+这不是要求每个 React 应用引入完整的 DDD 战术模式。对前端代码组织而言，它首先提供一种判断依据：feature 应围绕稳定的业务语言和规则聚合，而不是围绕数据库表、接口名称或某个临时页面划分。
+
+### Clean / Hexagonal：用依赖方向保护边界
+
+领域目录本身无法防止业务规则反向依赖某个 UI、浏览器存储或 HTTP SDK。Clean Architecture 和 Hexagonal Architecture 关注的正是这一点：把技术细节放到适配器一侧，让核心规则经由明确的 port/contract 使用外部能力。[Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture)
+
+在 React 应用里，这不需要变成一套额外的模板目录。feature 或 plugin 中的业务逻辑应依赖自己的服务契约；React 组件和事件处理器从输入端驱动业务逻辑，localStorage、桌面桥接或网络客户端则在输出端实现所需能力。这样，同一领域才可能在 Web、桌面、原生或 SSR 宿主中复用和替换。
+
+### 边界需要可验证
+
+目录约定不能阻止跨 feature 的任意导入。项目已拆为 package 或 workspace library 时，可以用 [Nx 的 project tag 与依赖约束](https://nx.dev/docs/features/enforce-module-boundaries) 检查 TypeScript 导入和包依赖；例如让 `shared` 只依赖 `shared`，让业务包只能依赖自己和允许的共享能力。
+
+Nx 的 tag 面向项目，不会自动为任意 `features/<name>` 文件夹建立边界。应用内部尚未拆包的切片仍需要目录级 import lint；不要为了规则把每个小 feature 过早拆成 package。
+
 ## 阶段三：将部分领域提升为插件
 
 领域目录解决的是**静态源码边界**：代码放在哪里、谁可以依赖谁。
@@ -68,7 +88,9 @@ Host/App：选择和配置插件，拥有业务布局、数据与平台实现
 
 插件不是“更大的文件夹”。它是可运行的能力边界：它需要声明依赖，能向宿主提供能力，并在停用时撤销服务、UI 贡献和其他副作用。
 
-[Backstage](https://github.com/backstage/backstage/blob/master/docs/overview/architecture-overview.md) 是较重的一端：Core 提供扩展机制，App 负责组装，Plugin 提供开发者门户的具体功能。它还扩展到后端服务、包分发和生态治理。React Cordis 不试图复刻 Backstage 的产品领域，而是探索更轻的 React 应用运行时：插件启动、服务依赖、生命周期、Slots、路由和宿主适配。
+这里的插件不等于远程安装的第三方代码、插件市场、微前端独立部署或不可信代码沙箱。React Cordis 当前使用构建期确定的静态插件图；插件共享宿主进程的执行环境。
+
+[Backstage](https://github.com/backstage/backstage/blob/master/docs/overview/architecture-overview.md) 是较重的一端：Core 提供扩展机制，App 负责组装，Plugin 提供开发者门户的具体功能，并覆盖多包、前后端扩展与应用装配。React Cordis 不试图复刻 Backstage 的产品领域，而是探索更轻的 React 应用运行时：插件启动、服务依赖、生命周期、Slots、路由和宿主适配。
 
 ## FSD 与插件化不是替代关系
 
