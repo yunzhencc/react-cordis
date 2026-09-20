@@ -137,5 +137,6 @@ pnpm --filter @examples/router exec vite --force
 ## 文档
 
 - [架构与插件契约](docs/architecture.md)
+- [代码边界的演进：从目录到领域，再到插件](docs/code-boundaries-evolution.md)
 - [国际化使用说明](packages/i18n/README.md)
 - [主题使用说明](packages/theme/README.md)
